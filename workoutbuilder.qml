@@ -7,6 +7,8 @@ import QtQuick.Controls.Styles 1.4
 import QtQuick.Layouts 1.1
 import FileIO 3.0
 
+import "zparkingb/notehelper.js" as NoteHelper
+
 MuseScore {
 	menuPath : "Plugins.Workout builder"
 	description : "Description goes here"
@@ -14,37 +16,112 @@ MuseScore {
 
 	pluginType : "dialog"
 	requiresScore : true
-	width : 800
-	height : 600
+	width : 1100
+	height : 700
 
 	id : mainWindow
 	onRun : {
 
-		console.log("steps: " + stepnotes.length);
-		console.log("labels: " + labels.length);
-		console.log("roots: " + steproots.length);
+		console.log("steps: " + patterns.length);
+		console.log("degrees: " + _degrees.length);
+		console.log("steproots: " + steproots.length);
+		console.log("roots: " + _roots.length);
+		console.log("ddroots: " + _ddRoots.length);
 
 	}
 
-	property int _max_steps : 8
-	property int _max_notes : 24
+	property int _Cpitch : 48
+
+	property int _max_patterns : 8
+	property int _max_steps : 12
 	property int _max_roots : 12
-	property var _raw_labels : ['1', 'b2', '2', 'm3', 'M3', '4', 'b5', '5', 'm6', 'M6', 'm7', 'M7',
+	property var _degrees : ['1', 'b2', '2', 'm3', 'M3', '4', 'b5', '5', 'm6', 'M6', 'm7', 'M7',
 		'(8)', 'b9', '9', '#9', 'b11', '11', '#11', '(12)', 'b13', '13', '#13', '(14)']
 
-	property var _roots : ['C', 'C#/Db', 'D', 'D#/Eb', 'E', 'F', 'F#/Gb', 'G', 'G#/Ab', 'A', 'A#/Bb', 'B', '']
+	property var _chords : [{
+			"root" : 'C',
+			"major" : true,
+			"minor" : false
+		}, {
+			"root" : 'Db/C#',
+			"major" : false,
+			"minor" : false
+		}, {
+			"root" : 'D',
+			"major" : true,
+			"minor" : false
+		}, {
+			"root" : 'Eb/D#',
+			"major" : false,
+			"minor" : false
+		}, {
+			"root" : 'E',
+			"major" : true,
+			"minor" : false
+		}, {
+			"root" : 'F',
+			"major" : false,
+			"minor" : false
+		}, {
+			"root" : 'F#/Gb',
+			"major" : true,
+			"minor" : false
+		}, {
+			"root" : 'G',
+			"major" : true,
+			"minor" : false
+		}, {
+			"root" : 'Ab/G#',
+			"major" : false,
+			"minor" : false
+		}, {
+			"root" : 'A',
+			"major" : true,
+			"minor" : false
+		}, {
+			"root" : 'Bb/A#',
+			"major" : false,
+			"minor" : false
+		}, {
+			"root" : 'B',
+			"major" : false,
+			"minor" : false
+		}
+	]
 
-	property var stepnotes : { {
+	property var _roots : { {
+			var dd = [];
+			for (var i = 0; i < _chords.length; i++) {
+				dd.push(_chords[i].root);
+			}
+			return dd;
+		}
+	}
+
+	property var _ddRoots : { {
+			var dd = [''];
+			dd = dd.concat(_roots);
+			return dd;
+		}
+	}
+
+	property var _ddNotes : { {
+			var dd = [''];
+			dd = dd.concat(_degrees);
+			return dd;
+		}
+	}
+
+	property var patterns : { {
 
 			var sn = [];
 
-			for (var i = 0; i < _max_steps; i++) {
-				for (var j = 0; j < _max_notes; j++) {
+			for (var i = 0; i < _max_patterns; i++) {
+				for (var j = 0; j < _max_steps; j++) {
 					var _sn = {
-						"step" : i,
-						"note" : j,
-						"played" : false,
-						"in_chord" : false
+						"pattern" : i,
+						"step" : j,
+						"note" : '',
 					};
 					sn.push(_sn);
 				}
@@ -62,58 +139,328 @@ MuseScore {
 		}
 	}
 
-	property var labels : { {
+	function printWorkout() {
 
-			var lb = [];
-			for (var j = 0; j < _max_notes; j++) {
-				var _l = _raw_labels[j % 24];
-				lb.push(_l);
+		var patts = [];
+
+		// Les patterns
+		for (var i = 0; i < _max_patterns; i++) {
+			var p = [];
+			for (var j = 0; j < _max_steps; j++) {
+				var sn = patterns[i * _max_steps + j];
+				//console.log("S "+i+"/"+j+": "+sn.note);
+				if (sn.note !== '') {
+					var d = _degrees.indexOf(sn.note);
+					if (d > -1)
+						p.push(d);
+				} else
+					break;
 			}
 
-			return lb;
+			if (p.length > 0) {
+				console.log("Pattern " + i + ": " + p);
+				patts.push(p);
+			} else
+				break;
 		}
+
+		// Les roots
+		var roots = [];
+		for (var i = 0; i < _max_roots; i++) {
+			var txt = steproots[i];
+			console.log("Next Root: " + txt);
+			if (txt === '' || txt === undefined)
+				continue;
+			var r = _roots.indexOf(txt);
+			console.log("-- => " + r);
+			if (r > -1)
+				roots.push(r)
+		}
+
+		// Les notes
+		var pages = [];
+		if (patts.length == 0 || roots.length == 0)
+			// TODO Message d'erreur
+			return;
+
+		if (chkByPattern.checked) {
+			// We sort by patterns. By pattern, repeat over each root
+
+			for (var p = 0; p < patts.length; p++) {
+				var basesteps = patts[p];
+				var mode=(basesteps.indexOf(3)>-1)?"minor":"major"; // if we have the "m3" the we are in minor mode.
+				var page = (chkPageBreak.checked) ? p : 0;
+				if (pages.length === page)
+					pages[page] = [];
+
+				for (var r = 0; r < roots.length; r++) {
+
+					var root = roots[r];
+					var notes = [];
+
+					if (!chkInvert.checked || ((r % 2) == 0)) {
+						console.log("-- => normal");
+						for (var j = 0; j < basesteps.length; j++) {
+							notes.push(root + basesteps[j]);
+						}
+					} else {
+						console.log("-- => reverse");
+						for (var j = basesteps.length - 1; j >= 0; j--) {
+							notes.push(root + basesteps[j]);
+						}
+					}
+
+					pages[page].push({
+						"root" : root,
+						"mode": mode,
+						"notes" : notes
+					});
+
+				}
+
+			}
+		} else {
+			// We sort by roots. By root, repeat every pattern
+			for (var r = 0; r < roots.length; r++) {
+				var page = (chkPageBreak.checked) ? r : 0;
+				if (pages.length === page)
+					pages[page] = [];
+
+				var root = roots[r];
+
+				for (var p = 0; p < patts.length; p++) {
+					var notes = [];
+					var basesteps = patts[p];
+					var mode=(basesteps.indexOf(3)>-1)?"minor":"major"; // if we have the "m3" the we are in minor mode.
+
+					for (var j = 0; j < basesteps.length; j++) {
+						notes.push(root + basesteps[j]);
+					}
+
+					pages[page].push({
+						"root" : root,
+						"mode": mode,
+						"notes" : notes
+					});
+
+				}
+
+			}
+
+		}
+
+		// Debug
+		for (var i = 0; i < pages.length; i++) {
+			for (var j = 0; j < pages[i].length; j++) {
+				for (var k = 0; k < pages[i][j].notes.length; k++) {
+					console.log(i + ") [" + pages[i][j].root + "/"+ pages[i][j].mode + "] " + pages[i][j].notes[k]);
+				}
+			}
+		}
+
+		// To Score
+
+
+		//var score = newScore("Workout", "saxophone", 20);
+		var score = newScore("Workout", "saxophone", 99);
+		var numerator = 4;
+		var denominator = 4;
+
+		score.addText("title", "Workouts");
+
+		score.startCmd();
+
+		var cursor = score.newCursor();
+		cursor.track = 0;
+
+		cursor.rewind(0);
+		var ts = newElement(Element.TIMESIG);
+		ts.timesig = fraction(numerator, denominator);
+		cursor.add(ts);
+
+		cursor.rewind(0);
+		var cur_time = cursor.segment.tick;
+
+		var counter = 0;
+		var prevRoot = '';
+		var preferredTpcs = NoteHelper.tpcs;
+
+		for (var i = 0; i < pages.length; i++) {
+			for (var j = 0; j < pages[i].length; j++) {
+				var root = pages[i][j].root;
+				var mode = pages[i][j].mode;
+				if (root !== prevRoot) {
+					preferredTpcs = filterTpcs(root, mode);
+					prevRoot = root;
+				}
+
+				for (var k = 0; k < pages[i][j].notes.length; k++, counter++) {
+					if (counter > 0) {
+						cursor.rewindToTick(cur_time); // be sure to move to the next rest, as now defined
+						cursor.next();
+					}
+					cursor.setDuration(1, 4); // quarter
+					var note = cursor.element;
+
+					var delta = pages[i][j].notes[k];
+					var pitch = _Cpitch + delta;
+					var tpc = 14; // One default value. The one of the C natural.
+
+					for (var t = 0; t < preferredTpcs.length; t++) {
+						if (preferredTpcs[t].pitch == (delta % 12)) {
+							tpc = preferredTpcs[t].tpc;
+							break;
+						}
+					}
+
+					var target = {
+						"pitch" : pitch,
+						"tpc1" : tpc,
+						"tpc2" : tpc
+					};
+
+					note = NoteHelper.restToNote(note, target);
+
+					//cur_time = note.parent.tick; // getting note's segment's tick
+					cur_time = cursor.segment.tick;
+
+					debugNote(delta, note);
+
+				}
+
+				// Fill with rests until end of measure
+				var fill = pages[i][j].notes.length % 4;
+				if (fill > 0) {
+					fill = 4 - fill;
+					//console.log("Going to fill for :"+fill);
+					for (var f = 0; f < fill; f++) {}
+						cursor.rewindToTick(cur_time); // be sure to move to the next rest, as now defined
+						cursor.next();
+						cursor.setDuration(1, 4); // quarter
+						cursor.addRest();
+						cur_time = cursor.segment.tick;
+				}
+			}
+		}
+
+		score.endCmd();
+
+	}
+
+	function filterTpcs(root, mode) {
+		var sharp_mode = true;
+
+		var f = _chords[root][mode];
+		if (f !== undefined)
+			sharp_mode = f;
+
+		var accidentals = sharp_mode ? ['NONE', 'SHARP', 'SHARP2'] : ['NONE', 'FLAT', 'FLAT2']
+			var preferredTpcs;
+
+		// On ne garde que les tpcs correspondant au type d'accord et trié par type d'altération
+		var preferredTpcs = NoteHelper.tpcs.filter(function (e) {
+				return accidentals.indexOf(e.accidental) >= 0;
+			});
+
+		preferredTpcs = preferredTpcs.sort(function (a, b) {
+				var acca = accidentals.indexOf(a.accidental);
+				var accb = accidentals.indexOf(b.accidental);
+				if (acca != accb)
+					return acca - accb;
+				return a.pitch - b.pitch;
+			});
+
+		for (var i = 0; i < preferredTpcs.length; i++) {
+			if (preferredTpcs[i].pitch < 0)
+				preferredTpcs[i].pitch += 12;
+			//console.log(root + " (" + mode + ") => " + sharp_mode + ": " + preferredTpcs[i].name + "/" + preferredTpcs[i].pitch);
+		}
+
+		return preferredTpcs;
+
+	}
+
+	function debugNote(delta, n) {
+		NoteHelper.enrichNote(n);
+		console.log("delta:" + delta + ", pitch:" + n.pitch + ", tpc:" + n.tpc + ", name:" + n.extname.fullname);
 	}
 
 	property bool reset : true
 
-	ColumnLayout {
+	GridLayout {
 		anchors.fill : parent
 		anchors.margins : 25
-		spacing : 10
+		columnSpacing : 10
+		rowSpacing : 10
+		columns : 2
 
-		Grid { // un small element within the fullWidth/fullHeight where we paint the repeater
+		GridLayout { // un small element within the fullWidth/fullHeight where we paint the repeater
 			//anchors.verticalCenter : parent.verticalCenter
 			id : idNoteGrid
-			rows : _max_steps + 1
-			columns : _max_notes
-			columnSpacing : -5
-			rowSpacing : -5
+			rows : _max_patterns + 1
+			columns : _max_steps + 1
+			columnSpacing : 0
+			rowSpacing : 0
+
+			//Layout.column : 0
+			//Layout.row : 0
+			Layout.columnSpan : 2
 
 			Layout.alignment : Qt.AlignCenter
-			//Layout.preferredWidth : _max_notes * 20
-			//Layout.preferredHeight : (_max_steps + 1) * 20
+			//Layout.preferredWidth : _max_steps * 20
+			//Layout.preferredHeight : (_max_patterns + 1) * 20
 
 			Repeater {
-				id : idNoteLabels
-				model : labels
+				id : idPatternLabels
+				model : _max_patterns
 
 				Label {
+					Layout.row : index + 1
+					Layout.column : 0
 					Layout.alignment : Qt.AlignVCenter | Qt.AlignRight
 					Layout.rightMargin : 2
 					Layout.leftMargin : 2
-					text : modelData
+					text : "Pattern " + (index + 1)
+				}
+			}
+
+			Repeater {
+				id : idNoteLabels
+				model : _max_steps
+
+				Label {
+					Layout.row : 0
+					Layout.column : index + 1
+					Layout.alignment : Qt.AlignVCenter | Qt.AlignHCenter
+					Layout.rightMargin : 2
+					Layout.leftMargin : 2
+					text : (index + 1)
 				}
 			}
 			Repeater {
 				id : idStepNotes
-				model : stepnotes
+				model : patterns
 
 				Loader {
 					id : loaderNotes
+					property int stepIndex : index % _max_steps
+					property int patternIndex : Math.floor(index / _max_steps)
+					Layout.row : 1 + patternIndex
+					Layout.column : 1 + stepIndex
 					Binding {
 						target : loaderNotes.item
-						property : "stepnote"
-						value : stepnotes[model.index]
+						property : "step"
+						value : patterns[patternIndex * _max_steps + stepIndex]
+					}
+					Binding {
+						target : loaderNotes.item
+						property : "patternIndex"
+						value : patternIndex
+					}
+					Binding {
+						target : loaderNotes.item
+						property : "stepIndex"
+						value : stepIndex
 					}
 					sourceComponent : stepComponent
 				}
@@ -121,67 +468,63 @@ MuseScore {
 			}
 		}
 
-		RowLayout {
-			Label {
-				text : "Options:"
-			}
-
-			CheckBox {
-				id : chkInvert
-				text : "Invert pattern at each repetition"
-			}
-
+		// Presets
+		Label {
+			//Layout.column : 0
+			//Layout.row : 2
+			text : "Presets:"
 		}
 
-		RowLayout {
-			Label {
-				text : "Presets:"
+		ComboBox {
+			id : lstPresets
+			model : presets
+
+			//Layout.column : 1
+			//Layout.row : 2
+
+			contentItem : Text {
+				text : lstPresets.displayText
+				verticalAlignment : Qt.AlignVCenter
 			}
 
-			ComboBox {
-				id : lstPresets
-				model : presets
-
+			delegate : ItemDelegate { // requiert QuickControls 2.2
 				contentItem : Text {
-					text : lstPresets.displayText
-					verticalAlignment : Qt.AlignVCenter
+					text : modelData.name
+					verticalAlignment : Text.AlignVCenter
 				}
+				highlighted : lstPresets.highlightedIndex === index
 
-				delegate : ItemDelegate { // requiert QuickControls 2.2
-					contentItem : Text {
-						text : modelData.name
-						verticalAlignment : Text.AlignVCenter
+			}
+			onCurrentIndexChanged : {
+				var __preset = model[currentIndex];
+				var rr = __preset.roots;
+				console.log("Preset Changed: " + __preset.name + " -- " + rr);
+				for (var i = 0; i < _max_roots; i++) {
+					if (i < rr.length) {
+						steproots[i] = _roots[rr[i]];
+					} else {
+						steproots[i] = '';
 					}
-					highlighted : lstPresets.highlightedIndex === index
 
+					console.log("selecting root " + i + ": " + steproots[i]);
 				}
-				onCurrentIndexChanged : {
-					var __preset = model[currentIndex];
-					var rr = __preset.roots;
-					console.log("Preset Changed: " + __preset.name + " -- " + rr);
-					for (var i = 0; i < _max_roots; i++) {
-						if (i < rr.length) {
-							steproots[i] = _roots[rr[i]];
-						} else {
-							steproots[i] = '';
-						}
+				reset = false;
+				reset = true;
 
-						console.log("selecting root " + i + ": " + steproots[i]);
-					}
-					reset = false;
-					reset = true;
-
-				}
 			}
 		}
 
-		Flow { // Les roots
-			//rows : 1
-			//columns : 6
-			//columnSpacing : 5
+		// Roots
+		Label {
+			//Layout.column : 0
+			//Layout.row : 3
+			text : "Roots:"
+		}
+		RowLayout {
 			spacing : 5
 			Layout.alignment : Qt.AlignHCenter
-			Layout.preferredWidth : idNoteGrid.implicitWidth
+			//Layout.column : 1
+			//Layout.row : 3
 
 			Repeater {
 				id : idRoot
@@ -201,11 +544,47 @@ MuseScore {
 
 		}
 
-		Item {
-			Layout.fillHeight : true
+		Label {
+			//Layout.column : 0
+			//Layout.row : 1
+			text : "Options:"
 		}
 
 		RowLayout {
+			//Layout.column : 1
+			//Layout.row : 1
+
+			CheckBox {
+				id : chkByPattern
+				text : "Group workouts by patterns"
+				checked : true
+			}
+			CheckBox {
+				id : chkInvert
+				text : "Invert pattern every two roots"
+				checked : false
+				enabled : chkByPattern.checked
+			}
+			CheckBox {
+				id : chkPageBreak
+				checked : false
+				text : "Page break after each group"
+			}
+
+		}
+
+		Item {
+			Layout.fillHeight : true
+			//Layout.column : 0
+			//Layout.row : 4
+			Layout.columnSpan : 2
+		}
+
+		RowLayout {
+			Layout.fillHeight : true
+			//Layout.column : 0
+			//Layout.row : 5
+			Layout.columnSpan : 2
 			Item {
 				Layout.fillWidth : true
 			}
@@ -221,61 +600,39 @@ MuseScore {
 				}
 
 				onAccepted : {
-					var basesteps = [];
-					for (var i = 0; i < _max_steps; i++) {
-						for (var j = 0; j < _max_notes; j++) {
-							var sn = stepnotes[i * _max_notes + j];
-							if (sn.played) {
-								basesteps.push(sn);
-								break;
-							}
-						}
-					}
-
-					for (var i = 0; i < basesteps.length; i++) {
-						console.log("S:" + basesteps[i].note);
-					}
-
-					var notes = [];
-					for (var i = 0; i < _max_roots; i++) {
-						var txt = steproots[i];
-						console.log("Next Root: " + txt);
-						if (txt === '' || txt === undefined)
-							continue;
-						var r = -1;
-						for (var j = 0; j < _roots.length; j++) {
-							if (txt === _roots[j]) {
-								r = j;
-								break;
-							}
-						}
-						console.log("-- => " + r);
-						if (r == -1)
-							continue;
-
-						if (!chkInvert.checked || ((i % 2) == 0)) {
-							console.log("-- => normal");
-							for (var j = 0; j < basesteps.length; j++) {
-								notes.push(r + basesteps[j].note);
-							}
-						} else {
-							console.log("-- => reverse");
-							for (var j = basesteps.length - 1; j >= 0; j--) {
-								notes.push(r + basesteps[j].note);
-							}
-						}
-
-					}
-
-					for (var i = 0; i < notes.length; i++) {
-						console.log("N:" + notes[i]);
-					}
-
+					printWorkout();
 					// Qt.quit();
 
 				}
 				onRejected : Qt.quit()
 
+			}
+		}
+	}
+
+	Component {
+		id : stepComponent
+
+		ComboBox {
+			id : lstStep
+			property var step : {
+				"step" : 0,
+				"pattern" : 0,
+				"note" : ''
+			}
+			property int stepIndex : 0
+			property int patternIndex : 0
+			property int indexInPatterns : patternIndex * _max_steps + stepIndex
+			Layout.alignment : Qt.AlignLeft | Qt.QtAlignBottom
+			editable : false
+			model : _ddNotes
+			//currentIndex : find(patterns[patternIndex * _max_steps + stepIndex].note, Qt.MatchExactly)
+			Layout.preferredHeight : 30
+			implicitWidth : 80
+			onCurrentIndexChanged : {
+				//patterns[patternIndex * _max_steps + stepIndex].note = model[currentIndex]
+				step.note = model[currentIndex];
+				console.log("Step " + patternIndex + "/" + stepIndex + ": " + patterns[indexInPatterns].note);
 			}
 		}
 	}
@@ -288,55 +645,13 @@ MuseScore {
 			property var rootIndex
 			Layout.alignment : Qt.AlignLeft | Qt.QtAlignBottom
 			editable : false
-			model : _roots
+			model : _ddRoots
 			currentIndex : find(steproots[rootIndex], Qt.MatchExactly)
 			Layout.preferredHeight : 30
 			implicitWidth : 80
 			onCurrentIndexChanged : {
 				steproots[rootIndex] = model[currentIndex]
 					console.log("Root " + rootIndex + ": " + steproots[rootIndex]);
-			}
-		}
-	}
-
-	Component {
-		id : stepComponent
-
-		CheckBox {
-			id : chkSN
-
-			property var stepnote
-
-			checked : stepnote.played
-			tristate : false
-
-			MouseArea {
-				anchors.fill : parent
-				onClicked : {
-					parent.checked = !(parent.checked);
-					stepnote.played = parent.checked;
-					console.log("Step: " + stepnote.step + ", note: " + _raw_labels[stepnote.note % 24] + ", played: " + stepnote.played);
-				}
-			}
-			Layout.alignment : Qt.AlignVCenter | Qt.AlignHCenter
-			Layout.rightMargin : 2
-			Layout.leftMargin : 2
-
-			indicator : Rectangle {
-				implicitWidth : 16
-				implicitHeight : implicitWidth
-				x : chkSN.leftPadding + 2
-				y : parent.height / 2 - height / 2
-				border.color : "grey"
-
-				Rectangle {
-					width : parent.implicitWidth / 2
-					height : parent.implicitWidth / 2
-					x : parent.implicitWidth / 4
-					y : parent.implicitWidth / 4
-					color : "grey"
-					visible : chkSN.checked
-				}
 			}
 		}
 	}
