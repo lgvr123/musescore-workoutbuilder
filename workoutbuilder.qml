@@ -38,6 +38,21 @@ MuseScore {
 	property var _degrees : ['1', 'b2', '2', 'm3', 'M3', '4', 'b5', '5', 'm6', 'M6', 'm7', 'M7',
 		'(8)', 'b9', '9', '#9', 'b11', '11', '#11', '(12)', 'b13', '13', '#13', '(14)']
 
+	property var _loops : [{
+			"value" : 0,
+			"label" : "No loop"
+		}, {
+			"value" : 1,
+			"label" : "At 2nd step"
+		}, {
+			"value" : 2,
+			"label" : "At 3rd step"
+		}, {
+			"value" : -1,
+			"label" : "Guided"
+		},
+	]
+
 	property var _chords : [{
 			"root" : 'C',
 			"major" : true,
@@ -141,6 +156,8 @@ MuseScore {
 
 	function printWorkout() {
 
+		var loopAt = -1;
+
 		var patts = [];
 
 		// Les patterns
@@ -188,7 +205,7 @@ MuseScore {
 
 			for (var p = 0; p < patts.length; p++) {
 				var basesteps = patts[p];
-				var mode=(basesteps.indexOf(3)>-1)?"minor":"major"; // if we have the "m3" the we are in minor mode.
+				var mode = (basesteps.indexOf(3) > -1) ? "minor" : "major"; // if we have the "m3" the we are in minor mode.
 				var page = (chkPageBreak.checked) ? p : 0;
 				if (pages.length === page)
 					pages[page] = [];
@@ -212,7 +229,7 @@ MuseScore {
 
 					pages[page].push({
 						"root" : root,
-						"mode": mode,
+						"mode" : mode,
 						"notes" : notes
 					});
 
@@ -231,15 +248,55 @@ MuseScore {
 				for (var p = 0; p < patts.length; p++) {
 					var notes = [];
 					var basesteps = patts[p];
-					var mode=(basesteps.indexOf(3)>-1)?"minor":"major"; // if we have the "m3" the we are in minor mode.
+					var mode = (basesteps.indexOf(3) > -1) ? "minor" : "major"; // if we have the "m3" the we are in minor mode.
 
-					for (var j = 0; j < basesteps.length; j++) {
-						notes.push(root + basesteps[j]);
+					var debug = 0;
+					var from = 0; // delta in index of the pattern for the regular loopAt mode
+					var shift = 0; // shift in pitch for the guided loopAt mode
+
+
+					console.log("Initial pattern");
+					while (debug < 50) {
+						debug++;
+						if ((from > 0) && ((from % basesteps.length) == 0))
+							break;
+						for (var j = 0; j < basesteps.length; j++) {
+							var idx = (from + j) % basesteps.length
+							var octave = Math.floor((from + j) / basesteps.length);
+							notes.push(root + basesteps[idx] + shift + octave * 12);
+						}
+
+						if (loopAt > 0 && loopAt < basesteps.length) {
+							// /Regular loopAt mode, where we loop from the current pattern, restarting the pattern (and looping)
+							// from the next step of it : A-B-C, B-C-A, C-A-B
+							from += loopAt;
+							console.log("Regular Looping at " + from);
+
+						} else if ((loopAt == -1) && (p < (patts.length - 1))) {
+							// Guided loopAt mode, where the next pattern is used to to guide the repetition of this one
+							// TODO ce mécanisme ne garantit pas qu'on reste dans la bonne gamme
+							var sp = patts[p + 1].indexOf(shift);
+							if ((sp == -1) || (sp == (patts[p + 1].length - 1))) {
+								// On ne trouve notre point de départ actual, ou on est à la dernière note de la pattern
+								// => On a fini d'exploier la séquence suivante, on l'indique comme traitée
+								p++;
+								console.log("End of guided Looping");
+								break;
+							} else {
+								shift = patts[p + 1][sp + 1];
+							}
+							console.log("Guided Looping at " + from);
+
+						} else {
+							// Mode sans loop
+							break;
+						}
+
 					}
 
 					pages[page].push({
 						"root" : root,
-						"mode": mode,
+						"mode" : mode,
 						"notes" : notes
 					});
 
@@ -253,7 +310,7 @@ MuseScore {
 		for (var i = 0; i < pages.length; i++) {
 			for (var j = 0; j < pages[i].length; j++) {
 				for (var k = 0; k < pages[i][j].notes.length; k++) {
-					console.log(i + ") [" + pages[i][j].root + "/"+ pages[i][j].mode + "] " + pages[i][j].notes[k]);
+					console.log(i + ") [" + pages[i][j].root + "/" + pages[i][j].mode + "] " + pages[i][j].notes[k]);
 				}
 			}
 		}
@@ -262,7 +319,7 @@ MuseScore {
 
 
 		//var score = newScore("Workout", "saxophone", 20);
-		var score = newScore("Workout", "saxophone", 99);
+		var score = newScore("Workout", "bass-flute", 99); // transposing instruments (a.o. the saxophone) are buggy
 		var numerator = 4;
 		var denominator = 4;
 
@@ -334,11 +391,11 @@ MuseScore {
 					fill = 4 - fill;
 					//console.log("Going to fill for :"+fill);
 					for (var f = 0; f < fill; f++) {}
-						cursor.rewindToTick(cur_time); // be sure to move to the next rest, as now defined
-						cursor.next();
-						cursor.setDuration(1, 4); // quarter
-						cursor.addRest();
-						cur_time = cursor.segment.tick;
+					cursor.rewindToTick(cur_time); // be sure to move to the next rest, as now defined
+					cursor.next();
+					cursor.setDuration(1, 4); // quarter
+					cursor.addRest();
+					cur_time = cursor.segment.tick;
 				}
 			}
 		}
@@ -398,7 +455,7 @@ MuseScore {
 			//anchors.verticalCenter : parent.verticalCenter
 			id : idNoteGrid
 			rows : _max_patterns + 1
-			columns : _max_steps + 1
+			columns : _max_steps + 2
 			columnSpacing : 0
 			rowSpacing : 0
 
@@ -418,9 +475,34 @@ MuseScore {
 					Layout.row : index + 1
 					Layout.column : 0
 					Layout.alignment : Qt.AlignVCenter | Qt.AlignRight
+					Layout.rightMargin : 10
+					Layout.leftMargin : 2
+					text : "Pattern " + (index + 1) +":"
+				}
+			}
+
+			Label {
+				Layout.row : 0
+				Layout.column : _max_steps + 2
+				Layout.alignment : Qt.AlignVCenter | Qt.AlignHCenter
+				Layout.rightMargin : 2
+				Layout.leftMargin : 2
+				Layout.bottomMargin : 5
+				text : "Repeating mode"
+			}
+
+			Repeater {
+				id : idLoopingMode
+				model : _max_patterns
+
+				ComboBox {
+					model : _loops
+					Layout.row : index + 1
+					Layout.column : _max_steps + 2
+					Layout.alignment : Qt.AlignVCenter | Qt.AlignLeft
 					Layout.rightMargin : 2
 					Layout.leftMargin : 2
-					text : "Pattern " + (index + 1)
+					//text : "0"
 				}
 			}
 
@@ -434,6 +516,7 @@ MuseScore {
 					Layout.alignment : Qt.AlignVCenter | Qt.AlignHCenter
 					Layout.rightMargin : 2
 					Layout.leftMargin : 2
+					Layout.bottomMargin : 5
 					text : (index + 1)
 				}
 			}
@@ -628,7 +711,7 @@ MuseScore {
 			model : _ddNotes
 			//currentIndex : find(patterns[patternIndex * _max_steps + stepIndex].note, Qt.MatchExactly)
 			Layout.preferredHeight : 30
-			implicitWidth : 80
+			implicitWidth : 75
 			onCurrentIndexChanged : {
 				//patterns[patternIndex * _max_steps + stepIndex].note = model[currentIndex]
 				step.note = model[currentIndex];
