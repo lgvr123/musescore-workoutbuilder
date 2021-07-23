@@ -11,11 +11,11 @@ import "zparkingb/notehelper.js" as NoteHelper
 
 MuseScore {
 	menuPath : "Plugins.Workout builder"
-	description : "Description goes here"
+	description : "This plugin builds chordscale workouts based"
 	version : "1.0"
 
 	pluginType : "dialog"
-	requiresScore : true
+	requiresScore : false
 	width : 1200
 	height : 600
 
@@ -42,10 +42,19 @@ MuseScore {
 		}, {
 			"value" : 1,
 			"label" : "at 2"
-		}, /*{
+		}, {
 		"value" : -1,
-		"label" : "C"
-		},*/
+		"label" : "^3"
+		}, {
+		"value" : -2,
+		"label" : "v3"
+		}, {
+		"value" : -3,
+		"label" : "^"
+		}, {
+		"value" : -4,
+		"label" : "v"
+		},
 	]
 
 	property var _ddLoops : { {
@@ -61,23 +70,33 @@ MuseScore {
 
 		"Maj" : {
 			"symb" : "",
+			"triades" : [0, 4, 7, 11],
 			"scale" : [0, 2, 4, 5, 7, 9, 11]
 		},
 		"Min" : {
 			"symb" : "-",
+			"triades" : [0, 3, 7, 10],
 			"scale" : [0, 2, 3, 5, 7, 8, 10]
 		},
 		"Maj7" : {
 			"symb" : "t7",
+			"triades" : [0, 4, 7, 11],
 			"scale" : [0, 2, 4, 5, 7, 9, 11]
 		},
 		"Dom7" : {
 			"symb" : "7",
+			"triades" : [0, 4, 7, 10],
 			"scale" : [0, 2, 4, 5, 7, 9, 10]
 		},
 		"Min7" : {
 			"symb" : "-7",
-			"scale" : [0, 2, 4, 5, 7, 9, 11]
+			"triades" : [0, 3, 7, 10],
+			"scale" : [0, 2, 3, 5, 7, 9, 11]
+		},
+		"Jazz" : {
+			"symb" : "7",
+			"triades" : [0, 4, 7, 10],
+			"scale" : [0, 2, 4, 5, 7, 9, 10, 11]
 		},
 	}
 
@@ -224,10 +243,15 @@ MuseScore {
 			// Retrieving Chord type
 			var cText = idChordType.itemAt(i).editText; // editable
 			var cSymb = _chordTypes[cText];
-			if (cSymb === undefined)
-				cSymb = cText;
-			else
-				cSymb = cSymb.symb;
+			if (cSymb === undefined) {
+				cSymb = _chordTypes['Maj']; // For user-specific chord type, we take a Major scale
+				cSymb.symb = cText;
+			}
+			else 
+			{
+				var scale=cSymb.triades;
+				console.debug("I:"+scale[0]+", III:"+scale[1]+", V:"+scale[2]+", VII:"+scale[3]); 
+			}
 
 			console.log("Pattern " + i + ": " + cText + " > " + cSymb);
 
@@ -425,7 +449,7 @@ MuseScore {
 					note = NoteHelper.restToNote(note, target);
 
 					// Adding the chord's name
-					if (prevChord !== chord || prevRoot !== root) {
+					if (prevChord !== chord.symb || prevRoot !== root) {
 						var csymb = newElement(Element.HARMONY);
 						var rtxt = _chords[root].root;
 
@@ -452,7 +476,7 @@ MuseScore {
 						}
 
 						// chord's type
-						csymb.text += chord;
+						csymb.text += chord.symb;
 
 						//note.parent.parent.add(csymb); //note->chord->segment
 						cursor.add(csymb); //note->chord->segment
@@ -461,7 +485,7 @@ MuseScore {
 					//debugNote(delta, note);
 
 					prevRoot = root;
-					prevChord = chord;
+					prevChord = chord.symb;
 
 				}
 
