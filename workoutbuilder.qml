@@ -114,7 +114,7 @@ MuseScore {
 		}, {
 			"root" : 'Db/C#',
 			"major" : false,
-			"minor" : false
+			"minor" : true
 		}, {
 			"root" : 'D',
 			"major" : true,
@@ -122,11 +122,11 @@ MuseScore {
 		}, {
 			"root" : 'Eb/D#',
 			"major" : false,
-			"minor" : false
+			"minor" : true
 		}, {
 			"root" : 'E',
 			"major" : true,
-			"minor" : false
+			"minor" : true
 		}, {
 			"root" : 'F',
 			"major" : false,
@@ -134,7 +134,7 @@ MuseScore {
 		}, {
 			"root" : 'F#/Gb',
 			"major" : true,
-			"minor" : false
+			"minor" : true
 		}, {
 			"root" : 'G',
 			"major" : true,
@@ -142,11 +142,11 @@ MuseScore {
 		}, {
 			"root" : 'Ab/G#',
 			"major" : false,
-			"minor" : false
+			"minor" : true
 		}, {
 			"root" : 'A',
 			"major" : true,
-			"minor" : false
+			"minor" : true
 		}, {
 			"root" : 'Bb/A#',
 			"major" : false,
@@ -154,7 +154,7 @@ MuseScore {
 		}, {
 			"root" : 'B',
 			"major" : false,
-			"minor" : false
+			"minor" : true
 		}
 	]
 
@@ -242,6 +242,18 @@ MuseScore {
 
 			// Retrieving Chord type
 			var cText = idChordType.itemAt(i).editText; // editable
+			if (cText==='') {
+				var m3=(p.indexOf(3) > -1); // if we have the "m3" the we are in minor mode.
+				if (p.indexOf(10) > -1) { //m7
+						cText=m3?"Min7":"Dom7";
+				}
+				else if (p.indexOf(11) > -1) { //M7
+						cText=m3?"Min7":"Maj7";
+				} else {
+						cText=m3?"Min":"Maj";
+				}
+				
+			}
 			var cSymb = _chordTypes[cText];
 			if (cSymb === undefined) {
 				cSymb = _chordTypes['Maj']; // For user-specific chord type, we take a Major scale
@@ -400,6 +412,7 @@ MuseScore {
 
 		var counter = 0;
 		var prevRoot = '';
+		var prevMode = 'xxxxxxxxxxxxxxx';
 		var prevChord = 'xxxxxxxxxxxxxxx'
 			var preferredTpcs = NoteHelper.tpcs;
 
@@ -408,7 +421,7 @@ MuseScore {
 				var root = pages[i][j].root;
 				var chord = pages[i][j].chord;
 				var mode = pages[i][j].mode;
-				if (root !== prevRoot) {
+				if (root !== prevRoot || mode!==prevMode) {
 					preferredTpcs = filterTpcs(root, mode);
 				}
 
@@ -486,6 +499,7 @@ MuseScore {
 
 					prevRoot = root;
 					prevChord = chord.symb;
+					prevMode=mode;
 
 				}
 
@@ -598,6 +612,9 @@ MuseScore {
 		var f = _chords[root][mode];
 		if (f !== undefined)
 			sharp_mode = f;
+		
+						console.log(_chords[root].root+" "+mode+" => sharp: "+sharp_mode);
+
 
 		var accidentals = sharp_mode ? ['NONE', 'SHARP', 'SHARP2'] : ['NONE', 'FLAT', 'FLAT2']
 			var preferredTpcs;
