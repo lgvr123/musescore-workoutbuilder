@@ -388,7 +388,7 @@ MuseScore {
 		}
 
 		// Push all this to the score
-		//var score = newScore("Workout", "saxophone", 20);
+		//var score = newScore("Workout", "saxophone", 1);
 		var score = newScore("Workout", "bass-flute", 1); // transposing instruments (a.o. the saxophone) are buggy
 		//var cs=eval("Sid.chordStyle");
 		//console.log("CHORD STYLE:" + score.styles.value(cs));
@@ -452,7 +452,7 @@ MuseScore {
 
 					var target = {
 						"pitch" : pitch,
-						"tpc1" : tpc,
+						//"tpc1" : tpc,  // undefined to force the representation
 						"tpc2" : tpc
 					};
 
