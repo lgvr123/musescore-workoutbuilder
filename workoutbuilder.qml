@@ -38,33 +38,36 @@ MuseScore {
 
     property var _loops: [{
             "value": 0,
-            "label": "--"
+            "label": "No repetition",
+            "image": "none.png"
         }, {
-            "value": 1,
-            "label": "at 2"
+            "type": 1,
+            "label": "Cycle pattern",
+            "image": "loopat1.png",
+            "shift": 1
         }, {
-            "value": -1,
-            "label": "^3"
+            "type": -1,
+            "label": "Repeat at every triade (ascending)",
+            "image": "triadeup.png",
+            "shift": 2
+
         }, {
-            "value": -2,
-            "label": "v3"
+            "type": -1,
+            "label": "Repeat at every triade (descending)",
+            "image": "triadedown.png",
+            "shift": -2
         }, {
-            "value": -3,
-            "label": "^"
+            "type": -1,
+            "label": "Repeat at every degree (ascending).png",
+            "image": "up.png",
+            "shift": 1
         }, {
-            "value": -4,
-            "label": "v"
+            "type": -1,
+            "label": "Repeat at every degree (descending)",
+            "image": "down.png",
+            "shift": -1
         },
     ]
-
-    property var _ddLoops: { {
-            var dd = [];
-            for (var i = 0; i < _loops.length; i++) {
-                dd.push(_loops[i].label);
-            }
-            return dd;
-        }
-    }
 
     property var _chordTypes: {
 
@@ -198,12 +201,16 @@ MuseScore {
         }
     }
 
+    readonly property int tooltipShow: 500
+    readonly property int tooltipHide: 5000
+
     function printWorkout() {
 
         var patts = [];
 
-        // Collect the patterns and their definition
+        // 1) Collect the patterns and their definition
         for (var i = 0; i < _max_patterns; i++) {
+			// 1.1) Collecting the basesteps
             var p = [];
             for (var j = 0; j < _max_steps; j++) {
                 var sn = patterns[i * _max_steps + j];
@@ -220,15 +227,10 @@ MuseScore {
                 break;
             }
 
-            // Retrieving loop mode
-            var lText = idLoopingMode.itemAt(i).currentText; // no edit possible in this one
-            var lVal = 0;
-            for (var x = 0; x < _loops.length; x++) {
-                if (_loops[x].label === lText) {
-                    lVal = _loops[x].value;
-                    break;
-                }
-            }
+            // 1.2) Retrieving loop mode
+			var mode=idLoopingMode.itemAt(i).currentIndex
+			mode=_loops[mode];
+			console.log("looping mode : "+mode.label);
 
             // Retrieving Chord type
             var cText = idChordType.itemAt(i).editText; // editable
@@ -254,7 +256,7 @@ MuseScore {
             // Build final pattern
             var pattern = {
                 "notes": p,
-                "loopAt": lVal,
+                "loopAt": mode,
                 "chord": cSymb
             };
             patts.push(pattern);
@@ -523,14 +525,14 @@ MuseScore {
         // first the original pattern
         extpattern["subpatterns"].push(basesteps);
 
-        if (loopAt == 0) {
+        if (loopAt.type == 0) {
             console.log("Looping patterns : no loop requested");
             return extpattern;
         }
 
         // looping patterns
 
-        if ((loopAt > 0) && (loopAt < basesteps.length)) {
+        if ((loopAt.type > 0) && (loopAt.shift < basesteps.length)) {
             // 1) Regular loopAt mode, where we loop from the current pattern, restarting the pattern (and looping)
             // from the next step of it : A-B-C, B-C-A, C-A-B
             console.log("Looping patterns : regular mode");
@@ -542,7 +544,7 @@ MuseScore {
                 debug++;
 
                 // Building next start point
-                from += loopAt;
+                from += loopAt.shift;
                 console.log("Regular Looping at " + from);
 
                 // Have we reached the end ?
@@ -566,33 +568,34 @@ MuseScore {
 
                 extpattern["subpatterns"].push(p);
             }
-        } else if (loopAt < 0) {
+        } else if (loopAt.type < 0) {
             // 2) Scale loopAt mode, we decline the pattern along the scale (up/down, by degree/triade)
-            var shift = Math.abs(loopAt)*(-1);
-            console.log("Looping patterns : scale mode ("+shift+")");
+            var shift = loopAt.shift; //Math.abs(loopAt) * (-1);
+            console.log("Looping patterns : scale mode (" + shift + ")");
             if (shift > 0) {
                 for (var i = shift; i < scale.length; i += shift) {
-                    console.log("Looping patterns : scale mode at "+i);
+                    console.log("Looping patterns : scale mode at " + i);
                     var shifted = shiftPattern(basesteps, scale, i);
                     extpattern["subpatterns"].push(shifted);
                 }
-			} else {
-				// We are decresing, so we'll tweak the original pattern one actave up
-				var octaveup=[];
-				for(var i=0;i<basesteps.length;i++) {
-						octaveup[i]=basesteps[i]+12;
-				}
-				extpattern["subpatterns"][0]=octaveup;
-				
-				// Building the other ones
-				var counter=0;
-				shift=Math.abs(shift); 
-                for (var i = (scale.length-1); i >= shift  ; i -= shift) { 
-					counter++;
-                    console.log("Looping patterns : scale mode at "+i);
+            } else {
+                // We are decresing, so we'll tweak the original pattern one actave up
+                var octaveup = [];
+                for (var i = 0; i < basesteps.length; i++) {
+                    octaveup[i] = basesteps[i] + 12;
+                }
+                extpattern["subpatterns"][0] = octaveup;
+
+                // Building the other ones
+                var counter = 0;
+                shift = Math.abs(shift);
+                for (var i = (scale.length - 1); i >= shift; i -= shift) {
+                    counter++;
+                    console.log("Looping patterns : scale mode at " + i);
                     var shifted = shiftPattern(basesteps, scale, i);
                     extpattern["subpatterns"].push(shifted);
-					if (counter>5) break;
+                    if (counter > 5)
+                        break;
                 }
             }
 
@@ -635,7 +638,7 @@ MuseScore {
                 }
             }
             pdia.push(d);
-            console.log("1)[" + ip + "]" + p + "->" + debugDia(d));
+            //console.log("1)[" + ip + "]" + p + "->" + debugDia(d));
         }
 
         // 2) shift the diatonic pattern by the amount of steps
@@ -645,7 +648,7 @@ MuseScore {
             d.octave += Math.floor(d.degree / scale.length);
             d.degree = d.degree % scale.length;
             pdia[ip] = d;
-            console.log("2)[" + ip + "]->" + debugDia(d));
+            //console.log("2)[" + ip + "]->" + debugDia(d));
         }
 
         // 3) Convert back to a chromatic scale
@@ -654,7 +657,7 @@ MuseScore {
             var d = pdia[ip];
             var s = scale[d.degree] + 12 * d.octave + d.semi;
             pshift.push(s);
-            console.log("3)[" + ip + "]" + debugDia(d) + "->" + s);
+            //console.log("3)[" + ip + "]" + debugDia(d) + "->" + s);
         }
 
         return pshift;
@@ -785,7 +788,7 @@ MuseScore {
                 Layout.rightMargin: 2
                 Layout.leftMargin: 2
                 Layout.bottomMargin: 5
-                text: "Loop"
+                text: "Repeat"
             }
 
             Repeater {
@@ -793,14 +796,47 @@ MuseScore {
                 model: _max_patterns
 
                 ComboBox {
-                    model: _ddLoops
-                    editable: false
+                    //Layout.fillWidth : true
+                    id: lstLoop
+                    model: _loops
+
+                    //clip: true
+                    //focus: true
                     Layout.row: index + 1
                     Layout.column: _max_steps + 2
                     Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
                     Layout.rightMargin: 2
-                    Layout.leftMargin: 2
-                    Layout.preferredWidth: 70
+                    Layout.preferredHeight: 30
+                    Layout.preferredWidth: 80
+
+                    delegate: ItemDelegate { // requiert QuickControls 2.2
+                        contentItem: Image {
+                            height: 25
+                            width: 25
+                            source: "./workoutbuilder/" + _loops[index].image
+                            fillMode: Image.Pad
+                            verticalAlignment: Text.AlignVCenter
+                            ToolTip.text: _loops[index].label
+                            ToolTip.delay: tooltipShow
+                            ToolTip.timeout: tooltipHide
+                            ToolTip.visible: hovered
+                        }
+                        highlighted: lstLoop.highlightedIndex === index
+
+                    }
+
+                    contentItem: Image {
+                        height: 25
+                        width: 25
+                        fillMode: Image.Pad
+                        source: "./workoutbuilder/" + _loops[lstLoop.currentIndex].image
+
+                        ToolTip.text: _loops[lstLoop.currentIndex].label
+                        ToolTip.delay: tooltipShow
+                        ToolTip.timeout: tooltipHide
+                        ToolTip.visible: hovered
+
+                    }
                 }
             }
 
@@ -811,7 +847,7 @@ MuseScore {
                 Layout.rightMargin: 2
                 Layout.leftMargin: 2
                 Layout.bottomMargin: 5
-                text: "As"
+                text: "Scale"
             }
 
             Repeater {
