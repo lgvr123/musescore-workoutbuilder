@@ -9,10 +9,16 @@ import FileIO 3.0
 
 import "zparkingb/notehelper.js" as NoteHelper
 
+/**********************
+/* Parking B - MuseScore - Workout builder plugin
+/* v1.0.0
+/* ChangeLog:
+/* 	- 1.0.0: Initial release
+/**********************************************/
 MuseScore {
     menuPath: "Plugins.Workout builder"
-    description: "This plugin builds chordscale workouts based"
-    version: "1.0"
+    description: "This plugin builds chordscale workouts based on patterns defined by the user."
+    version: "1.0.0"
 
     pluginType: "dialog"
     requiresScore: false
@@ -117,7 +123,7 @@ MuseScore {
 
     property var _chords: [{
             "root": 'C',
-            "major": true,
+            "major": false,  // we consider C as a flat scale, sothat a m7 is displayed as Bb instead of A#
             "minor": false
         }, {
             "root": 'Db/C#',
@@ -431,6 +437,10 @@ MuseScore {
         var denominator = 4;
 
         score.addText("title", "Chordscale workouts");
+//score.style.setValue("chordStyle", "jazz");
+score.style.setValue("chordDescriptionFile", "chords_jazz.xml");
+score.style.setValue("chordStyle", "std");
+score.style.setValue("chordDescriptionFile", "chords_std.xml");
 
         score.startCmd();
 
