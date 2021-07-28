@@ -612,8 +612,23 @@ MuseScore {
             // from the next step of it : A-B-C, B-C-A, C-A-B
             console.log("Looping patterns : regular mode");
 
-            // We are decresing, so we'll tweak the original pattern one actave up
-            if (loopAt.shift < 0) {
+            // octave up or down ? Is the pattern going up or going down ?
+            var pattdir = 1;
+            if (basesteps[0] > basesteps[basesteps.length - 1])
+                pattdir = -1; // first is higher than last, the pattern is going down
+            else if (basesteps[0] == basesteps[basesteps.length - 1])
+                pattdir = 0; // first is equal to last, the pattern is staying flat
+
+
+            // We'll tweak the original pattern one to have flowing logically among the subpatterns
+            if (pattdir < 0) {
+				// En mode decreasing, je monte toute la pattern d'une octave
+                var octaveup = [];
+                for (var i = 0; i < basesteps.length; i++) {
+                    basesteps[i] = basesteps[i] + 12;
+                }
+            } else if ((loopAt.shift < 0) && (pattdir > 0)) {
+				// En mode increasing mais reverse, je monte que la 1ère pattern
                 var octaveup = [];
                 for (var i = 0; i < basesteps.length; i++) {
                     octaveup[i] = basesteps[i] + 12;
@@ -621,10 +636,18 @@ MuseScore {
                 extpattern["subpatterns"][0] = octaveup;
             }
 
+            var e2e = false;
+            var e2edir = 0;
+            if ((Math.abs(basesteps[0] - basesteps[basesteps.length - 1]) == 12) || (basesteps[0] == basesteps[basesteps.length - 1])) {
+                //
+                e2e = true;
+                e2edir = (basesteps[basesteps.length - 1] - basesteps[0]) / 12; // -1: C4->C3, 0: C4->C4, 1: C4->C5
+                basesteps = [].concat(basesteps); // clone basesteps to not alter the gloable pattern
+                basesteps.pop(); // Remove the last step
+            }
+
             var debug = 0;
             var from = (loopAt.shift > 0) ? 0 : basesteps.length; // delta in index of the pattern for the regular loopAt mode
-            var shift = 0; // shift in pitch for the guided loopAt mode
-
             while (debug < 999) {
                 debug++;
 
@@ -643,14 +666,14 @@ MuseScore {
                     var idx = (from + j) % basesteps.length
                     var octave = Math.floor((from + j) / basesteps.length);
                     // octave up or down ? Is the pattern going up or going down ?
-                    // we basically compare the first and last note of the pattern
-                    if (basesteps[0] > basesteps[basesteps.length - 1])
-                        octave *= -1; // first is higher than last, the pattern is going down
-                    else if (basesteps[0] == basesteps[basesteps.length - 1])
-                        octave *= 0; // first is equal to last, the pattern is staying flat
+                    octave *= pattdir;
 
-                    console.log(">should play " + basesteps[idx] + " but I'm playing " + (basesteps[idx] + shift + octave * 12) + " (" + octave + ")");
-                    p.push(basesteps[idx] + shift + octave * 12);
+                    console.log(">should play " + basesteps[idx] + " but I'm playing " + (basesteps[idx] + octave * 12) + " (" + octave + ")");
+                    p.push(basesteps[idx] + octave * 12);
+                }
+                if (e2e) {
+                    // We re-add the first note
+                    p.push(p[0] + 12 * e2edir);
                 }
 
                 extpattern["subpatterns"].push(p);
