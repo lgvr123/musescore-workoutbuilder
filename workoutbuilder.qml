@@ -8,6 +8,8 @@ import QtQuick.Layouts 1.1
 import FileIO 3.0
 
 import "zparkingb/notehelper.js" as NoteHelper
+//import "workoutbuilder/SmallButton.qml" as SmallButton
+import "workoutbuilder"
 
 /**********************
 /* Parking B - MuseScore - Workout builder plugin
@@ -18,11 +20,11 @@ import "zparkingb/notehelper.js" as NoteHelper
 MuseScore {
     menuPath: "Plugins.Workout builder"
     description: "This plugin builds chordscale workouts based on patterns defined by the user."
-    version: "1.0.0"
+    version: "1.1.0"
 
     pluginType: "dialog"
     requiresScore: false
-    width: 1200
+    width: 1300
     height: 600
 
     id: mainWindow
@@ -45,44 +47,51 @@ MuseScore {
     property var _loops: [{
             "type": 0,
             "label": "No repetition",
-            "image": "none.png"
+            "image": "none.png",
+            "id": "--"
         }, {
             "type": 1,
             "label": "Cycle pattern",
             "short": "Cycled",
             "image": "loopat1.png",
-            "shift": 1
+            "shift": 1,
+            "id": "P+"
         }, {
             "type": 1,
             "label": "Reverse cycle pattern",
             "short": "Reserve Cycled",
             "image": "loopat-1.png",
-            "shift": -1
+            "shift": -1,
+            "id": "P-"
         }, {
             "type": -1,
             "label": "Repeat at every triade (ascending)",
             "short": "Triade up",
             "image": "triadeup.png",
-            "shift": 2
+            "shift": 2,
+            "id": "S3+"
 
         }, {
             "type": -1,
             "label": "Repeat at every triade (descending)",
             "short": "Triade down",
             "image": "triadedown.png",
-            "shift": -2
+            "shift": -2,
+            "id": "S3-"
         }, {
             "type": -1,
             "label": "Repeat at every degree (ascending).png",
             "short": "Diatonic up",
             "image": "up.png",
-            "shift": 1
+            "shift": 1,
+            "id": "S+"
         }, {
             "type": -1,
             "label": "Repeat at every degree (descending)",
             "short": "Diatonic down",
             "image": "down.png",
-            "shift": -1
+            "shift": -1,
+            "id": "S-"
         },
     ]
 
@@ -123,7 +132,7 @@ MuseScore {
 
     property var _chords: [{
             "root": 'C',
-            "major": false,  // we consider C as a flat scale, sothat a m7 is displayed as Bb instead of A#
+            "major": false, // we consider C as a flat scale, sothat a m7 is displayed as Bb instead of A#
             "minor": false
         }, {
             "root": 'Db/C#',
@@ -224,6 +233,8 @@ MuseScore {
 
     readonly property int tooltipShow: 500
     readonly property int tooltipHide: 5000
+
+    property var clipboard: undefined
 
     function printWorkout() {
 
@@ -437,10 +448,10 @@ MuseScore {
         var denominator = 4;
 
         score.addText("title", "Chordscale workouts");
-//score.style.setValue("chordStyle", "jazz");
-score.style.setValue("chordDescriptionFile", "chords_jazz.xml");
-score.style.setValue("chordStyle", "std");
-score.style.setValue("chordDescriptionFile", "chords_std.xml");
+        //score.style.setValue("chordStyle", "jazz");
+        score.style.setValue("chordDescriptionFile", "chords_jazz.xml");
+        score.style.setValue("chordStyle", "std");
+        score.style.setValue("chordDescriptionFile", "chords_std.xml");
 
         score.startCmd();
 
@@ -632,13 +643,13 @@ score.style.setValue("chordDescriptionFile", "chords_std.xml");
 
             // We'll tweak the original pattern one to have flowing logically among the subpatterns
             if (pattdir < 0) {
-				// En mode decreasing, je monte toute la pattern d'une octave
+                // En mode decreasing, je monte toute la pattern d'une octave
                 var octaveup = [];
                 for (var i = 0; i < basesteps.length; i++) {
                     basesteps[i] = basesteps[i] + 12;
                 }
             } else if ((loopAt.shift < 0) && (pattdir > 0)) {
-				// En mode increasing mais reverse, je monte que la 1ère pattern
+                // En mode increasing mais reverse, je monte que la 1ère pattern
                 var octaveup = [];
                 for (var i = 0; i < basesteps.length; i++) {
                     octaveup[i] = basesteps[i] + 12;
@@ -861,6 +872,38 @@ score.style.setValue("chordDescriptionFile", "chords_std.xml");
         console.log("delta:" + delta + ", pitch:" + n.pitch + ", tpc:" + n.tpc + ", name:" + n.extname.fullname);
     }
 
+    function toClipboard(index) {
+        console.log("To Clipboard for pattern " + index);
+        clipboard = getPattern(index);
+    }
+
+    function fromClipboard(index) {
+        console.log("From Clipboard for pattern " + index);
+        if (clipboard === undefined)
+            return;
+        setPattern(index, clipboard);
+    }
+
+    function clearPattern(index) {}
+
+    function getPattern(index) {
+        var steps = [];
+        for (var i = 0; i < _max_steps; i++) {
+            var note = patterns[index * _max_steps + i].note;
+            if (note !== '') {
+                var d = _degrees.indexOf(note);
+                if (d > -1)
+                    steps.push(d);
+            } else
+                break;
+        }
+
+        var p = new patternClass(steps, undefined, undefined);
+
+        console.log(p.label);
+
+    }
+
     property bool reset: true
 
     GridLayout {
@@ -1018,6 +1061,57 @@ score.style.setValue("chordDescriptionFile", "chords_std.xml");
                     Layout.leftMargin: 2
                     Layout.preferredWidth: 90
                 }
+            }
+
+            Repeater {
+                id: idCopyPattern
+                model: _max_patterns
+
+                SmallButton {
+                    id: btnCopy
+                    text: "C"
+                    Layout.row: index + 1
+                    Layout.column: _max_steps + 4
+                    Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
+                    Layout.rightMargin: 2
+                    Layout.leftMargin: 5
+                    onClicked: toClipboard(index);
+                }
+
+            }
+
+            Repeater {
+                id: idPastePattern
+                model: _max_patterns
+
+                SmallButton {
+                    id: btnPaste
+                    text: "P"
+                    Layout.row: index + 1
+                    Layout.column: _max_steps + 5
+                    Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
+                    Layout.rightMargin: 2
+                    Layout.leftMargin: 2
+                    onClicked: fromClipboard(index);
+                }
+
+            }
+
+            Repeater {
+                id: idClearPattern
+                model: _max_patterns
+
+                SmallButton {
+                    id: btnClear
+                    text: "X"
+                    Layout.row: index + 1
+                    Layout.column: _max_steps + 6
+                    Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
+                    Layout.rightMargin: 2
+                    Layout.leftMargin: 2
+                    onClicked: clearPattern(index);
+                }
+
             }
 
         }
@@ -1204,6 +1298,24 @@ score.style.setValue("chordDescriptionFile", "chords_std.xml");
         }
     }
 
+    Component {
+        id: miniButton
+
+        Button {
+            id: minib
+            text: "XX"
+            font.pointSize: 7
+            background: Rectangle {
+                implicitWidth: 40
+                implicitHeight: 20
+                color: minib.down ? "#C0C0C0" : "#E0E0E0"
+                //border.color: "#26282a"
+                //border.width: 1
+                radius: 4
+            }
+        }
+    }
+
     MessageDialog {
         id: missingStuffDialog
         icon: StandardIcon.Warning
@@ -1258,4 +1370,30 @@ score.style.setValue("chordDescriptionFile", "chords_std.xml");
 
     }
 
+    function patternClass(steps, loopMode, scale) {
+        this.steps = steps;
+        this.loopMode = loopMode;
+        this.scale = scale;
+        Object.defineProperty(this, "label", {
+            get: function () {
+                var label = "";
+                for (var i = 0; ((i < steps.length) && (steps[i] !== undefined)); i++) {
+                    if (i > 0)
+                        label += "-";
+                    label += _degrees[steps[i]];
+                }
+
+                if ((loopMode !== "--") && (loopMode !== undefined)) {
+                    label += " - " + loopMode;
+                }
+                if ((scale !== "") && (scale !== undefined)) {
+                    label += " - " + scale;
+                }
+                return label;
+            },
+
+            enumerable: true
+        });
+
+    }
 }
