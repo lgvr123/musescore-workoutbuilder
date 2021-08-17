@@ -8,14 +8,14 @@ import QtQuick.Layouts 1.1
 import FileIO 3.0
 
 import "zparkingb/notehelper.js" as NoteHelper
-//import "workoutbuilder/SmallButton.qml" as SmallButton
 import "workoutbuilder"
 
 /**********************
 /* Parking B - MuseScore - Workout builder plugin
-/* v1.0.0
+/* v1.1.0
 /* ChangeLog:
 /* 	- 1.0.0: Initial release
+/*  - 1.1.0: Copy/Paste, Library of patterns
 /**********************************************/
 MuseScore {
     menuPath: "Plugins.Workout builder"
@@ -878,13 +878,15 @@ MuseScore {
     }
 
     function fromClipboard(index) {
-        console.log("From Clipboard for pattern " + index);
+        console.log("From Clipboard for pattern " + index + "(clipboard is " + ((clipboard !== undefined) ? "defined" : "undefined") + ")");
         if (clipboard === undefined)
             return;
         setPattern(index, clipboard);
     }
 
-    function clearPattern(index) {}
+    function clearPattern(index) {
+        setPattern(index, undefined)
+    }
 
     function getPattern(index) {
         var steps = [];
@@ -898,13 +900,56 @@ MuseScore {
                 break;
         }
 
-        var p = new patternClass(steps, undefined, undefined);
+        var mode = idLoopingMode.itemAt(index).currentIndex;
+        mode = _loops[mode].id;
+		
+		var scale=idChordType.itemAt(index).editText;
+
+        var p = new patternClass(steps, mode, scale);
 
         console.log(p.label);
 
+        return p;
+
+    }
+
+    function setPattern(index, pattern) {
+        console.log("Setting pattern " + index);
+
+        for (var i = 0; i < _max_steps; i++) {
+            var ip = index * _max_steps + i;
+            var note = (pattern !== undefined && (i < pattern.steps.length)) ? _degrees[pattern.steps[i]] : '';
+            // setting  only the 'note' field the doesn't work because the binding is not that intelligent...
+            var sn = patterns[ip];
+            sn.note = note;
+            // ..one must reassign explicitely the whole object in the combobox to trigger the binding's update
+            idStepNotes.itemAt(ip).item.step = sn;
+            
+        }
+		
+		var scale='';
+		if ((pattern!==undefined) && (pattern.scale!==undefined)) {
+			scale=pattern.scale;
+		}
+		idChordType.itemAt(index).editText=scale;
+		
+		var modeidx=0;
+		if ((pattern!==undefined) && (pattern.loopMode!==undefined)) {
+			console.log("pasting mode "+pattern.loopMode);
+			for(var i=0;i<_loops.length;i++) {
+				if (_loops[i].id===pattern.loopMode) {
+					modeidx=i;
+					break;
+				}
+			}
+		}
+			console.log("pasting mode index "+modeidx);
+		idLoopingMode.itemAt(index).currentIndex=modeidx;
+	
     }
 
     property bool reset: true
+    property bool resetP: true
 
     GridLayout {
         anchors.fill: parent
@@ -959,7 +1004,7 @@ MuseScore {
             }
             Repeater {
                 id: idStepNotes
-                model: patterns
+                model: getPatterns(resetP)
 
                 Loader {
                     id: loaderNotes
@@ -1273,6 +1318,7 @@ MuseScore {
             model: _ddNotes
             Layout.preferredHeight: 30
             implicitWidth: 75
+            currentIndex: find(step.note, Qt.MatchExactly)
             onCurrentIndexChanged: {
                 step.note = model[currentIndex];
             }
@@ -1326,6 +1372,10 @@ MuseScore {
 
     function getRoots(uglyHack) {
         return steproots;
+    }
+
+    function getPatterns(uglyHack) {
+        return patterns;
     }
 
     property var presets: [{
@@ -1396,4 +1446,13 @@ MuseScore {
         });
 
     }
+
+    function debugO(label, element) {
+
+        var kys = Object.keys(element);
+        for (var i = 0; i < kys.length; i++) {
+            console.log(label + ": " + kys[i] + "=" + element[kys[i]]);
+        }
+    }
+
 }
