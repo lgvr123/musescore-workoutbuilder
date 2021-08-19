@@ -24,7 +24,7 @@ MuseScore {
 
     pluginType: "dialog"
     requiresScore: false
-    width: 1300
+    width: 1350
     height: 600
 
     id: mainWindow
@@ -902,8 +902,8 @@ MuseScore {
 
         var mode = idLoopingMode.itemAt(index).currentIndex;
         mode = _loops[mode].id;
-		
-		var scale=idChordType.itemAt(index).editText;
+
+        var scale = idChordType.itemAt(index).editText;
 
         var p = new patternClass(steps, mode, scale);
 
@@ -924,28 +924,28 @@ MuseScore {
             sn.note = note;
             // ..one must reassign explicitely the whole object in the combobox to trigger the binding's update
             idStepNotes.itemAt(ip).item.step = sn;
-            
+
         }
-		
-		var scale='';
-		if ((pattern!==undefined) && (pattern.scale!==undefined)) {
-			scale=pattern.scale;
-		}
-		idChordType.itemAt(index).editText=scale;
-		
-		var modeidx=0;
-		if ((pattern!==undefined) && (pattern.loopMode!==undefined)) {
-			console.log("pasting mode "+pattern.loopMode);
-			for(var i=0;i<_loops.length;i++) {
-				if (_loops[i].id===pattern.loopMode) {
-					modeidx=i;
-					break;
-				}
-			}
-		}
-			console.log("pasting mode index "+modeidx);
-		idLoopingMode.itemAt(index).currentIndex=modeidx;
-	
+
+        var scale = '';
+        if ((pattern !== undefined) && (pattern.scale !== undefined)) {
+            scale = pattern.scale;
+        }
+        idChordType.itemAt(index).editText = scale;
+
+        var modeidx = 0;
+        if ((pattern !== undefined) && (pattern.loopMode !== undefined)) {
+            console.log("pasting mode " + pattern.loopMode);
+            for (var i = 0; i < _loops.length; i++) {
+                if (_loops[i].id === pattern.loopMode) {
+                    modeidx = i;
+                    break;
+                }
+            }
+        }
+        console.log("pasting mode index " + modeidx);
+        idLoopingMode.itemAt(index).currentIndex = modeidx;
+
     }
 
     property bool reset: true
@@ -1112,14 +1112,16 @@ MuseScore {
                 id: idCopyPattern
                 model: _max_patterns
 
-                SmallButton {
+                ImageButton {
                     id: btnCopy
-                    text: "C"
+                    imageSource: "copy.svg"
+                    imageHeight: 20
+                    ToolTip.text: "Copy"
                     Layout.row: index + 1
                     Layout.column: _max_steps + 4
                     Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
                     Layout.rightMargin: 2
-                    Layout.leftMargin: 5
+                    Layout.leftMargin: 10
                     onClicked: toClipboard(index);
                 }
 
@@ -1129,9 +1131,10 @@ MuseScore {
                 id: idPastePattern
                 model: _max_patterns
 
-                SmallButton {
+                ImageButton {
                     id: btnPaste
-                    text: "P"
+                    imageSource: "paste.svg"
+                    ToolTip.text: "Paste"
                     Layout.row: index + 1
                     Layout.column: _max_steps + 5
                     Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
@@ -1146,15 +1149,50 @@ MuseScore {
                 id: idClearPattern
                 model: _max_patterns
 
-                SmallButton {
+                ImageButton {
                     id: btnClear
-                    text: "X"
+                    imageSource: "cancel.svg"
+                    ToolTip.text: "Clear"
                     Layout.row: index + 1
                     Layout.column: _max_steps + 6
                     Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
                     Layout.rightMargin: 2
                     Layout.leftMargin: 2
                     onClicked: clearPattern(index);
+                }
+            }
+
+            Repeater {
+                id: idSavePattern
+                model: _max_patterns
+
+                ImageButton {
+                    id: btnSave
+                    imageSource: "download.svg"
+                    ToolTip.text: "Save"
+                    Layout.row: index + 1
+                    Layout.column: _max_steps + 7
+                    Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
+                    Layout.rightMargin: 2
+                    Layout.leftMargin: 2
+                    //onClicked: savePattern(index);
+                }
+            }
+
+            Repeater {
+                id: idLoadPattern
+                model: _max_patterns
+
+                ImageButton {
+                    id: btnLoad
+                    imageSource: "upload.svg"
+                    ToolTip.text: "Load"
+                    Layout.row: index + 1
+                    Layout.column: _max_steps + 8
+                    Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
+                    Layout.rightMargin: 2
+                    Layout.leftMargin: 2
+                    //onClicked: loadPattern(index);
                 }
 
             }
