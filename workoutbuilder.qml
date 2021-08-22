@@ -1109,92 +1109,61 @@ MuseScore {
             }
 
             Repeater {
-                id: idCopyPattern
+                id: idTools
                 model: _max_patterns
 
-                ImageButton {
-                    id: btnCopy
-                    imageSource: "copy.svg"
-                    imageHeight: 20
-                    ToolTip.text: "Copy"
+                Rectangle {
+
                     Layout.row: index + 1
                     Layout.column: _max_steps + 4
                     Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
-                    Layout.rightMargin: 2
-                    Layout.leftMargin: 10
-                    onClicked: toClipboard(index);
+                    Layout.rightMargin: 0
+                    Layout.leftMargin: 0
+                    width: gridTools.width + 6
+                    height: gridTools.height + 6
+
+                    color: "#E8E8E8"
+                    radius: 4
+
+                    Grid {
+                        id: gridTools
+                        anchors.centerIn: parent
+                        rows: 1
+                        columnSpacing: 2
+                        rowSpacing: 0
+
+                        ImageButton {
+                            id: btnClear
+                            imageSource: "cancel.svg"
+                            ToolTip.text: "Clear"
+                            onClicked: clearPattern(index);
+                        }
+                        ImageButton {
+                            id: btnCopy
+                            imageSource: "copy.svg"
+                            ToolTip.text: "Copy"
+                            onClicked: toClipboard(index);
+                        }
+                        ImageButton {
+                            id: btnPaste
+                            imageSource: "paste.svg"
+                            ToolTip.text: "Paste"
+                            onClicked: fromClipboard(index);
+                        }
+                        ImageButton {
+                            id: btnLoad
+                            imageSource: "upload.svg"
+                            ToolTip.text: "Reuse saved pattern"
+                            //onClicked: loadPattern(index);
+                        }
+                        ImageButton {
+                            id: btnSave
+                            imageSource: "download.svg"
+                            ToolTip.text: "Save for later reuse"
+                            //onClicked: savePattern(index);
+                        }
+                    }
                 }
-
-            }
-
-            Repeater {
-                id: idPastePattern
-                model: _max_patterns
-
-                ImageButton {
-                    id: btnPaste
-                    imageSource: "paste.svg"
-                    ToolTip.text: "Paste"
-                    Layout.row: index + 1
-                    Layout.column: _max_steps + 5
-                    Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
-                    Layout.rightMargin: 2
-                    Layout.leftMargin: 2
-                    onClicked: fromClipboard(index);
-                }
-
-            }
-
-            Repeater {
-                id: idClearPattern
-                model: _max_patterns
-
-                ImageButton {
-                    id: btnClear
-                    imageSource: "cancel.svg"
-                    ToolTip.text: "Clear"
-                    Layout.row: index + 1
-                    Layout.column: _max_steps + 6
-                    Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
-                    Layout.rightMargin: 2
-                    Layout.leftMargin: 2
-                    onClicked: clearPattern(index);
-                }
-            }
-
-            Repeater {
-                id: idSavePattern
-                model: _max_patterns
-
-                ImageButton {
-                    id: btnSave
-                    imageSource: "download.svg"
-                    ToolTip.text: "Save"
-                    Layout.row: index + 1
-                    Layout.column: _max_steps + 7
-                    Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
-                    Layout.rightMargin: 2
-                    Layout.leftMargin: 2
-                    //onClicked: savePattern(index);
-                }
-            }
-
-            Repeater {
-                id: idLoadPattern
-                model: _max_patterns
-
-                ImageButton {
-                    id: btnLoad
-                    imageSource: "upload.svg"
-                    ToolTip.text: "Load"
-                    Layout.row: index + 1
-                    Layout.column: _max_steps + 8
-                    Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
-                    Layout.rightMargin: 2
-                    Layout.leftMargin: 2
-                    //onClicked: loadPattern(index);
-                }
-
             }
 
         }
