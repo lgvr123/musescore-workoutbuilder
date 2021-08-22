@@ -30,6 +30,9 @@ MuseScore {
     id: mainWindow
     onRun: {
 
+        libraryFile.exists();
+        console.log(libraryFile.source);
+
         //		console.log(homePath() + "/MuseJazz.mss");
         //		console.log(rootPath() + "/MuseJazz.mss");
         //		console.log(Qt.resolvedUrl("MuseJazz.mss"));
@@ -80,7 +83,7 @@ MuseScore {
             "id": "S3-"
         }, {
             "type": -1,
-            "label": "Repeat at every degree (ascending).png",
+            "label": "Repeat at every degree (ascending)",
             "short": "Diatonic up",
             "image": "up.png",
             "shift": 1,
@@ -230,6 +233,8 @@ MuseScore {
             return sr;
         }
     }
+
+    property var library: [];
 
     readonly property int tooltipShow: 500
     readonly property int tooltipHide: 5000
@@ -948,8 +953,16 @@ MuseScore {
 
     }
 
+    function savePattern(index) {
+        var p = getPattern(index);
+        library.push(p);
+        resetL = false;
+        resetL = true;
+    }
+
     property bool reset: true
     property bool resetP: true
+    property bool resetL: true
 
     GridLayout {
         anchors.fill: parent
@@ -1155,12 +1168,16 @@ MuseScore {
                             imageSource: "upload.svg"
                             ToolTip.text: "Reuse saved pattern"
                             //onClicked: loadPattern(index);
+                            onClicked: {
+                                loadWindow.index = index;
+                                loadWindow.show();
+                            }
                         }
                         ImageButton {
                             id: btnSave
                             imageSource: "download.svg"
                             ToolTip.text: "Save for later reuse"
-                            //onClicked: savePattern(index);
+                            onClicked: savePattern(index);
                         }
                     }
                 }
@@ -1300,7 +1317,8 @@ MuseScore {
                 }
 
                 onAccepted: {
-                    printWorkout();
+                    aboutWindow.show();
+                    //printWorkout();
                     // Qt.quit();
 
                 }
@@ -1351,21 +1369,177 @@ MuseScore {
         }
     }
 
-    Component {
-        id: miniButton
+    Window {
+        id: aboutWindow
+        title: "About..."
+        width: 500
+        height: 200
+        modality: Qt.WindowModal
+        flags: Qt.Dialog | Qt.WindowSystemMenuHint | Qt.WindowTitleHint | Qt.WindowCloseButtonHint
+        //color: "#E3E3E3"
 
-        Button {
-            id: minib
-            text: "XX"
-            font.pointSize: 7
-            background: Rectangle {
-                implicitWidth: 40
-                implicitHeight: 20
-                color: minib.down ? "#C0C0C0" : "#E0E0E0"
-                //border.color: "#26282a"
-                //border.width: 1
-                radius: 4
+        ColumnLayout {
+
+            anchors.fill: parent
+            spacing: 5
+            anchors.margins: 5
+
+            Text {
+                Layout.fillWidth: true
+                verticalAlignment: Text.AlignVCenter
+                horizontalAlignment: Text.AlignHCenter
+                font.pointSize: 12
+                text: 'Workout Builder ' + version
             }
+
+            Text {
+                Layout.fillWidth: true
+                verticalAlignment: Text.AlignVCenter
+                horizontalAlignment: Text.AlignHCenter
+                font.pointSize: 9
+                topPadding: -5
+                bottomPadding: 15
+                text: 'by <a href="https://www.laurentvanroy.be/" title="Laurent van Roy">Laurent van Roy</a>'
+                onLinkActivated: Qt.openUrlExternally(link)
+            }
+
+            Item {
+                // spacer
+                Layout.fillHeight: true;
+                Layout.fillWidth: true;
+                //Layout.columnSpan: 2
+            }
+
+            DialogButtonBox {
+                id: opionsButtonBox
+                Layout.alignment: Qt.AlignHCenter
+                Layout.fillWidth: true
+                background.opacity: 0 // hide default white background
+                standardButtons: DialogButtonBox.Close //| DialogButtonBox.Save
+                onRejected: aboutWindow.hide()
+                onAccepted: aboutWindow.hide()
+
+            }
+
+            Text {
+                Layout.fillWidth: true
+                verticalAlignment: Text.AlignVCenter
+                horizontalAlignment: Text.AlignHCenter
+                font.pointSize: 10
+                anchors.bottomMargin: 20
+
+                text: 'Icons made by <a href="https://www.freepik.com" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a>'
+
+                wrapMode: Text.Wrap
+
+                onLinkActivated: Qt.openUrlExternally(link)
+
+            }
+
+        }
+    }
+
+    Window {
+        id: loadWindow
+        title: "Reuse pattern..."
+        width: 500
+        height: 500
+        modality: Qt.WindowModal
+        flags: Qt.Dialog | Qt.WindowSystemMenuHint | Qt.WindowTitleHint | Qt.WindowCloseButtonHint
+        //color: "#E3E3E3"
+
+        property int index: -1
+
+        ColumnLayout {
+
+            anchors.fill: parent
+            spacing: 5
+            anchors.margins: 10
+
+            Text {
+                Layout.fillWidth: true
+                verticalAlignment: Text.AlignVCenter
+                horizontalAlignment: Text.AlignLeft
+                text: "Select :"
+                bottomPadding: 5
+
+            }
+
+            Rectangle {
+                Layout.fillHeight: true
+                Layout.fillWidth: true
+
+                border.color: "grey"
+
+                ListView { // Presets
+
+                    id: lstLibrary
+
+                    anchors.fill: parent
+                    anchors.margins: 5
+
+                    model: getPresetsLibrary(resetL) //__library
+                    //delegate: presetComponent
+                    clip: true
+                    focus: true
+
+                    delegate: Text {
+                        readonly property ListView __lv: ListView.view
+                        text: library[model.index].label;
+                        padding: 4
+
+                        MouseArea {
+                            anchors.fill: parent
+                            acceptedButtons: Qt.LeftButton
+
+                            onDoubleClicked: {
+                                setPattern(loadWindow.index, library[model.index]);
+                            }
+
+                            onClicked: {
+                                __lv.currentIndex = index;
+                            }
+                        }
+                    }
+
+                    highlightMoveDuration: 250 // 250 pour changer la sélection
+                    highlightMoveVelocity: 2000 // ou 2000px/sec
+
+
+                    // scrollbar
+                    flickableDirection: Flickable.VerticalFlick
+                    boundsBehavior: Flickable.StopAtBounds
+
+                    highlight: Rectangle {
+                        color: "lightsteelblue"
+                        //width: parent.width
+                        anchors {
+                            left: parent.left
+                            right: parent.right
+                        }
+                    }
+                }
+            }
+
+            DialogButtonBox {
+                Layout.fillWidth: true
+                Layout.alignment: Qt.AlignRight
+
+                background.opacity: 0 // hide default white background
+
+                standardButtons: DialogButtonBox.Cancel
+                Button {
+                    text: "Use"
+                    DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
+                }
+
+                onAccepted: {
+                    setPattern(loadWindow.index, library[lstLibrary.currentIndex])
+                }
+                onRejected: loadWindow.hide()
+
+            }
+
         }
     }
 
@@ -1383,6 +1557,11 @@ MuseScore {
 
     function getPatterns(uglyHack) {
         return patterns;
+    }
+
+    function getPresetsLibrary(uglyHack) {
+        console.log("Library has " + library.length + " elements");
+        return library;
     }
 
     property var presets: [{
@@ -1441,10 +1620,17 @@ MuseScore {
                 }
 
                 if ((loopMode !== "--") && (loopMode !== undefined)) {
-                    label += " - " + loopMode;
+                    var m = loopMode;
+                    var filtered = _loops.filter(function (p) {
+                        return (p.id === loopMode);
+                    });
+                    if (filtered.length > 0) {
+                        m = filtered[0].short;
+                    }
+                    label += " / " + m;
                 }
                 if ((scale !== "") && (scale !== undefined)) {
-                    label += " - " + scale;
+                    label += " / " + scale;
                 }
                 return label;
             },
@@ -1452,6 +1638,18 @@ MuseScore {
             enumerable: true
         });
 
+    }
+
+    FileIO {
+        id: libraryFile
+        source: {
+            var f = Qt.resolvedUrl("workoutbuilder/workoutbuilder.library");
+            console.log(f);
+            return f;
+        }
+        onError: {
+            console.log(msg);
+        }
     }
 
     function debugO(label, element) {
