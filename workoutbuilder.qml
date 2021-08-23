@@ -28,14 +28,23 @@ MuseScore {
     height: 600
 
     id: mainWindow
+
+    readonly property var librarypath: { {
+            var f = Qt.resolvedUrl("workoutbuilder/workoutbuilder.library");
+            f = f.slice(8); // remove the "file:///" added by Qt.resolveUrl and not understood by the FileIO API
+            return f;
+        }
+    }
     onRun: {
 
-        libraryFile.exists();
+        //console.log(Qt.resolvedUrl("MuseJazz.mss"));
+        console.log(librarypath);
         console.log(libraryFile.source);
 
-        //		console.log(homePath() + "/MuseJazz.mss");
+        loadLibrary();
+
+        //		console.log(FileIO.homePath() + "/MuseJazz.mss");
         //		console.log(rootPath() + "/MuseJazz.mss");
-        //		console.log(Qt.resolvedUrl("MuseJazz.mss"));
 
     }
 
@@ -234,7 +243,8 @@ MuseScore {
         }
     }
 
-    property var library: [];
+    property var library: []
+    property var workouts: []
 
     readonly property int tooltipShow: 500
     readonly property int tooltipHide: 5000
@@ -446,7 +456,7 @@ MuseScore {
 
         // Push all this to the score
         //var score = newScore("Workout", "saxophone", 1);
-        var score = newScore("Workout", "bass-flute", 1); // transposing instruments (a.o. the saxophone) are buggy
+        var score = newScore("Workout", "bass-flute", 1); // transposing instruments (a.o. the saxophone) are buggy (???)
         //var cs=eval("Sid.chordStyle");
         //console.log("CHORD STYLE:" + score.styles.value(cs));
         var numerator = 4;
@@ -955,9 +965,150 @@ MuseScore {
 
     function savePattern(index) {
         var p = getPattern(index);
-        library.push(p);
-        resetL = false;
-        resetL = true;
+        var i = findInLibrary(p);
+        if (i < 0) { // pattern not found in library
+            console.log("Pattern " + p.label + " added to the library");
+            library.push(p);
+            resetL = !resetL;
+            saveLibrary();
+        } else {
+            console.log("Pattern " + p.label + " not added to the library - already present");
+        }
+    }
+
+    function deletePattern(pattern) {
+        var i = findInLibrary(pattern);
+        if (i >= 0) { // pattern found in library
+            console.log("Pattern " + pattern.label + " deleted from the library (at " + i + ")");
+            library.splice(i, 1);
+            resetL = !resetL;
+            saveLibrary();
+        } else {
+            console.log("Pattern " + pattern.label + " cannot be deleted from the library : not found");
+
+        }
+
+    }
+
+    function findInLibrary(pattern) {
+        for (var i = 0; i < library.length; i++) {
+            var p = library[i];
+            if (p.label === pattern.label) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    function applyWorkout(workout) {
+		// patterns
+        var m = Math.min(_max_patterns, workout.patterns.length);
+
+        for (var i = 0; i < m; i++) {
+            setPattern(i, workout.patterns[i]);
+        }
+
+        for (var i = m; i < _max_patterns; i++) {
+            setPattern(i, undefined);
+        }
+
+		// roots, if defined in the workout
+        if (workout.roots !== undefined) {
+            m = Math.min(_max_roots, workout.roots.length);
+
+            for (var i = 0; i < m; i++) {
+                steproots[i] = _roots[workout.roots[i]];
+            }
+
+            for (var i = m; i < _max_patterns; i++) {
+                        steproots[i] = '';
+            }
+
+        }
+
+		// options, if defined in the workout
+        if (workout.bypattern !== undefined) {
+            chkByPattern.checkState = (workout.bypattern === "true") ? Qt.Checked : Qt.Unchecked;
+
+        }
+        if (workout.invert !== undefined) {
+            chkInvert.checkState = (workout.invert === "true") ? Qt.Checked : Qt.Unchecked;
+        }
+
+    }
+
+    function saveWorkout(label) {
+        var pp = [];
+        for (var i = 0; i < _max_patterns; i++) {
+            var p = getPattern(i);
+            if (p.steps.length == 0)
+                break;
+            pp.push(p);
+        }
+
+        var workout = new workoutClass(label, pp);
+
+        workouts.push(workout);
+        resetL = !resetL;
+        saveLibrary();
+    }
+
+    function deleteWorkout(workout) {}
+
+    function loadLibrary() {
+
+        console.log("Loading library " + libraryFile.source);
+        if (!libraryFile.exists()) {
+            console.log("file not found");
+            return;
+
+        }
+
+        var json = libraryFile.read();
+
+        var lib = {};
+
+        try {
+            lib = JSON.parse(json);
+        } catch (e) {
+            console.error('while reading the library file', e.message);
+        }
+
+        var allpresets = lib.patterns;
+
+        for (var i = 0; i < allpresets.length; i++) {
+            var pp = allpresets[i];
+            var p = new patternClassRaw(pp);
+            library.push(p);
+        }
+        console.log("Library loaded");
+
+        var allworkouts = lib.workouts;
+        for (var i = 0; i < allworkouts.length; i++) {
+            var pp = allworkouts[i];
+            var p = new workoutClassRaw(pp);
+            workouts.push(p);
+        }
+        console.log("Library loaded");
+
+        resetL = !resetL;
+    }
+
+    function saveLibrary() {
+
+        var lib = {
+            patterns: library,
+            workouts: workouts
+        };
+
+        var t = JSON.stringify(lib) + "\n";
+        console.log(t);
+
+        if (libraryFile.write(t)) {
+            console.log("Library saved");
+        } else {
+            console.log("Error while saving the library");
+        }
     }
 
     property bool reset: true
@@ -1161,6 +1312,7 @@ MuseScore {
                             id: btnPaste
                             imageSource: "paste.svg"
                             ToolTip.text: "Paste"
+                            enabled: clipboard !== undefined
                             onClicked: fromClipboard(index);
                         }
                         ImageButton {
@@ -1287,6 +1439,29 @@ MuseScore {
             checked : false
             text : "Page break after each group"
             }*/
+            Item {
+                Layout.fillWidth: true
+            }
+            ImageButton {
+                imageSource: "upload.svg"
+                ToolTip.text: "Load workout"
+                imageHeight: 25
+                imagePadding: (buttonBox.contentItem.height - imageHeight) / 2
+                onClicked: {
+                    applyWorkout(workouts[workouts.length - 1]);
+                }
+
+            }
+            ImageButton {
+                imageSource: "download.svg"
+                ToolTip.text: "Save workout"
+                imageHeight: 25
+                imagePadding: (buttonBox.contentItem.height - imageHeight) / 2
+                onClicked: {
+                    saveWorkout("aaa");
+                }
+
+            }
 
         }
 
@@ -1302,6 +1477,15 @@ MuseScore {
             //Layout.column : 0
             //Layout.row : 5
             Layout.columnSpan: 2
+
+            ImageButton {
+                imageSource: "about.svg"
+                ToolTip.text: "About"
+                imageHeight: 25
+                imagePadding: (buttonBox.contentItem.height - imageHeight) / 2
+                onClicked: aboutWindow.show();
+
+            }
             Item {
                 Layout.fillWidth: true
             }
@@ -1317,8 +1501,7 @@ MuseScore {
                 }
 
                 onAccepted: {
-                    aboutWindow.show();
-                    //printWorkout();
+                    printWorkout();
                     // Qt.quit();
 
                 }
@@ -1513,7 +1696,7 @@ MuseScore {
                     highlight: Rectangle {
                         color: "lightsteelblue"
                         //width: parent.width
-                        anchors {
+                        anchors { // throws some errors, but is working fine
                             left: parent.left
                             right: parent.right
                         }
@@ -1521,25 +1704,47 @@ MuseScore {
                 }
             }
 
-            DialogButtonBox {
+            RowLayout {
                 Layout.fillWidth: true
-                Layout.alignment: Qt.AlignRight
+                Layout.columnSpan: 2
 
-                background.opacity: 0 // hide default white background
+                ImageButton {
+                    imageSource: "remove.svg"
+                    enabled: lstLibrary.currentIndex >= 0
+                    ToolTip.text: "Delete the selected pattern"
+                    imageHeight: 25
+                    imagePadding: (libButtonBox.contentItem.height - imageHeight) / 2
+                    onClicked: {
+                        confirmRemovePatternDialog.pattern = library[lstLibrary.currentIndex];
+                        confirmRemovePatternDialog.open();
+                    }
 
-                standardButtons: DialogButtonBox.Cancel
-                Button {
-                    text: "Use"
-                    DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
+                }
+                Item {
+                    Layout.fillWidth: true
                 }
 
-                onAccepted: {
-                    setPattern(loadWindow.index, library[lstLibrary.currentIndex])
-                }
-                onRejected: loadWindow.hide()
+                DialogButtonBox {
+                    //Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignRight
+                    id: libButtonBox
 
+                    background.opacity: 0 // hide default white background
+
+                    standardButtons: DialogButtonBox.Cancel
+                    Button {
+                        text: "Apply"
+                        DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
+                    }
+
+                    onAccepted: {
+                        setPattern(loadWindow.index, library[lstLibrary.currentIndex]);
+                        loadWindow.hide();
+                    }
+                    onRejected: loadWindow.hide()
+
+                }
             }
-
         }
     }
 
@@ -1549,6 +1754,19 @@ MuseScore {
         standardButtons: StandardButton.Ok
         title: 'Cannot proceed'
         text: 'At least one pattern and one root note must be defined to create the score/'
+    }
+
+    MessageDialog {
+        id: confirmRemovePatternDialog
+        icon: StandardIcon.Warning
+        standardButtons: StandardButton.Yes | StandardButton.No
+        title: 'Confirm '
+        property var pattern: null
+        text: 'Please confirm the deletion of the following pattern : <br/>' + ((pattern == null) ? "--" : pattern.label)
+        onYes: {
+            deletePattern(pattern);
+        }
+        onNo: confirmRemovePatternDialog.close();
     }
 
     function getRoots(uglyHack) {
@@ -1640,13 +1858,38 @@ MuseScore {
 
     }
 
+    /**
+     * Creation of a pattern from a pattern object containing the *enumerable* fields (ie. the non transient fields)
+     */
+    function patternClassRaw(raw) {
+        patternClass.call(this, raw.steps, raw.loopMode, raw.scale);
+    }
+
+    function workoutClass(label, patterns, roots, bypattern, invert) {
+        this.patterns = patterns;
+        this.label = label;
+        this.roots = roots;
+        this.bypattern = bypattern;
+        this.invert = invert;
+    }
+
+    /**
+     * Creation of a complete workout from a workout object containing the *enumerable* fields (ie. the non transient fields)
+     */
+    function workoutClassRaw(raw) {
+        var p = raw.patterns;
+        var pp = [];
+        for (var i = 0; i < p.length; i++) {
+
+            pp.push(new patternClassRaw(p[i]));
+        }
+
+        workoutClass.call(this, raw.label, pp, raw["roots"], raw["bypattern"], raw["invert"]);
+    }
+
     FileIO {
         id: libraryFile
-        source: {
-            var f = Qt.resolvedUrl("workoutbuilder/workoutbuilder.library");
-            console.log(f);
-            return f;
-        }
+        source: librarypath
         onError: {
             console.log(msg);
         }

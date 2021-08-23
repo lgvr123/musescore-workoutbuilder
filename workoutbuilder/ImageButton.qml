@@ -7,8 +7,8 @@ Button {
     property int imageHeight: 18
     property int imagePadding: 3
     font.pointSize: 7
-    implicitWidth: imageHeight + imagePadding * 2
-    implicitHeight: imageHeight + imagePadding * 2
+    implicitWidth: img.height + imagePadding * 2
+    implicitHeight: img.width + imagePadding * 2
     background: Rectangle {
         implicitWidth: smbtn.width
         implicitHeight: smbtn.height
@@ -20,6 +20,7 @@ Button {
     }
     indicator:
     Image {
+		id: img
         source: smbtn.imageSource
         height: smbtn.imageHeight
         fillMode: Image.PreserveAspectFit // ensure it fits
