@@ -37,6 +37,16 @@ MuseScore {
     }
     onRun: {
 
+        String.prototype.hashCode = function () {
+            var hash = 0;
+            for (var i = 0; i < this.length; i++) {
+                var character = this.charCodeAt(i);
+                hash = ((hash << 5) - hash) + character;
+                hash = hash & hash; // Convert to 32bit integer
+            }
+            return hash;
+        }
+
         //console.log(Qt.resolvedUrl("MuseJazz.mss"));
         console.log(librarypath);
         console.log(libraryFile.source);
@@ -993,7 +1003,7 @@ MuseScore {
     function findInLibrary(pattern) {
         for (var i = 0; i < library.length; i++) {
             var p = library[i];
-            if (p.label === pattern.label) {
+            if (p.hash === pattern.hash) {
                 return i;
             }
         }
@@ -1001,7 +1011,7 @@ MuseScore {
     }
 
     function applyWorkout(workout) {
-		// patterns
+        // patterns
         var m = Math.min(_max_patterns, workout.patterns.length);
 
         for (var i = 0; i < m; i++) {
@@ -1012,7 +1022,7 @@ MuseScore {
             setPattern(i, undefined);
         }
 
-		// roots, if defined in the workout
+        // roots, if defined in the workout
         if (workout.roots !== undefined) {
             m = Math.min(_max_roots, workout.roots.length);
 
@@ -1021,12 +1031,12 @@ MuseScore {
             }
 
             for (var i = m; i < _max_patterns; i++) {
-                        steproots[i] = '';
+                steproots[i] = '';
             }
 
         }
 
-		// options, if defined in the workout
+        // options, if defined in the workout
         if (workout.bypattern !== undefined) {
             chkByPattern.checkState = (workout.bypattern === "true") ? Qt.Checked : Qt.Unchecked;
 
@@ -1037,7 +1047,8 @@ MuseScore {
 
     }
 
-    function saveWorkout(label) {
+    function buildWorkout(label) {
+
         var pp = [];
         for (var i = 0; i < _max_patterns; i++) {
             var p = getPattern(i);
@@ -1048,12 +1059,79 @@ MuseScore {
 
         var workout = new workoutClass(label, pp);
 
+        return workout;
+    }
+
+    /**
+     * @return a conflicting workout in the workouts list. Return null if no conflict identified.
+     */
+    function verifyWorkout(workout, ask) {
+
+        // 1) look for an existing workput with the same name
+        var filtered = workouts.filter(function (w) {
+            return (w.name.localeCompare(workout.name) == 0);
+        });
+        if (filtered.length > 0) {
+            if (ask) {
+                confirmReplaceWorkoutDialog.origworkout = filtered[0];
+                confirmReplaceWorkoutDialog.newworkout = workout;
+                confirmReplaceWorkoutDialog.open();
+            }
+            return filtered[0];
+        }
+        // 2) looking for a workoout with the same patterns
+        filtered = workouts.filter(function (w) {
+            return w.hash == workout.hash;
+        });
+        console.log("workouts <> " + workout.name + ": " + filtered.length);
+
+        if (filtered.length > 0) {
+            if (ask) {
+                confirmReplaceWorkoutDialog.origworkout = filtered[0];
+                confirmReplaceWorkoutDialog.newworkout = workout;
+                confirmReplaceWorkoutDialog.open();
+            }
+            return filtered[0];
+        }
+
+        return null;
+
+    }
+
+    /**
+     * Simply adds that workout on top of the workouts list. No verification of duplicates is performed.
+     */
+    function saveWorkout(workout) {
         workouts.push(workout);
         resetL = !resetL;
         saveLibrary();
     }
 
-    function deleteWorkout(workout) {}
+    /**
+     * Simply adds that workout on top of the workouts list. No verification of duplicates is performed.
+     */
+    function replaceWorkout(oldWorkout, newWorkout) {
+        for (var i = 0; i < workouts.length; i++) {
+			// TODO still buggy
+            if (workouts[i].hash == oldWorkout.hash) {
+                workouts[i] = newWorkout
+				break;
+            }
+        }
+        resetL = !resetL;
+        saveLibrary();
+    }
+
+    function deleteWorkout(workout) {
+        for (var i = 0; i < workouts.length; i++) {
+            if (workouts[i].hash == workout.hash) {
+                workouts.splice(i,1);
+				break;
+            }
+        }
+        resetL = !resetL;
+        saveLibrary();
+    }
 
     function loadLibrary() {
 
@@ -1321,7 +1399,8 @@ MuseScore {
                             ToolTip.text: "Reuse saved pattern"
                             //onClicked: loadPattern(index);
                             onClicked: {
-                                loadWindow.index = index;
+                                loadWindow.state = "pattern"
+                                    loadWindow.index = index;
                                 loadWindow.show();
                             }
                         }
@@ -1448,7 +1527,8 @@ MuseScore {
                 imageHeight: 25
                 imagePadding: (buttonBox.contentItem.height - imageHeight) / 2
                 onClicked: {
-                    applyWorkout(workouts[workouts.length - 1]);
+                    loadWindow.state = "workout";
+                    loadWindow.show();
                 }
 
             }
@@ -1458,7 +1538,7 @@ MuseScore {
                 imageHeight: 25
                 imagePadding: (buttonBox.contentItem.height - imageHeight) / 2
                 onClicked: {
-                    saveWorkout("aaa");
+                    newWorkoutDialog.open();
                 }
 
             }
@@ -1633,119 +1713,228 @@ MuseScore {
 
         property int index: -1
 
-        ColumnLayout {
-
+        property string state: "pattern"
+        Item {
             anchors.fill: parent
-            spacing: 5
-            anchors.margins: 10
 
-            Text {
-                Layout.fillWidth: true
-                verticalAlignment: Text.AlignVCenter
-                horizontalAlignment: Text.AlignLeft
-                text: "Select :"
-                bottomPadding: 5
+            state: loadWindow.state
 
-            }
-
-            Rectangle {
-                Layout.fillHeight: true
-                Layout.fillWidth: true
-
-                border.color: "grey"
-
-                ListView { // Presets
-
-                    id: lstLibrary
-
-                    anchors.fill: parent
-                    anchors.margins: 5
-
-                    model: getPresetsLibrary(resetL) //__library
-                    //delegate: presetComponent
-                    clip: true
-                    focus: true
-
-                    delegate: Text {
-                        readonly property ListView __lv: ListView.view
-                        text: library[model.index].label;
-                        padding: 4
-
-                        MouseArea {
-                            anchors.fill: parent
-                            acceptedButtons: Qt.LeftButton
-
-                            onDoubleClicked: {
-                                setPattern(loadWindow.index, library[model.index]);
-                            }
-
-                            onClicked: {
-                                __lv.currentIndex = index;
-                            }
-                        }
+            states: [
+                State {
+                    name: "pattern";
+                    PropertyChanges {
+                        target: lstLibrary;
+                        model: getPresetsLibrary(resetL)
+                    }
+                    PropertyChanges {
+                        target: btnDelPatt;
+                        ToolTip.text: "Delete the selected pattern from the library"
                     }
 
-                    highlightMoveDuration: 250 // 250 pour changer la sélection
-                    highlightMoveVelocity: 2000 // ou 2000px/sec
-
-
-                    // scrollbar
-                    flickableDirection: Flickable.VerticalFlick
-                    boundsBehavior: Flickable.StopAtBounds
-
-                    highlight: Rectangle {
-                        color: "lightsteelblue"
-                        //width: parent.width
-                        anchors { // throws some errors, but is working fine
-                            left: parent.left
-                            right: parent.right
-                        }
+                },
+                State {
+                    name: "workout";
+                    PropertyChanges {
+                        target: lstLibrary;
+                        model: getWorkoutsLibrary(resetL)
+                    }
+                    PropertyChanges {
+                        target: btnDelPatt;
+                        ToolTip.text: "Delete the selected workout from the library"
                     }
                 }
-            }
+            ]
 
-            RowLayout {
-                Layout.fillWidth: true
-                Layout.columnSpan: 2
+            ColumnLayout {
 
-                ImageButton {
-                    imageSource: "remove.svg"
-                    enabled: lstLibrary.currentIndex >= 0
-                    ToolTip.text: "Delete the selected pattern"
-                    imageHeight: 25
-                    imagePadding: (libButtonBox.contentItem.height - imageHeight) / 2
-                    onClicked: {
-                        confirmRemovePatternDialog.pattern = library[lstLibrary.currentIndex];
-                        confirmRemovePatternDialog.open();
-                    }
+                anchors.fill: parent
+                spacing: 5
+                anchors.margins: 10
 
-                }
-                Item {
+                Text {
                     Layout.fillWidth: true
+                    verticalAlignment: Text.AlignVCenter
+                    horizontalAlignment: Text.AlignLeft
+                    text: "Select :"
+                    bottomPadding: 5
+
                 }
 
-                DialogButtonBox {
-                    //Layout.fillWidth: true
-                    Layout.alignment: Qt.AlignRight
-                    id: libButtonBox
+                Rectangle {
+                    Layout.fillHeight: true
+                    Layout.fillWidth: true
 
-                    background.opacity: 0 // hide default white background
+                    border.color: "grey"
 
-                    standardButtons: DialogButtonBox.Cancel
-                    Button {
-                        text: "Apply"
-                        DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
+                    ListView { // Presets
+
+                        id: lstLibrary
+
+                        anchors.fill: parent
+                        anchors.margins: 5
+
+                        //model: getPresetsLibrary(resetL) //__library
+                        //delegate: presetComponent
+                        clip: true
+                        focus: true
+
+                        delegate: Text {
+                            readonly property ListView __lv: ListView.view
+                            text: lstLibrary.model[model.index].label;
+                            padding: 4
+
+                            MouseArea {
+                                anchors.fill: parent
+                                acceptedButtons: Qt.LeftButton
+
+                                onDoubleClicked: {
+                                    if (loadWindow.state === "pattern") {
+                                        setPattern(loadWindow.index, library[model.index]);
+                                    } else {
+                                        applyWorkout(workouts[model.index]);
+                                    }
+                                }
+
+                                onClicked: {
+                                    __lv.currentIndex = index;
+                                }
+                            }
+                        }
+
+                        highlightMoveDuration: 250 // 250 pour changer la sélection
+                        highlightMoveVelocity: 2000 // ou 2000px/sec
+
+
+                        // scrollbar
+                        flickableDirection: Flickable.VerticalFlick
+                        boundsBehavior: Flickable.StopAtBounds
+
+                        highlight: Rectangle {
+                            color: "lightsteelblue"
+                            //width: parent.width
+                            anchors { // throws some errors, but is working fine
+                                left: parent.left
+                                right: parent.right
+                            }
+                        }
+                    }
+                }
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    Layout.columnSpan: 2
+
+                    ImageButton {
+                        imageSource: "remove.svg"
+                        id: btnDelPatt
+                        enabled: lstLibrary.currentIndex >= 0
+                        imageHeight: 25
+                        imagePadding: (libButtonBox.contentItem.height - imageHeight) / 2
+                        onClicked: {
+                            if (loadWindow.state === "pattern") {
+                                confirmRemovePatternDialog.pattern = library[lstLibrary.currentIndex];
+                                confirmRemovePatternDialog.open();
+                            } else {
+                                confirmRemovePatternDialog.pattern = workouts[lstLibrary.currentIndex];
+                                confirmRemovePatternDialog.open();
+                            }
+                        }
+
+                    }
+                    Item {
+                        Layout.fillWidth: true
                     }
 
-                    onAccepted: {
-                        setPattern(loadWindow.index, library[lstLibrary.currentIndex]);
-                        loadWindow.hide();
-                    }
-                    onRejected: loadWindow.hide()
+                    DialogButtonBox {
+                        //Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignRight
+                        id: libButtonBox
 
+                        background.opacity: 0 // hide default white background
+
+                        standardButtons: DialogButtonBox.Cancel
+                        Button {
+                            text: "Apply"
+                            DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
+                        }
+
+                        onAccepted: {
+                            if (loadWindow.state === "pattern") {
+                                setPattern(loadWindow.index, library[lstLibrary.currentIndex]);
+                            } else {
+                                applyWorkout(workouts[lstLibrary.currentIndex]);
+                            }
+                            loadWindow.hide();
+                        }
+                        onRejected: loadWindow.hide()
+
+                    }
                 }
             }
         }
+    }
+
+    Dialog {
+        id: newWorkoutDialog
+        title: "Save workout..."
+        //modal: true
+        standardButtons: Dialog.Save | Dialog.Cancel
+
+        RowLayout {
+            Label {
+                text: "Save workout as:"
+            }
+
+            TextField {
+                id: txtWorkoutName
+
+                //Layout.preferredHeight: 30
+                text: ""
+                Layout.fillWidth: true
+                placeholderText: "Enter new workout's name"
+                maximumLength: 255
+
+            }
+        }
+
+        onAccepted: {
+            var name = txtWorkoutName.text.trim();
+            console.log("==> " + name);
+            if ("" === name)
+                return;
+            var workout = buildWorkout(name);
+            console.log(workout.label);
+            newWorkoutDialog.close();
+            var conflict = verifyWorkout(workout, true);
+            if (conflict == null) // no conflict
+                saveWorkout(workout);
+        }
+        onRejected: newWorkoutDialog.close();
+
+    }
+
+    MessageDialog {
+        id: confirmReplaceWorkoutDialog
+        title: "Save workout..."
+        icon: StandardIcon.Question
+
+        standardButtons: StandardButton.Save | StandardButton.Cancel
+
+        property var origworkout: {
+            label: "--"
+        }
+        property var newworkout: {
+            label: "--"
+        }
+
+        text: "The following workout:\n" + origworkout.label + "\nwill be renamed into \n" + newworkout.label + "\n\n.Do you want to proceed ?"
+
+        onAccepted: {
+			console.log("REPLACE GO");
+            replaceWorkout(origworkout, newworkout);
+        }
+        onRejected: newWorkoutDialog.close();
+
     }
 
     MessageDialog {
@@ -1753,7 +1942,7 @@ MuseScore {
         icon: StandardIcon.Warning
         standardButtons: StandardButton.Ok
         title: 'Cannot proceed'
-        text: 'At least one pattern and one root note must be defined to create the score/'
+        text: 'At least one pattern and one root note must be defined to create the score.'
     }
 
     MessageDialog {
@@ -1762,9 +1951,16 @@ MuseScore {
         standardButtons: StandardButton.Yes | StandardButton.No
         title: 'Confirm '
         property var pattern: null
-        text: 'Please confirm the deletion of the following pattern : <br/>' + ((pattern == null) ? "--" : pattern.label)
+        text: 'Please confirm the deletion of the following ' +
+        ((loadWindow.state === "pattern") ? "pattern" : "workout") +
+        ' : <br/>' + ((pattern == null) ? "--" : pattern.label)
         onYes: {
-            deletePattern(pattern);
+            confirmRemovePatternDialog.close();
+            if (loadWindow.state === "pattern") {
+                deletePattern(pattern);
+            } else {
+                deleteWorkout(pattern);
+            }
         }
         onNo: confirmRemovePatternDialog.close();
     }
@@ -1778,8 +1974,13 @@ MuseScore {
     }
 
     function getPresetsLibrary(uglyHack) {
-        console.log("Library has " + library.length + " elements");
+        //console.log("Library has " + library.length + " elements");
         return library;
+    }
+
+    function getWorkoutsLibrary(uglyHack) {
+        //console.log("Library has " + library.length + " elements");
+        return workouts;
     }
 
     property var presets: [{
@@ -1825,36 +2026,54 @@ MuseScore {
     }
 
     function patternClass(steps, loopMode, scale) {
-        this.steps = steps;
+        this.steps = (steps !== undefined) ? steps : [];
         this.loopMode = loopMode;
         this.scale = scale;
-        Object.defineProperty(this, "label", {
-            get: function () {
-                var label = "";
-                for (var i = 0; ((i < steps.length) && (steps[i] !== undefined)); i++) {
-                    if (i > 0)
-                        label += "-";
-                    label += _degrees[steps[i]];
-                }
 
-                if ((loopMode !== "--") && (loopMode !== undefined)) {
-                    var m = loopMode;
-                    var filtered = _loops.filter(function (p) {
-                        return (p.id === loopMode);
-                    });
-                    if (filtered.length > 0) {
-                        m = filtered[0].short;
-                    }
-                    label += " / " + m;
-                }
-                if ((scale !== "") && (scale !== undefined)) {
-                    label += " / " + scale;
-                }
-                return label;
-            },
+        // label
+        var label = "";
+        if (steps.length == 0)
+            label += "---";
+        else
+            for (var i = 0; ((i < steps.length) && (steps[i] !== undefined)); i++) {
+                if (i > 0)
+                    label += "-";
+                label += _degrees[steps[i]];
+            }
 
-            enumerable: true
-        });
+        if ((loopMode !== "--") && (loopMode !== undefined)) {
+            var m = loopMode;
+            var filtered = _loops.filter(function (p) {
+                return (p.id === loopMode);
+            });
+            if (filtered.length > 0) {
+                m = filtered[0].short;
+            }
+            label += " / " + m;
+        }
+        if ((scale !== "") && (scale !== undefined)) {
+            label += " / " + scale;
+        }
+
+        this.label = label;
+
+        // hash
+        var hash = 7;
+        for (var i = 0; ((i < steps.length) && (steps[i] !== undefined)); i++) {
+            hash = hash * 31 + steps[i];
+        }
+        if (loopMode !== undefined) {
+            hash = hash * 31 + loopMode.hashCode();
+        } else {
+            hash = hash * 31 + "--".hashCode();
+        }
+        if (scale !== undefined) {
+            hash = hash * 31 + scale.hashCode();
+        } else {
+            hash = hash * 31 + "--".hashCode();
+        }
+
+        this.hash = hash;
 
     }
 
@@ -1865,12 +2084,49 @@ MuseScore {
         patternClass.call(this, raw.steps, raw.loopMode, raw.scale);
     }
 
-    function workoutClass(label, patterns, roots, bypattern, invert) {
-        this.patterns = patterns;
-        this.label = label;
+    function workoutClass(name, patterns, roots, bypattern, invert) {
+        this.patterns = (patterns !== undefined) ? patterns : [];
+        this.name = ((name !== undefined) && (name.trim() !== "")) ? name.trim() : "???";
         this.roots = roots;
         this.bypattern = bypattern;
         this.invert = invert;
+
+        // label
+        var label = this.name;
+
+        if (patterns.length == 1) {
+            label += " (" + patterns[0].label + ")"
+        } else if (patterns.length > 1) {
+            label += " (" + patterns[0].label + ", ...)"
+        }
+
+        this.label = label;
+
+        // hash
+        var hash = 7;
+        for (var i = 0; i < this.patterns.length; i++) {
+            hash = hash * 31 + this.patterns[i].hash;
+        }
+        if (this.roots != undefined) {
+            for (var i = 0; i < this.roots.length; i++) {
+                hash = hash * 31 + this.roots[i].hash;
+            }
+        }
+        if (this.bypattern !== undefined) {
+            hash = hash * 31 + (this.bypattern ? 1 : 2);
+        }
+        if (this.invert !== undefined) {
+            hash = hash * 31 + (this.invert ? 1 : 2);
+        }
+
+        this.hash = hash;
+
+        // makes object immutable
+        Object.freeze(this.patterns);
+        if (this.roots !== undefined)
+            Object.freeze(this.roots);
+        Object.freeze(this);
+
     }
 
     /**
@@ -1884,7 +2140,7 @@ MuseScore {
             pp.push(new patternClassRaw(p[i]));
         }
 
-        workoutClass.call(this, raw.label, pp, raw["roots"], raw["bypattern"], raw["invert"]);
+        workoutClass.call(this, raw.name, pp, raw["roots"], raw["bypattern"], raw["invert"]);
     }
 
     FileIO {
