@@ -1012,7 +1012,7 @@ MuseScore {
 
     function applyWorkout(workout) {
         // patterns
-        var m = Math.min(_max_patterns, workout.patterns.length);
+        var m = (workout!==undefined)?Math.min(_max_patterns, workout.patterns.length):0;
 
         for (var i = 0; i < m; i++) {
             setPattern(i, workout.patterns[i]);
@@ -1023,7 +1023,7 @@ MuseScore {
         }
 
         // roots, if defined in the workout
-        if (workout.roots !== undefined) {
+        if (workout!==undefined && workout.roots !== undefined) {
             m = Math.min(_max_roots, workout.roots.length);
 
             for (var i = 0; i < m; i++) {
@@ -1037,11 +1037,11 @@ MuseScore {
         }
 
         // options, if defined in the workout
-        if (workout.bypattern !== undefined) {
+        if (workout!==undefined && workout.bypattern !== undefined) {
             chkByPattern.checkState = (workout.bypattern === "true") ? Qt.Checked : Qt.Unchecked;
 
         }
-        if (workout.invert !== undefined) {
+        if (workout!==undefined && workout.invert !== undefined) {
             chkInvert.checkState = (workout.invert === "true") ? Qt.Checked : Qt.Unchecked;
         }
 
@@ -1097,6 +1097,10 @@ MuseScore {
         return null;
 
     }
+	
+	function emptyAll() {
+		applyWorkout(undefined);
+	}
 
     /**
      * Simply adds that workout on top of the workouts list. No verification of duplicates is performed.
@@ -1112,10 +1116,12 @@ MuseScore {
      */
     function replaceWorkout(oldWorkout, newWorkout) {
         for (var i = 0; i < workouts.length; i++) {
-			// TODO still buggy
+            // TODO still buggy
+            console.log(workouts[i].name + " (" + workouts[i].hash + ") <> " + oldWorkout.name + " (" + oldWorkout.hash + ")");
             if (workouts[i].hash == oldWorkout.hash) {
-                workouts[i] = newWorkout
-				break;
+                console.log("REPLACING THIS ONE");
+                workouts[i] = newWorkout;
+                break;
             }
         }
         resetL = !resetL;
@@ -1125,8 +1131,8 @@ MuseScore {
     function deleteWorkout(workout) {
         for (var i = 0; i < workouts.length; i++) {
             if (workouts[i].hash == workout.hash) {
-                workouts.splice(i,1);
-				break;
+                workouts.splice(i, 1);
+                break;
             }
         }
         resetL = !resetL;
@@ -1521,27 +1527,6 @@ MuseScore {
             Item {
                 Layout.fillWidth: true
             }
-            ImageButton {
-                imageSource: "upload.svg"
-                ToolTip.text: "Load workout"
-                imageHeight: 25
-                imagePadding: (buttonBox.contentItem.height - imageHeight) / 2
-                onClicked: {
-                    loadWindow.state = "workout";
-                    loadWindow.show();
-                }
-
-            }
-            ImageButton {
-                imageSource: "download.svg"
-                ToolTip.text: "Save workout"
-                imageHeight: 25
-                imagePadding: (buttonBox.contentItem.height - imageHeight) / 2
-                onClicked: {
-                    newWorkoutDialog.open();
-                }
-
-            }
 
         }
 
@@ -1564,6 +1549,35 @@ MuseScore {
                 imageHeight: 25
                 imagePadding: (buttonBox.contentItem.height - imageHeight) / 2
                 onClicked: aboutWindow.show();
+
+            }
+            ImageButton {
+                imageSource: "upload.svg"
+                ToolTip.text: "Load workout"
+                imageHeight: 25
+                imagePadding: (buttonBox.contentItem.height - imageHeight) / 2
+                onClicked: {
+                    loadWindow.state = "workout";
+                    loadWindow.show();
+                }
+
+            }
+            ImageButton {
+                imageSource: "download.svg"
+                ToolTip.text: "Save workout"
+                imageHeight: 25
+                imagePadding: (buttonBox.contentItem.height - imageHeight) / 2
+                onClicked: {
+                    newWorkoutDialog.open();
+                }
+
+            }
+            ImageButton {
+                imageSource: "cancel.svg"
+                ToolTip.text: "Clear the workout"
+                imageHeight: 25
+                imagePadding: (buttonBox.contentItem.height - imageHeight) / 2
+                onClicked: emptyAll();
 
             }
             Item {
@@ -1927,10 +1941,11 @@ MuseScore {
             label: "--"
         }
 
-        text: "The following workout:\n" + origworkout.label + "\nwill be renamed into \n" + newworkout.label + "\n\n.Do you want to proceed ?"
+        text: "The following workout:\n" + origworkout.label +
+        "\nwill be " + ((origworkout.label !== newworkout.label) ? "renamed into" : "redefined as") + ":\n" +
+        newworkout.label + "\n\n.Do you want to proceed ?"
 
         onAccepted: {
-			console.log("REPLACE GO");
             replaceWorkout(origworkout, newworkout);
         }
         onRejected: newWorkoutDialog.close();
@@ -2030,6 +2045,16 @@ MuseScore {
         this.loopMode = loopMode;
         this.scale = scale;
 
+        this.toJSON = function (key) {
+            return {
+                steps: this.steps,
+                loopMode: this.loopMode,
+                scale: this.scale
+            };
+
+        };
+
+        // transient properties
         // label
         var label = "";
         if (steps.length == 0)
@@ -2091,13 +2116,25 @@ MuseScore {
         this.bypattern = bypattern;
         this.invert = invert;
 
+        this.toJSON = function (key) {
+            return {
+                patterns: this.patterns,
+                name: this.name,
+                roots: this.roots,
+                bypattern: this.bypattern,
+                invert: this.invert
+            };
+
+        };
+
+        // transient properties
         // label
         var label = this.name;
 
         if (patterns.length == 1) {
             label += " (" + patterns[0].label + ")"
         } else if (patterns.length > 1) {
-            label += " (" + patterns[0].label + ", ...)"
+            label += " (" + patterns[0].label + ", +"+(patterns.length-1)+" )"
         }
 
         this.label = label;

@@ -1,0 +1,82 @@
+{
+    "patterns": [{
+            "loopMode": "P+",
+            "scale": "",
+            "steps": [0, 4, 7, 10]
+        }
+    ],
+    "workouts": [{
+            "name": "Scale Dom7",
+            "patterns": [{
+                    "loopMode": "S+",
+                    "scale": "Dom7",
+                    "steps": [0, 2, 4]
+                }, {
+                    "loopMode": "S-",
+                    "scale": "Dom7",
+                    "steps": [0, 2, 4]
+                }, {
+                    "loopMode": "S+",
+                    "scale": "Dom7",
+                    "steps": [0, 2, 4, 5]
+                }, {
+                    "loopMode": "S-",
+                    "scale": "Dom7",
+                    "steps": [0, 2, 4, 5]
+                }, {
+                    "loopMode": "S+",
+                    "scale": "Dom7",
+                    "steps": [4, 2, 0]
+                }, {
+                    "loopMode": "S-",
+                    "scale": "Dom7",
+                    "steps": [4, 2, 0]
+                }, {
+                    "loopMode": "S+",
+                    "scale": "Dom7",
+                    "steps": [5, 4, 2, 0]
+                }, {
+                    "loopMode": "S-",
+                    "scale": "Dom7",
+                    "steps": [5, 4, 2, 0]
+                }
+            ]
+        }, {
+            "name": "Scale Min 7",
+            "patterns": [{
+                    "loopMode": "S+",
+                    "scale": "Min7",
+                    "steps": [0, 2, 3]
+                }, {
+                    "loopMode": "S-",
+                    "scale": "Min7",
+                    "steps": [0, 2, 3]
+                }, {
+                    "loopMode": "S+",
+                    "scale": "Min7",
+                    "steps": [0, 2, 3, 5]
+                }, {
+                    "loopMode": "S-",
+                    "scale": "Min7",
+                    "steps": [0, 2, 3, 5]
+                }, {
+                    "loopMode": "S+",
+                    "scale": "Min7",
+                    "steps": [3, 2, 0]
+                }, {
+                    "loopMode": "S-",
+                    "scale": "Min7",
+                    "steps": [3, 2, 0]
+                }, {
+                    "loopMode": "S+",
+                    "scale": "Min7",
+                    "steps": [5, 3, 2, 0]
+                }, {
+                    "loopMode": "S-",
+                    "scale": "Min7",
+                    "steps": [5, 3, 2, 0]
+                }
+            ]
+        }
+    ]
+}
