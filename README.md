@@ -1,9 +1,9 @@
 # Scale Workout Builder plugin for MuseScore 3.x
-*Scale Workout Builder plugin for MuseScore 3.x* is a plugin for MuseScore 3.0 for the creation of exercises and workouts scores for practicing your playing skills and knowledge of scales, improvisation patterns, ...
+*Scale Workout Builder plugin for MuseScore 3.x* is a plugin for MuseScore 3.0 for the creation of exercises and workouts scores for practising your playing skills and knowledge of scales, improvisation patterns, ...
 
 ## Features
 * Define freely up-to 8 patterns of up-to 12 steps each
-* Loop them across the diatonic scale, or by triades
+* Loop them across the diatonic scale, or by triads
 * Repeat the patterns over different roots
 * Export to a MuseScore score
 

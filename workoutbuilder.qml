@@ -11,11 +11,11 @@ import "zparkingb/notehelper.js" as NoteHelper
 import "workoutbuilder"
 
 /**********************
-/* Parking B - MuseScore - Workout builder plugin
-/* v1.1.0
+/* Parking B - MuseScore - Scale Workout builder plugin
+/* v1.0.0
 /* ChangeLog:
-/* 	- 1.0.0: Initial release
-/*  - 1.1.0: Copy/Paste, Library of patterns
+/* 	- 0.0.0: Initial release
+/*  - 1.0.0: Tools and library of patterns and workouts
 /**********************************************/
 MuseScore {
     menuPath: "Plugins.Workout builder"
@@ -87,17 +87,17 @@ MuseScore {
             "id": "P-"
         }, {
             "type": -1,
-            "label": "Repeat at every triade (ascending)",
-            "short": "Triade up",
-            "image": "triadeup.png",
+            "label": "Repeat at every Triad (ascending)",
+            "short": "Triad up",
+            "image": "Triadup.png",
             "shift": 2,
             "id": "S3+"
 
         }, {
             "type": -1,
-            "label": "Repeat at every triade (descending)",
-            "short": "Triade down",
-            "image": "triadedown.png",
+            "label": "Repeat at every Triad (descending)",
+            "short": "Triad down",
+            "image": "Triaddown.png",
             "shift": -2,
             "id": "S3-"
         }, {
@@ -725,7 +725,7 @@ MuseScore {
                 extpattern["subpatterns"].push(p);
             }
         } else if (loopAt.type < 0) {
-            // 2) Scale loopAt mode, we decline the pattern along the scale (up/down, by degree/triade)
+            // 2) Scale loopAt mode, we decline the pattern along the scale (up/down, by degree/Triad)
             var shift = loopAt.shift; //Math.abs(loopAt) * (-1);
             console.log("Looping patterns : scale mode (" + shift + ")");
             if (shift > 0) {
@@ -2009,7 +2009,7 @@ MuseScore {
         new presetClass("seconds", 0, function (r) {
             return r + 2;
         }),
-        new presetClass("quarts", 0, function (r) {
+        new presetClass("fourths", 0, function (r) {
             return r + 5;
         }),
     ]
