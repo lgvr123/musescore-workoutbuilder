@@ -16,6 +16,7 @@ import "workoutbuilder"
 /* ChangeLog:
 /* 	- 0.0.0: Initial release
 /*  - 1.0.0: Tools and library of patterns and workouts
+/*  - 1.0.1:
 /**********************************************/
 MuseScore {
     menuPath: "Plugins.Workout builder"
@@ -469,8 +470,6 @@ MuseScore {
         var score = newScore("Workout", "bass-flute", 1); // transposing instruments (a.o. the saxophone) are buggy (???)
         //var cs=eval("Sid.chordStyle");
         //console.log("CHORD STYLE:" + score.styles.value(cs));
-        var numerator = 4;
-        var denominator = 4;
 
         score.addText("title", "Chordscale workouts");
         //score.style.setValue("chordStyle", "jazz");
@@ -478,14 +477,34 @@ MuseScore {
         score.style.setValue("chordStyle", "std");
         score.style.setValue("chordDescriptionFile", "chords_std.xml");
 
+        var adaptativeMeasure = chkAdaptativeMeasure.checked && chkStrictLayout.checked;
+        var beatsByMeasure;
+
         score.startCmd();
 
         var cursor = score.newCursor();
         cursor.track = 0;
 
         cursor.rewind(0);
+
+        // first measure sign
+        if (adaptativeMeasure) {
+            //beatsByMeasure = pages[0][0].notes.length;
+            // TODO buggy change of sig in the score
+            // workaround : On prend la pattern la plus grande. Tant pois pour les plus courtes. Elles auront
+            beatsByMeasure = -1;
+            for (var i = 0; i < pages.length; i++) {
+                for (var j = 0; j < pages[i].length; j++) {
+                    beatsByMeasure = Math.max(beatsByMeasure,pages[i][j].notes.length);
+                }
+            }
+
+        } else {
+            beatsByMeasure = 4;
+        }
+        console.log("Adapting measure to " + beatsByMeasure + "/4");
         var ts = newElement(Element.TIMESIG);
-        ts.timesig = fraction(numerator, denominator);
+        ts.timesig = fraction(beatsByMeasure, 4);
         cursor.add(ts);
 
         cursor.rewind(0);
@@ -494,6 +513,7 @@ MuseScore {
         var counter = 0;
         var preferredTpcs = NoteHelper.tpcs;
         var prevPage = -1;
+        var prevBeatsByM = beatsByMeasure; ;
 
         for (var i = 0; i < pages.length; i++) {
             var prevRoot = '';
@@ -507,6 +527,13 @@ MuseScore {
                         preferredTpcs = filterTpcs(root, mode);
                     }
 
+                    // TODO buggy change of sig in the score
+                    /*if (adaptativeMeasure) {
+                    beatsByMeasure = pages[i][j].notes.length;
+                    } else {
+                    beatsByMeasure = 4;
+                    }*/
+
                     for (var k = 0; k < pages[i][j].notes.length; k++, counter++) {
                         if (counter > 0) {
                             cursor.rewindToTick(cur_time); // be sure to move to the next rest, as now defined
@@ -517,6 +544,18 @@ MuseScore {
                                 cursor.next();
                             }
                         }
+
+                        // TODO buggy change of sig in the score
+                        /*if (beatsByMeasure != prevBeatsByM) {
+                        console.log("Adapting measure to " + beatsByMeasure + "/4");
+                        var ts = newElement(Element.TIMESIG);
+                        ts.timesig = fraction(beatsByMeasure, 4);
+                        cursor.add(ts);
+                        cursor.rewindToTick(cur_time); // be sure to move to the next rest, as now defined
+                        cursor.next();
+                        prevBeatsByM = beatsByMeasure;
+                        }*/
+
                         cursor.setDuration(1, 4); // quarter
                         var note = cursor.element;
 
@@ -596,20 +635,22 @@ MuseScore {
                     }
 
                     // Fill with rests until end of measure
-                    var fill = pages[i][j].notes.length % 4;
-                    if (fill > 0) {
-                        //fill = 4 - fill;
-                        console.log("Going to fill from :" + fill);
-                        for (var f = fill; f < 4; f++) {
-                            cursor.rewindToTick(cur_time); // rewing to the last note
-                            var success = cursor.next(); // move to the next position
-                            if (success) { // if we haven't reach the end of the part, add a rest, otherwise that's just fine
-                                cursor.setDuration(1, 4); // quarter
-                                cursor.addRest();
-                                if (cursor.segment)
-                                    cur_time = cursor.segment.tick;
-                                else
-                                    cur_time = score.lastSegment.tick
+                    if (chkStrictLayout.checked) {
+                        var fill = pages[i][j].notes.length % beatsByMeasure;
+                        if (fill > 0) {
+                            //fill = 4 - fill;
+                            console.log("Going to fill from :" + fill);
+                            for (var f = fill; f < beatsByMeasure; f++) {
+                                cursor.rewindToTick(cur_time); // rewing to the last note
+                                var success = cursor.next(); // move to the next position
+                                if (success) { // if we haven't reach the end of the part, add a rest, otherwise that's just fine
+                                    cursor.setDuration(1, 4); // quarter
+                                    cursor.addRest();
+                                    if (cursor.segment)
+                                        cur_time = cursor.segment.tick;
+                                    else
+                                        cur_time = score.lastSegment.tick
+                                }
                             }
                         }
                     }
@@ -1012,7 +1053,7 @@ MuseScore {
 
     function applyWorkout(workout) {
         // patterns
-        var m = (workout!==undefined)?Math.min(_max_patterns, workout.patterns.length):0;
+        var m = (workout !== undefined) ? Math.min(_max_patterns, workout.patterns.length) : 0;
 
         for (var i = 0; i < m; i++) {
             setPattern(i, workout.patterns[i]);
@@ -1023,7 +1064,7 @@ MuseScore {
         }
 
         // roots, if defined in the workout
-        if (workout!==undefined && workout.roots !== undefined) {
+        if (workout !== undefined && workout.roots !== undefined) {
             m = Math.min(_max_roots, workout.roots.length);
 
             for (var i = 0; i < m; i++) {
@@ -1037,11 +1078,11 @@ MuseScore {
         }
 
         // options, if defined in the workout
-        if (workout!==undefined && workout.bypattern !== undefined) {
+        if (workout !== undefined && workout.bypattern !== undefined) {
             chkByPattern.checkState = (workout.bypattern === "true") ? Qt.Checked : Qt.Unchecked;
 
         }
-        if (workout!==undefined && workout.invert !== undefined) {
+        if (workout !== undefined && workout.invert !== undefined) {
             chkInvert.checkState = (workout.invert === "true") ? Qt.Checked : Qt.Unchecked;
         }
 
@@ -1097,10 +1138,10 @@ MuseScore {
         return null;
 
     }
-	
-	function emptyAll() {
-		applyWorkout(undefined);
-	}
+
+    function emptyAll() {
+        applyWorkout(undefined);
+    }
 
     /**
      * Simply adds that workout on top of the workouts list. No verification of duplicates is performed.
@@ -1512,12 +1553,39 @@ MuseScore {
                 id: chkByPattern
                 text: "Group workouts by patterns"
                 checked: true
+                            ToolTip.text: "All the patterns will be applied on the first root notes. Then the next root note. And so on.\nAlternatively, the first pattern will be applied for all the root notes. Then the next pattern. And so on."
+                            ToolTip.delay: tooltipShow
+                            ToolTip.timeout: tooltipHide
+                            ToolTip.visible: hovered
             }
             CheckBox {
                 id: chkInvert
                 text: "Invert pattern every two roots"
                 checked: false
                 enabled: chkByPattern.checked
+                            ToolTip.text: "During a pattern over different root notes, every two root notes, the pattern will be apply in the reversed order. Meaning in a descending way for an ascending pattern)."
+                            ToolTip.delay: tooltipShow
+                            ToolTip.timeout: tooltipHide
+                            ToolTip.visible: hovered
+            }
+            CheckBox {
+                id: chkStrictLayout
+                text: "Complete measures with rests"
+                checked: true
+                            ToolTip.text: "Add rests at the end of the pattern to ensure that the next iteration of the pattarn starts at the next measure."
+                            ToolTip.delay: tooltipShow
+                            ToolTip.timeout: tooltipHide
+                            ToolTip.visible: hovered
+            }
+            CheckBox {
+                id: chkAdaptativeMeasure
+                text: "Adapt signature to pattern"
+                checked: true
+                enabled: chkStrictLayout.checked
+                            ToolTip.text: "Adapt the score signatures to ensure that each patterns fits into one measure."
+                            ToolTip.delay: tooltipShow
+                            ToolTip.timeout: tooltipHide
+                            ToolTip.visible: hovered
             }
             /*CheckBox {
             id : chkPageBreak
@@ -2134,7 +2202,7 @@ MuseScore {
         if (patterns.length == 1) {
             label += " (" + patterns[0].label + ")"
         } else if (patterns.length > 1) {
-            label += " (" + patterns[0].label + ", +"+(patterns.length-1)+" )"
+            label += " (" + patterns[0].label + ", +" + (patterns.length - 1) + " )"
         }
 
         this.label = label;
