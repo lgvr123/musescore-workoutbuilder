@@ -16,10 +16,10 @@ import "workoutbuilder"
 /* ChangeLog:
 /* 	- 0.0.0: Initial release
 /*  - 1.0.0: Tools and library of patterns and workouts
-/*  - 1.0.1:
+/*  - 1.0.1: New options for measure manement, order in the workouts list
 /**********************************************/
 MuseScore {
-    menuPath: "Plugins.Workout builder"
+    menuPath: "Plugins."+pluginName
     description: "This plugin builds chordscale workouts based on patterns defined by the user."
     version: "1.1.0"
 
@@ -29,6 +29,8 @@ MuseScore {
     height: 600
 
     id: mainWindow
+	
+	readonly property var pluginName: "Scale Workout Builder" 
 
     readonly property var librarypath: { {
             var f = Qt.resolvedUrl("workoutbuilder/workoutbuilder.library");
@@ -90,7 +92,7 @@ MuseScore {
             "type": -1,
             "label": "Repeat at every Triad (ascending)",
             "short": "Triad up",
-            "image": "Triadup.png",
+            "image": "Triadeup.png",
             "shift": 2,
             "id": "S3+"
 
@@ -98,7 +100,7 @@ MuseScore {
             "type": -1,
             "label": "Repeat at every Triad (descending)",
             "short": "Triad down",
-            "image": "Triaddown.png",
+            "image": "Triadedown.png",
             "shift": -2,
             "id": "S3-"
         }, {
@@ -261,6 +263,9 @@ MuseScore {
     readonly property int tooltipHide: 5000
 
     property var clipboard: undefined
+
+    property var rootSchemeName: undefined
+    property var workoutName: undefined
 
     function printWorkout() {
 
@@ -471,8 +476,23 @@ MuseScore {
         //var cs=eval("Sid.chordStyle");
         //console.log("CHORD STYLE:" + score.styles.value(cs));
 
-        score.addText("title", "Chordscale workouts");
-        //score.style.setValue("chordStyle", "jazz");
+		var title=(workoutName!==undefined)?workoutName:"Scale workout";
+		title+=" - ";
+		if (rootSchemeName!=undefined) {
+			title+=rootSchemeName;
+		} else {
+			var sr=steproots.filter(function(s) {
+				return (s!==undefined) && (s.trim()!=="");
+			});
+			title+=sr.join(", ");
+		}
+
+        score.addText("title", title);
+		/*score.addText("arranger",pluginName+" "+version);
+		score.addText("source","https://github.com/lgvr123/musescore-workoutbuilder");
+		score.addText("url","https://www.parkingb.be/");*/
+		
+        //Setting chordStyle is buggy. It requires those 3 actions.
         score.style.setValue("chordDescriptionFile", "chords_jazz.xml");
         score.style.setValue("chordStyle", "std");
         score.style.setValue("chordDescriptionFile", "chords_std.xml");
@@ -495,7 +515,7 @@ MuseScore {
             beatsByMeasure = -1;
             for (var i = 0; i < pages.length; i++) {
                 for (var j = 0; j < pages[i].length; j++) {
-                    beatsByMeasure = Math.max(beatsByMeasure,pages[i][j].notes.length);
+                    beatsByMeasure = Math.max(beatsByMeasure, pages[i][j].notes.length);
                 }
             }
 
@@ -504,6 +524,7 @@ MuseScore {
         }
         console.log("Adapting measure to " + beatsByMeasure + "/4");
         var ts = newElement(Element.TIMESIG);
+        // TODO buggy: si la mesure < 4 notes => MS transforme la mesure d'origine en 4/4 à 2 mesures en 3/4
         ts.timesig = fraction(beatsByMeasure, 4);
         cursor.add(ts);
 
@@ -1085,6 +1106,8 @@ MuseScore {
         if (workout !== undefined && workout.invert !== undefined) {
             chkInvert.checkState = (workout.invert === "true") ? Qt.Checked : Qt.Unchecked;
         }
+		
+		workoutName=(workout !== undefined)?workout.name:undefined;
 
     }
 
@@ -1150,6 +1173,7 @@ MuseScore {
         workouts.push(workout);
         resetL = !resetL;
         saveLibrary();
+		workoutName=workout.name;
     }
 
     /**
@@ -1214,12 +1238,21 @@ MuseScore {
             var p = new workoutClassRaw(pp);
             workouts.push(p);
         }
-        console.log("Library loaded");
+
+        workouts = workouts.sort(function (a, b) {
+            return a.label.localeCompare(b.label);
+        });
+
+        console.log("Workouts loaded");
 
         resetL = !resetL;
     }
 
     function saveLibrary() {
+
+        workouts = workouts.sort(function (a, b) {
+            return a.label.localeCompare(b.label);
+        });
 
         var lib = {
             patterns: library,
@@ -1468,11 +1501,14 @@ MuseScore {
             //Layout.column : 0
             //Layout.row : 2
             text: "Presets:"
+
         }
 
         ComboBox {
             id: lstPresets
             model: presets
+
+			Layout.preferredWidth: 220
 
             //Layout.column : 1
             //Layout.row : 2
@@ -1506,6 +1542,7 @@ MuseScore {
                 reset = false;
                 reset = true;
 
+                rootSchemeName = __preset.name;
             }
         }
 
@@ -1553,39 +1590,39 @@ MuseScore {
                 id: chkByPattern
                 text: "Group workouts by patterns"
                 checked: true
-                            ToolTip.text: "All the patterns will be applied on the first root notes. Then the next root note. And so on.\nAlternatively, the first pattern will be applied for all the root notes. Then the next pattern. And so on."
-                            ToolTip.delay: tooltipShow
-                            ToolTip.timeout: tooltipHide
-                            ToolTip.visible: hovered
+                ToolTip.text: "All the patterns will be applied on the first root notes. Then the next root note. And so on.\nAlternatively, the first pattern will be applied for all the root notes. Then the next pattern. And so on."
+                ToolTip.delay: tooltipShow
+                ToolTip.timeout: tooltipHide
+                ToolTip.visible: hovered
             }
             CheckBox {
                 id: chkInvert
                 text: "Invert pattern every two roots"
                 checked: false
                 enabled: chkByPattern.checked
-                            ToolTip.text: "During a pattern over different root notes, every two root notes, the pattern will be apply in the reversed order. Meaning in a descending way for an ascending pattern)."
-                            ToolTip.delay: tooltipShow
-                            ToolTip.timeout: tooltipHide
-                            ToolTip.visible: hovered
+                ToolTip.text: "During a pattern over different root notes, every two root notes, the pattern will be apply in the reversed order.\n (Meaning in a descending way for an ascending pattern)."
+                ToolTip.delay: tooltipShow
+                ToolTip.timeout: tooltipHide
+                ToolTip.visible: hovered
             }
             CheckBox {
                 id: chkStrictLayout
                 text: "Complete measures with rests"
                 checked: true
-                            ToolTip.text: "Add rests at the end of the pattern to ensure that the next iteration of the pattarn starts at the next measure."
-                            ToolTip.delay: tooltipShow
-                            ToolTip.timeout: tooltipHide
-                            ToolTip.visible: hovered
+                ToolTip.text: "Add rests at the end of the pattern to ensure that the next iteration of the pattarn starts at the next measure."
+                ToolTip.delay: tooltipShow
+                ToolTip.timeout: tooltipHide
+                ToolTip.visible: hovered
             }
             CheckBox {
                 id: chkAdaptativeMeasure
                 text: "Adapt signature to pattern"
                 checked: true
                 enabled: chkStrictLayout.checked
-                            ToolTip.text: "Adapt the score signatures to ensure that each patterns fits into one measure."
-                            ToolTip.delay: tooltipShow
-                            ToolTip.timeout: tooltipHide
-                            ToolTip.visible: hovered
+                ToolTip.text: "Adapt the score signatures to ensure that each patterns fits into one measure."
+                ToolTip.delay: tooltipShow
+                ToolTip.timeout: tooltipHide
+                ToolTip.visible: hovered
             }
             /*CheckBox {
             id : chkPageBreak
@@ -1711,6 +1748,11 @@ MuseScore {
                 steproots[rootIndex] = model[currentIndex]
                     console.log("Root " + rootIndex + ": " + steproots[rootIndex]);
             }
+
+            onActivated: {
+                // manual change, resetting the rootSchemeName
+                rootSchemeName = undefined;
+            }
         }
     }
 
@@ -1734,7 +1776,7 @@ MuseScore {
                 verticalAlignment: Text.AlignVCenter
                 horizontalAlignment: Text.AlignHCenter
                 font.pointSize: 12
-                text: 'Workout Builder ' + version
+                text: pluginName+" "+version
             }
 
             Text {
@@ -2071,13 +2113,13 @@ MuseScore {
             "root": 0,
             "roots": []
         },
-        new presetClass("chromatic", 0, function (r) {
+        new presetClass("Chromatic progression", 0, function (r) {
             return r + 1;
         }),
-        new presetClass("seconds", 0, function (r) {
+        new presetClass("by Seconds", 0, function (r) {
             return r + 2;
         }),
-        new presetClass("fourths", 0, function (r) {
+        new presetClass("by Fourths", 0, function (r) {
             return r + 5;
         }),
     ]
