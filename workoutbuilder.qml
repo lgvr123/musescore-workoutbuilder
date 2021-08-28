@@ -16,10 +16,10 @@ import "workoutbuilder"
 /* ChangeLog:
 /* 	- 0.0.0: Initial release
 /*  - 1.0.0: Tools and library of patterns and workouts
-/*  - 1.0.1: New options for measure manement, order in the workouts list
+/*  - 1.0.1: New options for measure manement, order in the workouts list, ...
 /**********************************************/
 MuseScore {
-    menuPath: "Plugins."+pluginName
+    menuPath: "Plugins." + pluginName
     description: "This plugin builds chordscale workouts based on patterns defined by the user."
     version: "1.1.0"
 
@@ -29,8 +29,8 @@ MuseScore {
     height: 600
 
     id: mainWindow
-	
-	readonly property var pluginName: "Scale Workout Builder" 
+
+    readonly property var pluginName: "Scale Workout Builder"
 
     readonly property var librarypath: { {
             var f = Qt.resolvedUrl("workoutbuilder/workoutbuilder.library");
@@ -476,22 +476,22 @@ MuseScore {
         //var cs=eval("Sid.chordStyle");
         //console.log("CHORD STYLE:" + score.styles.value(cs));
 
-		var title=(workoutName!==undefined)?workoutName:"Scale workout";
-		title+=" - ";
-		if (rootSchemeName!=undefined) {
-			title+=rootSchemeName;
-		} else {
-			var sr=steproots.filter(function(s) {
-				return (s!==undefined) && (s.trim()!=="");
-			});
-			title+=sr.join(", ");
-		}
+        var title = (workoutName !== undefined) ? workoutName : "Scale workout";
+        title += " - ";
+        if (rootSchemeName != undefined) {
+            title += rootSchemeName;
+        } else {
+            var sr = steproots.filter(function (s) {
+                return (s !== undefined) && (s.trim() !== "");
+            });
+            title += sr.join(", ");
+        }
 
         score.addText("title", title);
-		/*score.addText("arranger",pluginName+" "+version);
-		score.addText("source","https://github.com/lgvr123/musescore-workoutbuilder");
-		score.addText("url","https://www.parkingb.be/");*/
-		
+        /*score.addText("arranger",pluginName+" "+version);
+        score.addText("source","https://github.com/lgvr123/musescore-workoutbuilder");
+        score.addText("url","https://www.parkingb.be/");*/
+
         //Setting chordStyle is buggy. It requires those 3 actions.
         score.style.setValue("chordDescriptionFile", "chords_jazz.xml");
         score.style.setValue("chordStyle", "std");
@@ -509,22 +509,12 @@ MuseScore {
 
         // first measure sign
         if (adaptativeMeasure) {
-            //beatsByMeasure = pages[0][0].notes.length;
-            // TODO buggy change of sig in the score
-            // workaround : On prend la pattern la plus grande. Tant pois pour les plus courtes. Elles auront
-            beatsByMeasure = -1;
-            for (var i = 0; i < pages.length; i++) {
-                for (var j = 0; j < pages[i].length; j++) {
-                    beatsByMeasure = Math.max(beatsByMeasure, pages[i][j].notes.length);
-                }
-            }
-
+            beatsByMeasure = pages[0][0].notes.length;
         } else {
             beatsByMeasure = 4;
         }
         console.log("Adapting measure to " + beatsByMeasure + "/4");
         var ts = newElement(Element.TIMESIG);
-        // TODO buggy: si la mesure < 4 notes => MS transforme la mesure d'origine en 4/4 à 2 mesures en 3/4
         ts.timesig = fraction(beatsByMeasure, 4);
         cursor.add(ts);
 
@@ -548,12 +538,11 @@ MuseScore {
                         preferredTpcs = filterTpcs(root, mode);
                     }
 
-                    // TODO buggy change of sig in the score
-                    /*if (adaptativeMeasure) {
+                    if (adaptativeMeasure) {
                     beatsByMeasure = pages[i][j].notes.length;
                     } else {
                     beatsByMeasure = 4;
-                    }*/
+                    }
 
                     for (var k = 0; k < pages[i][j].notes.length; k++, counter++) {
                         if (counter > 0) {
@@ -565,17 +554,6 @@ MuseScore {
                                 cursor.next();
                             }
                         }
-
-                        // TODO buggy change of sig in the score
-                        /*if (beatsByMeasure != prevBeatsByM) {
-                        console.log("Adapting measure to " + beatsByMeasure + "/4");
-                        var ts = newElement(Element.TIMESIG);
-                        ts.timesig = fraction(beatsByMeasure, 4);
-                        cursor.add(ts);
-                        cursor.rewindToTick(cur_time); // be sure to move to the next rest, as now defined
-                        cursor.next();
-                        prevBeatsByM = beatsByMeasure;
-                        }*/
 
                         cursor.setDuration(1, 4); // quarter
                         var note = cursor.element;
@@ -635,6 +613,18 @@ MuseScore {
 
                             //note.parent.parent.add(csymb); //note->chord->segment
                             cursor.add(csymb); //note->chord->segment
+
+                            // Adding the signature change if needed (must be done **after** a note has been added to the new measure.
+                            if (beatsByMeasure != prevBeatsByM) {
+                                console.log("Adapting measure to " + beatsByMeasure + "/4");
+                                var ts = newElement(Element.TIMESIG);
+                                ts.timesig = fraction(beatsByMeasure, 4);
+                                cursor.add(ts);
+                                //cursor.rewindToTick(cur_time); // be sure to move to the next rest, as now defined
+                                //cursor.next();
+                                prevBeatsByM = beatsByMeasure;
+                            }
+
                         }
 
                         // Adding the pattern description
@@ -1106,8 +1096,8 @@ MuseScore {
         if (workout !== undefined && workout.invert !== undefined) {
             chkInvert.checkState = (workout.invert === "true") ? Qt.Checked : Qt.Unchecked;
         }
-		
-		workoutName=(workout !== undefined)?workout.name:undefined;
+
+        workoutName = (workout !== undefined) ? workout.name : undefined;
 
     }
 
@@ -1173,7 +1163,7 @@ MuseScore {
         workouts.push(workout);
         resetL = !resetL;
         saveLibrary();
-		workoutName=workout.name;
+        workoutName = workout.name;
     }
 
     /**
@@ -1181,7 +1171,6 @@ MuseScore {
      */
     function replaceWorkout(oldWorkout, newWorkout) {
         for (var i = 0; i < workouts.length; i++) {
-            // TODO still buggy
             console.log(workouts[i].name + " (" + workouts[i].hash + ") <> " + oldWorkout.name + " (" + oldWorkout.hash + ")");
             if (workouts[i].hash == oldWorkout.hash) {
                 console.log("REPLACING THIS ONE");
@@ -1508,7 +1497,7 @@ MuseScore {
             id: lstPresets
             model: presets
 
-			Layout.preferredWidth: 220
+            Layout.preferredWidth: 220
 
             //Layout.column : 1
             //Layout.row : 2
@@ -1776,7 +1765,7 @@ MuseScore {
                 verticalAlignment: Text.AlignVCenter
                 horizontalAlignment: Text.AlignHCenter
                 font.pointSize: 12
-                text: pluginName+" "+version
+                text: pluginName + " " + version
             }
 
             Text {
@@ -2119,8 +2108,11 @@ MuseScore {
         new presetClass("by Seconds", 0, function (r) {
             return r + 2;
         }),
-        new presetClass("by Fourths", 0, function (r) {
+        new presetClass("Circle of fourths", 0, function (r) {
             return r + 5;
+        }),
+        new presetClass("Circle of fifths", 0, function (r) {
+            return r + 7;
         }),
     ]
 
