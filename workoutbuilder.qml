@@ -346,12 +346,19 @@ MuseScore {
             return;
         }
 
+        // Extending the patterns with their subpatterns
+        var extpatts = [];
+        for (var p = 0; p < patts.length; p++) {
+            var pp = extendPattern(patts[p]);
+            extpatts.push(pp);
+        }
+
         // Building the notes and their order
         var page = -1;
         if (chkByPattern.checked) {
             // We sort by patterns. By pattern, repeat over each root
-            for (var p = 0; p < patts.length; p++) {
-                var pp = extendPattern(patts[p]);
+            for (var p = 0; p < extpatts.length; p++) {
+                var pp = extpatts[p];
                 var mode = (pp.notes.indexOf(3) > -1) ? "minor" : "major"; // if we have the "m3" the we are in minor mode.
                 //var page = p; //0; //(chkPageBreak.checked) ? p : 0;
                 if ((p == 0) || ((patts.length > 1) && (roots.length > 1))) {
@@ -393,8 +400,16 @@ MuseScore {
                         });
 
                     }
-                    // On ne change pas de "page" entre root sauf si la pattern est "loopée", dans quel cas on change à chaque root.
-                    if ((pp["subpatterns"].length > 1) && ((roots.length == 1) || (r < (roots.length - 1)))) {
+                    // On ne change pas de "page" entre root sauf si
+                    // a) la pattern coutante est "loopée", dans quel cas on change à chaque root (sauf à la dernière).
+                    // b) la pattern suivante est "loopée", dans quel cas on change à chaque root (sauf à la dernière).
+
+                    if (
+                        (
+                            (pp["subpatterns"].length > 1) ||
+                            ((p < (extpatts.length - 1)) && (extpatts[p + 1]["subpatterns"].length > 1) && (r == (roots.length - 1))))
+                         &&
+                        ((roots.length == 1) || (r < (roots.length - 1)))) {
                         console.log("page++ (SP)");
                         page++;
                     } {
@@ -415,10 +430,10 @@ MuseScore {
                     console.log("page++");
                     page++;
                 }
-                for (var p = 0; p < patts.length; p++) {
+                for (var p = 0; p < extpatts.length; p++) {
                     console.log("By R, patterns: " + p + "/" + (patts.length - 1) + "; roots:" + r + "/" + (roots.length - 1) + " => " + page);
 
-                    var pp = extendPattern(patts[p]);
+                    var pp = extpatts[p];
                     var mode = (pp.notes.indexOf(3) > -1) ? "minor" : "major"; // if we have the "m3" the we are in minor mode.
 
 
@@ -444,8 +459,14 @@ MuseScore {
                         });
                     }
 
-                    // On ne change pas de "page" entre pattern sauf si la pattern est "loopée", dans quel cas on change à chaque pattern.
-                    if ((pp["subpatterns"].length > 1) && ((patts.length == 1) || (p < (patts.length - 1)))) {
+                    // On ne change pas de "page" entre pattern sauf si la pattern est "loopée" ou que la suivante est loopée dans quel cas on change à chaque pattern.
+                    if (
+                        //(pp["subpatterns"].length > 1)
+                        (
+                            (pp["subpatterns"].length > 1)
+                             || ((p < (extpatts.length - 1)) && (extpatts[p + 1]["subpatterns"].length > 1)))
+
+                         && ((patts.length == 1) || (p < (patts.length - 1)))) {
                         console.log("page++ (SP)");
                         page++;
                     } else {
@@ -460,21 +481,19 @@ MuseScore {
         }
 
         // Debug
-        for (var i = 0; i < pages.length; i++) {
-            console.log("[" + i + "]" + pages[i]);
-            //if (pages[i]===undefined) continue; // ne devrait plus arriver
-            for (var j = 0; j < pages[i].length; j++) {
-                for (var k = 0; k < pages[i][j].notes.length; k++) {
-                    console.log(i + ") [" + pages[i][j].root + "/" + pages[i][j].mode + "] " + pages[i][j].notes[k]);
-                }
-            }
+        /*for (var i = 0; i < pages.length; i++) {
+        console.log("[" + i + "]" + pages[i]);
+        //if (pages[i]===undefined) continue; // ne devrait plus arriver
+        for (var j = 0; j < pages[i].length; j++) {
+        for (var k = 0; k < pages[i][j].notes.length; k++) {
+        console.log(i + ") [" + pages[i][j].root + "/" + pages[i][j].mode + "] " + pages[i][j].notes[k]);
         }
+        }
+        }*/
 
         // Push all this to the score
         //var score = newScore("Workout", "saxophone", 1);
         var score = newScore("Workout", "bass-flute", 1); // transposing instruments (a.o. the saxophone) are buggy (???)
-        //var cs=eval("Sid.chordStyle");
-        //console.log("CHORD STYLE:" + score.styles.value(cs));
 
         var title = (workoutName !== undefined) ? workoutName : "Scale workout";
         title += " - ";
@@ -487,6 +506,7 @@ MuseScore {
             title += sr.join(", ");
         }
 
+        // Styling
         score.addText("title", title);
         /*score.addText("arranger",pluginName+" "+version);
         score.addText("source","https://github.com/lgvr123/musescore-workoutbuilder");
@@ -496,6 +516,17 @@ MuseScore {
         score.style.setValue("chordDescriptionFile", "chords_jazz.xml");
         score.style.setValue("chordStyle", "std");
         score.style.setValue("chordDescriptionFile", "chords_std.xml");
+
+        score.style.setValue("enableIndentationOnFirstSystem", "false");
+
+        score.style.setValue("showFooter", "true");
+        score.style.setValue("footerFirstPage", "true");
+        score.style.setValue("footerOddEven", "false");
+        score.style.setValue("evenFooterL", "");
+        score.style.setValue("oddFooterC", "Scale Workoout Builder\nhttps://www.parkingb.be/");
+        score.style.setValue("evenFooterR", "");
+
+        // end of styling
 
         var adaptativeMeasure = chkAdaptativeMeasure.checked && chkStrictLayout.checked;
         var beatsByMeasure;
@@ -524,9 +555,34 @@ MuseScore {
         var counter = 0;
         var preferredTpcs = NoteHelper.tpcs;
         var prevPage = -1;
-        var prevBeatsByM = beatsByMeasure; ;
+        var prevBeatsByM = beatsByMeasure;
+        var newLine = false;
 
         for (var i = 0; i < pages.length; i++) {
+
+            if (i > 0) {
+                // New Page ==> double bar + section break;
+                cursor.rewindToTick(cur_time); // rewing to the last note
+
+                // ... add a double line
+                var measure = cursor.measure;
+                if (measure.nextMeasure != null) {
+
+                    addDoubleLineBar(measure, score);
+                } else {
+                    console.log("Changing the bar line is delayed after the next measure is added");
+                }
+
+                // ... add a  linebreak
+                var lbreak = newElement(Element.LAYOUT_BREAK);
+                lbreak.layoutBreakType = 2; //section break
+                cursor.add(lbreak);
+                newLine = true;
+            } else {
+                console.log("NO <BR>");
+
+            }
+
             var prevRoot = '';
             var prevMode = 'xxxxxxxxxxxxxxx';
             var prevChord = 'xxxxxxxxxxxxxxx'
@@ -539,9 +595,9 @@ MuseScore {
                     }
 
                     if (adaptativeMeasure) {
-                    beatsByMeasure = pages[i][j].notes.length;
+                        beatsByMeasure = pages[i][j].notes.length;
                     } else {
-                    beatsByMeasure = 4;
+                        beatsByMeasure = 4;
                     }
 
                     for (var k = 0; k < pages[i][j].notes.length; k++, counter++) {
@@ -551,6 +607,13 @@ MuseScore {
                             if (!success) {
                                 score.appendMeasures(1);
                                 cursor.rewindToTick(cur_time);
+
+                                if (newLine) {
+                                    var measure = cursor.measure;
+                                    console.log("Delayed change of ending bar line");
+                                    addDoubleLineBar(measure, score);
+                                }
+
                                 cursor.next();
                             }
                         }
@@ -614,26 +677,27 @@ MuseScore {
                             //note.parent.parent.add(csymb); //note->chord->segment
                             cursor.add(csymb); //note->chord->segment
 
-                            // Adding the signature change if needed (must be done **after** a note has been added to the new measure.
-                            if (beatsByMeasure != prevBeatsByM) {
-                                console.log("Adapting measure to " + beatsByMeasure + "/4");
-                                var ts = newElement(Element.TIMESIG);
-                                ts.timesig = fraction(beatsByMeasure, 4);
-                                cursor.add(ts);
-                                //cursor.rewindToTick(cur_time); // be sure to move to the next rest, as now defined
-                                //cursor.next();
-                                prevBeatsByM = beatsByMeasure;
-                            }
 
                         }
 
                         // Adding the pattern description
-                        if ((i !== prevPage) || ((k == 0) && (j > 0) && (pages[i][j].representation != pages[i][j - 1].representation))) {
+                        if (((i !== prevPage) || ((k == 0) && (j > 0) && (pages[i][j].representation != pages[i][j - 1].representation))) || newLine) {
                             var ptext = newElement(Element.STAFF_TEXT);
                             var t = "";
                             ptext.text = pages[i][j].representation;
                             cursor.add(ptext);
 
+                        }
+
+                        // Adding the signature change if needed (must be done **after** a note has been added to the new measure.
+                        if ((beatsByMeasure != prevBeatsByM) || newLine) {
+                            console.log("Adapting measure to " + beatsByMeasure + "/4");
+                            var ts = newElement(Element.TIMESIG);
+                            ts.timesig = fraction(beatsByMeasure, 4);
+                            cursor.add(ts);
+                            //cursor.rewindToTick(cur_time); // be sure to move to the next rest, as now defined
+                            //cursor.next();
+                            prevBeatsByM = beatsByMeasure;
                         }
 
                         //debugNote(delta, note);
@@ -642,6 +706,7 @@ MuseScore {
                         prevChord = chord.symb;
                         prevMode = mode;
                         prevPage = i;
+                        newLine = false;
 
                     }
 
@@ -665,18 +730,6 @@ MuseScore {
                             }
                         }
                     }
-                }
-
-                if (i < (pages.length - 1)) {
-                    // if there is another part ("page") after this one, add a  linebreak
-                    console.log("<BR>");
-                    var lbreak = newElement(Element.LAYOUT_BREAK);
-                    lbreak.layoutBreakType = 1;
-                    cursor.rewindToTick(cur_time); // rewing to the last note
-                    cursor.add(lbreak);
-                } else {
-                    console.log("NO <BR>");
-
                 }
 
         }
@@ -916,7 +969,7 @@ MuseScore {
         if (f !== undefined)
             sharp_mode = f;
 
-        console.log(_chords[root].root + " " + mode + " => sharp: " + sharp_mode);
+        //console.log(_chords[root].root + " " + mode + " => sharp: " + sharp_mode);
 
         var accidentals = sharp_mode ? ['NONE', 'SHARP', 'SHARP2'] : ['NONE', 'FLAT', 'FLAT2']
             var preferredTpcs;
@@ -941,6 +994,28 @@ MuseScore {
         }
 
         return preferredTpcs;
+
+    }
+
+    /**
+     * Changes a ending measure bar line to a double one.
+     * !! If the measure is the last one of the score, adding a new measure after will override this change.
+     */
+    function addDoubleLineBar(measure, score) {
+        // The ending line bar for ameasure added by the API is viewable only after the measure addition is enclosed in its own startCmd/endCmd
+        if (score === undefined)
+            score = curScore;
+        score.endCmd();
+        score.startCmd();
+
+        var segment = measure.lastSegment;
+        var bar = segment.elementAt(0);
+        if (bar.type == Element.BAR_LINE) {
+            bar.barlineType = 32;
+            console.log("Last element is a barline (type=" + bar.userName() + ")");
+        } else {
+            console.log("Last element is not a barline (type=" + bar.userName() + ")");
+        }
 
     }
 
