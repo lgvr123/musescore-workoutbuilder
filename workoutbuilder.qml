@@ -61,13 +61,30 @@ MuseScore {
 
     }
 
-    property int _Cpitch: 48
-
     property int _max_patterns: 8
     property int _max_steps: 12
     property int _max_roots: 12
     property var _degrees: ['1', 'b2', '2', 'm3', 'M3', '4', 'b5', '5', 'm6', 'M6', 'm7', 'M7',
         '(8)', 'b9', '9', '#9', 'b11', '11', '#11', '(12)', 'b13', '13', '#13', '(14)']
+
+    property var _instruments: [{
+            "label": "C Instruments (default)",
+            "instrument": "bass-flute",
+            "cpitch": 48,
+            "delta": 0
+        }, {
+            "label": "Bb instruments",
+            "instrument": "saxophone",
+            "cpitch": 48,
+            "delta": -2
+            /*        }, {
+            "label": "Eb instruments",
+            "instrument": "f-alto-horn",
+            "cpitch": 48,
+            "delta": +3
+             */
+        },
+    ]
 
     property var _loops: [{
             "type": 0,
@@ -491,9 +508,11 @@ MuseScore {
         }
         }*/
 
+        var instru = _instruments[lstTransposition.currentIndex];
+		console.log("Instrument is "+instru.label);
+
         // Push all this to the score
-        //var score = newScore("Workout", "saxophone", 1);
-        var score = newScore("Workout", "bass-flute", 1); // transposing instruments (a.o. the saxophone) are buggy (???)
+        var score = newScore("Workout", instru.instrument, 1);
 
         var title = (workoutName !== undefined) ? workoutName : "Scale workout";
         title += " - ";
@@ -508,8 +527,10 @@ MuseScore {
 
         // Styling
         score.addText("title", title);
-        /*score.addText("arranger",pluginName+" "+version);
-        score.addText("source","https://github.com/lgvr123/musescore-workoutbuilder");
+        if (instru.delta != 0) {
+            score.addText("subtitle", instru.label);
+        }
+        /*score.addText("source","https://github.com/lgvr123/musescore-workoutbuilder");
         score.addText("url","https://www.parkingb.be/");*/
 
         //Setting chordStyle is buggy. It requires those 3 actions.
@@ -622,7 +643,7 @@ MuseScore {
                         var note = cursor.element;
 
                         var delta = pages[i][j].notes[k];
-                        var pitch = _Cpitch + delta;
+                        var pitch = instru.cpitch + delta;
                         var tpc = 14; // One default value. The one of the C natural.
 
                         for (var t = 0; t < preferredTpcs.length; t++) {
@@ -1752,6 +1773,34 @@ MuseScore {
             Item {
                 Layout.fillWidth: true
             }
+
+            Label {
+                text: "Transposition:"
+            }
+
+            ComboBox {
+                id: lstTransposition
+                model: _instruments
+
+				currentIndex: 0
+				
+				displayText: _instruments[currentIndex].label
+
+                contentItem: Text {
+                    text: lstTransposition.displayText
+                    verticalAlignment: Qt.AlignVCenter
+                }
+
+                delegate: ItemDelegate { // requiert QuickControls 2.2
+                    contentItem: Text {
+                        text: modelData.label
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                    highlighted: lstTransposition.highlightedIndex === index
+
+                }
+            }
+
             DialogButtonBox {
                 standardButtons: DialogButtonBox.Close
                 id: buttonBox
