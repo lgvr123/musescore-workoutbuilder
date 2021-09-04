@@ -523,7 +523,7 @@ MuseScore {
         score.style.setValue("footerFirstPage", "true");
         score.style.setValue("footerOddEven", "false");
         score.style.setValue("evenFooterL", "");
-        score.style.setValue("oddFooterC", "Scale Workoout Builder\nhttps://www.parkingb.be/");
+        score.style.setValue("oddFooterC", "More scores on https://musescore.com/parkingb\nhttps://www.parkingb.be/");
         score.style.setValue("evenFooterR", "");
 
         // end of styling
