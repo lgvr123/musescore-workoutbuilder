@@ -12,11 +12,11 @@ import "workoutbuilder"
 
 /**********************
 /* Parking B - MuseScore - Scale Workout builder plugin
-/* v1.0.0
+/* v1.1.0
 /* ChangeLog:
 /* 	- 0.0.0: Initial release
 /*  - 1.0.0: Tools and library of patterns and workouts
-/*  - 1.0.1: New options for measure manement, order in the workouts list, ...
+/*  - 1.1.0: Transposing instruments, New options for measure management, order in the workouts list, ...
 /**********************************************/
 MuseScore {
     menuPath: "Plugins." + pluginName
@@ -69,20 +69,36 @@ MuseScore {
 
     property var _instruments: [{
             "label": "C Instruments (default)",
-            "instrument": "bass-flute",
-            "cpitch": 48,
-            "delta": 0
+            "instrument": "flute",
+            "cpitch": 60,
         }, {
-            "label": "Bb instruments",
-            "instrument": "saxophone",
+            "label": "B♭ instruments",
+            "instrument": "soprano-saxophone",
             "cpitch": 48,
-            "delta": -2
-            /*        }, {
-            "label": "Eb instruments",
-            "instrument": "f-alto-horn",
+        }, {
+            "label": "E♭ instruments",
+            "instrument": "eb-clarinet",
+            "cpitch": 60,
+        }, {
+            "label": "D instruments",
+            "instrument": "d-trumpet",
+            "cpitch": 60,
+        }, {
+            "label": "E instruments",
+            "instrument": "e-trumpet",
+            "cpitch": 60,
+        }, {
+            "label": "F instruments",
+            "instrument": "horn",
             "cpitch": 48,
-            "delta": +3
-             */
+        }, {
+            "label": "G instruments",
+            "instrument": "alto-flute",
+            "cpitch": 48,
+        }, {
+            "label": "A instruments",
+            "instrument": "a-cornet",
+            "cpitch": 48,
         },
     ]
 
@@ -509,7 +525,7 @@ MuseScore {
         }*/
 
         var instru = _instruments[lstTransposition.currentIndex];
-		console.log("Instrument is "+instru.label);
+        console.log("Instrument is " + instru.label);
 
         // Push all this to the score
         var score = newScore("Workout", instru.instrument, 1);
@@ -527,7 +543,7 @@ MuseScore {
 
         // Styling
         score.addText("title", title);
-        if (instru.delta != 0) {
+        if (lstTransposition.currentIndex != 0) {
             score.addText("subtitle", instru.label);
         }
         /*score.addText("source","https://github.com/lgvr123/musescore-workoutbuilder");
@@ -644,20 +660,15 @@ MuseScore {
 
                         var delta = pages[i][j].notes[k];
                         var pitch = instru.cpitch + delta;
-                        var tpc = 14; // One default value. The one of the C natural.
-
-                        for (var t = 0; t < preferredTpcs.length; t++) {
-                            var d = (delta < 0) ? (delta + 12) : delta
-                            if (preferredTpcs[t].pitch == (d % 12)) {
-                                tpc = preferredTpcs[t].tpc;
-                                break;
-                            }
-                        }
+                        var sharp_mode = true;
+                        var f = _chords[root][mode];
+                        if (f !== undefined)
+                            sharp_mode = f;
 
                         var target = {
                             "pitch": pitch,
-                            //"tpc1" : tpc,  // undefined to force the representation
-                            "tpc2": tpc
+                            "concertPitch": false,
+                            "sharp_mode": f
                         };
 
                         //cur_time = note.parent.tick; // getting note's segment's tick
@@ -675,10 +686,6 @@ MuseScore {
                                 csymb.text = rtxt;
                             } else {
                                 var parts = rtxt.split("/");
-                                var sharp_mode = true;
-                                var f = _chords[root][mode];
-                                if (f !== undefined)
-                                    sharp_mode = f;
                                 if (parts[0].includes("#")) {
                                     if (sharp_mode)
                                         csymb.text = parts[0];
@@ -1782,9 +1789,9 @@ MuseScore {
                 id: lstTransposition
                 model: _instruments
 
-				currentIndex: 0
-				
-				displayText: _instruments[currentIndex].label
+                currentIndex: 0
+
+                displayText: _instruments[currentIndex].label
 
                 contentItem: Text {
                     text: lstTransposition.displayText
