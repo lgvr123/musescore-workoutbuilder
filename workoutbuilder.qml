@@ -157,27 +157,27 @@ MuseScore {
 
         "Maj": {
             "symb": "",
-            "scale": [0, 2, 4, 5, 7, 9, 11]
+            "scale": [0, 2, 4, 5, 7, 9, 11, 12]
         },
         "Min": {
             "symb": "-",
-            "scale": [0, 2, 3, 5, 7, 8, 10]
+            "scale": [0, 2, 3, 5, 7, 8, 10, 12]
         },
         "Maj7": {
             "symb": "t7",
-            "scale": [0, 2, 4, 5, 7, 9, 11]
+            "scale": [0, 2, 4, 5, 7, 9, 11, 12]
         },
         "Dom7": {
             "symb": "7",
-            "scale": [0, 2, 4, 5, 7, 9, 10]
+            "scale": [0, 2, 4, 5, 7, 9, 10, 12]
         },
         "Min7": {
             "symb": "-7",
-            "scale": [0, 2, 3, 5, 7, 8, 10]
+            "scale": [0, 2, 3, 5, 7, 8, 10, 12]
         },
         "Bepop": {
             "symb": "-7",
-            "scale": [0, 2, 4, 5, 7, 9, 10, 11]
+            "scale": [0, 2, 4, 5, 7, 9, 10, 11, 12]
         },
     }
 
@@ -190,10 +190,10 @@ MuseScore {
 
     property var _chords: [{
             "root": 'C',
-            "major": false, // we consider C as a flat scale, sothat a m7 is displayed as Bb instead of A#
+            "major": false, // we consider C as a flat scale, sothat a m7 is displayed as B♭ instead of A♯
             "minor": false
         }, {
-            "root": 'Db/C#',
+            "root": 'D♭/C♯',
             "major": false,
             "minor": true
         }, {
@@ -201,7 +201,7 @@ MuseScore {
             "major": true,
             "minor": false
         }, {
-            "root": 'Eb/D#',
+            "root": 'E♭/D♯',
             "major": false,
             "minor": true
         }, {
@@ -213,7 +213,7 @@ MuseScore {
             "major": false,
             "minor": false
         }, {
-            "root": 'F#/Gb',
+            "root": 'F♯/G♭',
             "major": true,
             "minor": true
         }, {
@@ -221,7 +221,7 @@ MuseScore {
             "major": true,
             "minor": false
         }, {
-            "root": 'Ab/G#',
+            "root": 'A♭/G♯',
             "major": false,
             "minor": true
         }, {
@@ -229,7 +229,7 @@ MuseScore {
             "major": true,
             "minor": true
         }, {
-            "root": 'Bb/A#',
+            "root": 'B♭/A♯',
             "major": false,
             "minor": false
         }, {
@@ -861,29 +861,36 @@ MuseScore {
             // 2) Scale loopAt mode, we decline the pattern along the scale (up/down, by degree/Triad)
             var shift = loopAt.shift; //Math.abs(loopAt) * (-1);
             console.log("Looping patterns : scale mode (" + shift + ")");
+            // We clear all the patterns because will be restarting from the last step
+            extpattern["subpatterns"] = [];
+
+            // Building the other ones
+            var counter = 0;
+            var dia = [];
+            var delta = Math.abs(shift);
+            // we compute the degree to have III V VII
+            for (var i = 0; i < scale.length; i += delta) {
+                console.log("Adding " + i + " (" + scale[i] + ")");
+                dia.push(i);
+            }
+
+            // if we have a scale ending on a tonic (I - 12), and our steps have stopped before (ex the next triad after the VII is the II, not the I)
+            // we add it explicitely
+            if ((scale[scale.length - 1] == 12) && (dia[dia.length - 1] < (scale.length - 1))) {
+                dia.push(scale.length - 1); // the repetition must end with the last step of the scale (the one that holds "12")
+            }
             if (shift > 0) {
-                for (var i = shift; i < scale.length; i += shift) {
-                    console.log("Looping patterns : scale mode at " + i);
-                    var shifted = shiftPattern(basesteps, scale, i);
+                // we loop it
+                for (var i = 0; i < dia.length; i++) {
+                    counter++;
+                    console.log("Looping patterns : scale mode at " + dia[i]);
+                    var shifted = shiftPattern(basesteps, scale, dia[i]);
                     extpattern["subpatterns"].push(shifted);
+                    if (counter > 99) // security
+                        break;
                 }
             } else {
-                // We are decresing, so we'll tweak the original pattern one actave up
-                var octaveup = [];
-                for (var i = 0; i < basesteps.length; i++) {
-                    octaveup[i] = basesteps[i] + 12;
-                }
-                extpattern["subpatterns"][0] = octaveup;
 
-                // Building the other ones
-                var counter = 0;
-                var dia = [];
-                shift = Math.abs(shift);
-                // we compute III V VII
-                for (var i = shift; i < scale.length; i += shift) {
-                    console.log("Adding " + i + " (" + scale[i] + ")");
-                    dia.push(i);
-                }
                 // we loop it in reverse
                 for (var i = (dia.length - 1); i >= 0; i--) {
                     counter++;
@@ -941,26 +948,33 @@ MuseScore {
             }
 
             pdia.push(d);
-            //console.log("1)[" + ip + "]" + p + "->" + debugDia(d));
+            console.log("[shift " + step + "] 1)[" + ip + "]" + p + "->" + debugDia(d));
         }
 
         // 2) shift the diatonic pattern by the amount of steps
         for (var ip = 0; ip < pdia.length; ip++) {
             var d = pdia[ip];
             d.degree += step;
-            d.octave += Math.floor(d.degree / scale.length);
-            d.degree = d.degree % scale.length;
+            d.octave += Math.floor(d.degree / 7); // degrees are ranging from 0->6, 7 is 0 at the nexy octave //scale.length);
+            d.degree = d.degree % 7; //scale.length;
             pdia[ip] = d;
-            //console.log("2)[" + ip + "]->" + debugDia(d));
+            console.log("[shift " + step + "] 2)[" + ip + "]->" + debugDia(d));
         }
 
         // 3) Convert back to a chromatic scale
         var pshift = [];
         for (var ip = 0; ip < pdia.length; ip++) {
             var d = pdia[ip];
+            if (d.degree >= scale.length) {
+                // We are beyond the scale, let's propose some value
+                d.semi += (d.degree - scale.length + 1) * 1; // 1 semi-tone by missing degree
+                d.degree = scale.length - 1;
+                if ((scale[d.degree] + d.semi) >= 12)
+                    d.semi = 11;
+            }
             var s = scale[d.degree] + 12 * d.octave + d.semi;
             pshift.push(s);
-            //console.log("3)[" + ip + "]" + debugDia(d) + "->" + s);
+            console.log("[shift " + step + "] 3)[" + ip + "]" + debugDia(d) + "->" + s);
         }
 
         return pshift;
@@ -1863,7 +1877,7 @@ MuseScore {
             model: _ddRoots
             currentIndex: find(steproots[rootIndex], Qt.MatchExactly)
             Layout.preferredHeight: 30
-            implicitWidth: 80
+            implicitWidth: 90
             onCurrentIndexChanged: {
                 steproots[rootIndex] = model[currentIndex]
                     console.log("Root " + rootIndex + ": " + steproots[rootIndex]);
