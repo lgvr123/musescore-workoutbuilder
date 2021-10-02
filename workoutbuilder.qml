@@ -26,7 +26,7 @@ MuseScore {
 
     pluginType: "dialog"
     requiresScore: false
-    width: 1350
+    width: 1375
     height: 700
 
     id: mainWindow
@@ -118,6 +118,13 @@ MuseScore {
             "label": "No repetition",
             "image": "none.png",
             "id": "--"
+        }, {
+            "type": 2,
+            "label": "Reverse pattern",
+            "short": "Reversed",
+            "image": "reverse.png",
+            //"shift": 1,
+            "id": "R"
         }, {
             "type": 1,
             "label": "Cycle pattern",
@@ -365,7 +372,7 @@ MuseScore {
                 "notes": p,
                 "loopAt": mode,
                 "chord": cSymb,
-				"name": idPattName.itemAt(i).text
+                "name": idPattName.itemAt(i).text
             };
             patts.push(pattern);
 
@@ -784,7 +791,7 @@ MuseScore {
         var scale = pattern.chord.scale;
         var loopAt = pattern.loopAt;
 
-        extpattern.representation = (pattern.name && pattern.name!=="")?pattern.name:patternToString(pattern.notes, pattern.loopAt);
+        extpattern.representation = (pattern.name && pattern.name !== "") ? pattern.name : patternToString(pattern.notes, pattern.loopAt);
 
         extpattern["subpatterns"] = [];
 
@@ -798,7 +805,7 @@ MuseScore {
 
         // looping patterns
 
-        if ((loopAt.type > 0) && (Math.abs(loopAt.shift) < basesteps.length) && (loopAt.shift != 0)) {
+        if ((loopAt.type == 1) && (Math.abs(loopAt.shift) < basesteps.length) && (loopAt.shift != 0)) {
             // 1) Regular loopAt mode, where we loop from the current pattern, restarting the pattern (and looping)
             // from the next step of it : A-B-C, B-C-A, C-A-B
             console.log("Looping patterns : regular mode");
@@ -869,8 +876,16 @@ MuseScore {
 
                 extpattern["subpatterns"].push(p);
             }
-        } else if (loopAt.type < 0) {
-            // 2) Scale loopAt mode, we decline the pattern along the scale (up/down, by degree/Triad)
+        } else if (loopAt.type == 2) {
+            // 2) REverse loopAt mode, we simply reverse the pattern
+            console.log("Looping patterns : reverse mode ");
+
+            var reversed = [].concat(basesteps); // clone the basesteps
+            reversed.reverse();
+            extpattern["subpatterns"].push(reversed);
+
+        } else if (loopAt.type == -1) {
+            // 3) Scale loopAt mode, we decline the pattern along the scale (up/down, by degree/Triad)
             var shift = loopAt.shift; //Math.abs(loopAt) * (-1);
             console.log("Looping patterns : scale mode (" + shift + ")");
             // We clear all the patterns because will be restarting from the last step
@@ -1121,10 +1136,10 @@ MuseScore {
         mode = _loops[mode].id;
 
         var scale = idChordType.itemAt(index).editText;
-		
-		var name= idPattName.itemAt(index).text;
 
-        var p = new patternClass(steps, mode, scale,name);
+        var name = idPattName.itemAt(index).text;
+
+        var p = new patternClass(steps, mode, scale, name);
 
         console.log(p.label);
 
@@ -1162,13 +1177,12 @@ MuseScore {
                 }
             }
         }
-		
+
         console.log("pasting mode index " + modeidx);
         idLoopingMode.itemAt(index).currentIndex = modeidx;
 
-		var name=(pattern && pattern.name)?pattern.name:"";
-		idPattName.itemAt(index).text=name;	
-
+        var name = (pattern && pattern.name) ? pattern.name : "";
+        idPattName.itemAt(index).text = name;
 
     }
 
@@ -1629,13 +1643,13 @@ MuseScore {
                         ImageButton {
                             id: btnSetName
                             imageSource: "edittext.svg"
-                            ToolTip.text: "Set pattern's name"+
-							((idPattName.itemAt(index).text!="")?("\n\""+idPattName.itemAt(index).text+"\""):"\n--default--")
-							highlighted: (idPattName.itemAt(index).text!="")
+                            ToolTip.text: "Set pattern's name" +
+                            ((idPattName.itemAt(index).text != "") ? ("\n\"" + idPattName.itemAt(index).text + "\"") : "\n--default--")
+                            highlighted: (idPattName.itemAt(index).text != "")
                             onClicked: {
                                 patternNameInputDialog.index = index;
                                 patternNameInputDialog.open();
-						
+
                             }
                         }
                     }
@@ -2254,7 +2268,7 @@ MuseScore {
 
         onVisibleChanged: {
             if (visible) {
-                txtInputPatternName.text = ((index === -1)) ? "??" :idPattName.itemAt(index).text;
+                txtInputPatternName.text = ((index === -1)) ? "??" : idPattName.itemAt(index).text;
             }
         }
 
@@ -2328,7 +2342,7 @@ MuseScore {
         icon: StandardIcon.Critical
         standardButtons: StandardButton.Ok
         title: 'Invalid libraries'
-        text: "Invalid 'zparkingb/notehelper.js' versions.\nExpecting "+ noteHelperVersion + ".\n" + pluginName + " will stop here."
+        text: "Invalid 'zparkingb/notehelper.js' versions.\nExpecting " + noteHelperVersion + ".\n" + pluginName + " will stop here."
         onAccepted: {
             Qt.quit()
         }
@@ -2424,10 +2438,10 @@ MuseScore {
                     label += "-";
                 label += _degrees[steps[i]];
             }
-			
-		if (name && name!=="") {
-			label+=" ("+name+")";
-		}
+
+        if (name && name !== "") {
+            label += " (" + name + ")";
+        }
 
         if ((loopMode !== "--") && (loopMode !== undefined)) {
             var m = loopMode;
