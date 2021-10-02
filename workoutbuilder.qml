@@ -1628,7 +1628,7 @@ MuseScore {
                         }
                         ImageButton {
                             id: btnSetName
-                            imageSource: "download.svg"
+                            imageSource: "edittext.svg"
                             ToolTip.text: "Set pattern's name"+
 							((idPattName.itemAt(index).text!="")?("\n\""+idPattName.itemAt(index).text+"\""):"\n--default--")
 							highlighted: (idPattName.itemAt(index).text!="")
@@ -2424,6 +2424,10 @@ MuseScore {
                     label += "-";
                 label += _degrees[steps[i]];
             }
+			
+		if (name && name!=="") {
+			label+=" ("+name+")";
+		}
 
         if ((loopMode !== "--") && (loopMode !== undefined)) {
             var m = loopMode;
