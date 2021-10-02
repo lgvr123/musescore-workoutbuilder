@@ -6,6 +6,29 @@
 /*  - 25/7/21: Managing of transposing instruments
 /*	- 5/9/21: v1.0.2 Improved support for transpositing instruments.
 /**********************************************/
+// -----------------------------------------------------------------------
+// --- Vesionning-----------------------------------------
+// -----------------------------------------------------------------------
+
+function checktVersion(expected) {
+	return checkVersion(expected);
+}
+function checkVersion(expected) {
+	var version = "1.0.3";
+
+	var aV = version.split('.').map(function (v) {return parseInt(v);});
+	var aE = (expected && (expected != null)) ? expected.split('.').map(function (v) {return parseInt(v);}) : [99];
+	if (aE.length == 0) aE = [99];
+
+	for (var i = 0; (i < aV.length) && (i < aE.length); i++) {
+		if (!(aV[i] >= aE[i])) return false;
+	}
+
+	return true;
+}
+// -----------------------------------------------------------------------
+// --- Processing-----------------------------------------
+// -----------------------------------------------------------------------
 /**
  * Add some propeprties to the note. Among others, the name of the note, in the format "C4" and "C#4", ...
  * The added properties:
@@ -514,6 +537,11 @@ function tpcClass(tpc, name, accidental) {
             this.accidental = 'NONE';
         }
     }
+
+    this.toString = function () {
+        return this.raw+" "+this.accidental;
+    };
+
     Object.freeze(this);
 
 }

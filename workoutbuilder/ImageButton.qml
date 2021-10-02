@@ -13,7 +13,7 @@ Button {
         implicitWidth: smbtn.width
         implicitHeight: smbtn.height
 
-        color: smbtn.down ? "#C0C0C0" : (smbtn.hovered ? "#D0D0D0" : "transparent" /*"#E0E0E0"*/)
+        color: smbtn.down ? "#C0C0C0" : (smbtn.hovered ? "#D0D0D0" : (smbtn.highlighted?"lightsteelblue":"transparent" /*"#E0E0E0"*/))
         //border.color: "red"
         //border.width: 1
         radius: 4

@@ -17,20 +17,22 @@ import "workoutbuilder"
 /* 	- 0.0.0: Initial release
 /*  - 1.0.0: Tools and library of patterns and workouts
 /*  - 1.1.0: Transposing instruments, New options for measure management, order in the workouts list, ...
+/*  - 1.2.0: Pattern name
 /**********************************************/
 MuseScore {
     menuPath: "Plugins." + pluginName
     description: "This plugin builds chordscale workouts based on patterns defined by the user."
-    version: "1.1.0"
+    version: "1.2.0"
 
     pluginType: "dialog"
     requiresScore: false
     width: 1350
-    height: 600
+    height: 700
 
     id: mainWindow
 
     readonly property var pluginName: "Scale Workout Builder"
+    readonly property var noteHelperVersion: "1.0.3"
 
     readonly property var librarypath: { {
             var f = Qt.resolvedUrl("workoutbuilder/workoutbuilder.library");
@@ -40,6 +42,14 @@ MuseScore {
     }
     onRun: {
 
+        // Versionning
+        if ((typeof(NoteHelper.checkVersion) !== 'function') || !NoteHelper.checkVersion(noteHelperVersion)) {
+            console.log("Invalid zparkingb/notehelper.js versions. Expecting " + noteHelperVersion + ".");
+            invalidLibraryDialog.open();
+            return;
+        }
+
+        // Misc. tweaks
         String.prototype.hashCode = function () {
             var hash = 0;
             for (var i = 0; i < this.length; i++) {
@@ -50,6 +60,7 @@ MuseScore {
             return hash;
         }
 
+        // Processing
         //console.log(Qt.resolvedUrl("MuseJazz.mss"));
         console.log(librarypath);
         console.log(libraryFile.source);
@@ -61,7 +72,7 @@ MuseScore {
 
     }
 
-    property int _max_patterns: 8
+    property int _max_patterns: 10
     property int _max_steps: 12
     property int _max_roots: 12
     property var _degrees: ['1', 'b2', '2', 'm3', 'M3', '4', 'b5', '5', 'm6', 'M6', 'm7', 'M7',
@@ -353,7 +364,8 @@ MuseScore {
             var pattern = {
                 "notes": p,
                 "loopAt": mode,
-                "chord": cSymb
+                "chord": cSymb,
+				"name": idPattName.itemAt(i).text
             };
             patts.push(pattern);
 
@@ -577,7 +589,7 @@ MuseScore {
 
         // first measure sign
         if (adaptativeMeasure) {
-            beatsByMeasure = pages[0][0].notes.length;
+            beatsByMeasure = signatureForPattern(pages[0][0].notes.length);
         } else {
             beatsByMeasure = 4;
         }
@@ -632,7 +644,7 @@ MuseScore {
                     }
 
                     if (adaptativeMeasure) {
-                        beatsByMeasure = pages[i][j].notes.length;
+                        beatsByMeasure = signatureForPattern(pages[i][j].notes.length);
                     } else {
                         beatsByMeasure = 4;
                     }
@@ -679,7 +691,7 @@ MuseScore {
                         // Adding the chord's name
                         if (prevChord !== chord.symb || prevRoot !== root) {
                             var csymb = newElement(Element.HARMONY);
-                            var rtxt = _chords[root].root;
+                            var rtxt = _chords[root].root.replace(/♯/gi, '#').replace(/♭/gi, "b");
 
                             // chord's roots
                             if (!rtxt.includes("/")) {
@@ -772,7 +784,7 @@ MuseScore {
         var scale = pattern.chord.scale;
         var loopAt = pattern.loopAt;
 
-        extpattern.representation = patternToString(pattern.notes, pattern.loopAt);
+        extpattern.representation = (pattern.name && pattern.name!=="")?pattern.name:patternToString(pattern.notes, pattern.loopAt);
 
         extpattern["subpatterns"] = [];
 
@@ -981,6 +993,17 @@ MuseScore {
 
     }
 
+    function signatureForPattern(count) {
+        if ((count % 4) == 0)
+            return 4;
+        else if ((count % 3) == 0)
+            return 3;
+        else if ((count % 5) == 0)
+            return 5;
+        else
+            return count;
+    }
+
     function patternToString(pattern, loopAt) {
         var str = "";
         for (var i = 0; i < pattern.length; i++) {
@@ -1098,8 +1121,10 @@ MuseScore {
         mode = _loops[mode].id;
 
         var scale = idChordType.itemAt(index).editText;
+		
+		var name= idPattName.itemAt(index).text;
 
-        var p = new patternClass(steps, mode, scale);
+        var p = new patternClass(steps, mode, scale,name);
 
         console.log(p.label);
 
@@ -1137,8 +1162,13 @@ MuseScore {
                 }
             }
         }
+		
         console.log("pasting mode index " + modeidx);
         idLoopingMode.itemAt(index).currentIndex = modeidx;
+
+		var name=(pattern && pattern.name)?pattern.name:"";
+		idPattName.itemAt(index).text=name;	
+
 
     }
 
@@ -1585,8 +1615,8 @@ MuseScore {
                             ToolTip.text: "Reuse saved pattern"
                             //onClicked: loadPattern(index);
                             onClicked: {
-                                loadWindow.state = "pattern"
-                                    loadWindow.index = index;
+                                loadWindow.state = "pattern";
+                                loadWindow.index = index;
                                 loadWindow.show();
                             }
                         }
@@ -1596,7 +1626,32 @@ MuseScore {
                             ToolTip.text: "Save for later reuse"
                             onClicked: savePattern(index);
                         }
+                        ImageButton {
+                            id: btnSetName
+                            imageSource: "download.svg"
+                            ToolTip.text: "Set pattern's name"+
+							((idPattName.itemAt(index).text!="")?("\n\""+idPattName.itemAt(index).text+"\""):"\n--default--")
+							highlighted: (idPattName.itemAt(index).text!="")
+                            onClicked: {
+                                patternNameInputDialog.index = index;
+                                patternNameInputDialog.open();
+						
+                            }
+                        }
                     }
+                }
+            }
+
+            Repeater {
+                id: idPattName
+                model: _max_patterns
+
+                Text {
+                    id: txtPN
+                    text: ""
+                    visible: false
+                    Layout.row: index + 1
+                    Layout.column: _max_steps + 5
                 }
             }
 
@@ -2171,6 +2226,50 @@ MuseScore {
 
     }
 
+    Dialog {
+        id: patternNameInputDialog
+        title: "Pattern name..."
+        //modal: true
+        standardButtons: Dialog.Save | Dialog.Cancel
+
+        property var index: -1
+
+        RowLayout {
+            Label {
+                text: "Save workout as:"
+            }
+
+            TextField {
+                id: txtInputPatternName
+
+                //Layout.preferredHeight: 30
+                text: ""
+                Layout.fillWidth: true
+                placeholderText: "Leave blank for default name"
+                maximumLength: 255
+
+            }
+
+        }
+
+        onVisibleChanged: {
+            if (visible) {
+                txtInputPatternName.text = ((index === -1)) ? "??" :idPattName.itemAt(index).text;
+            }
+        }
+
+        onAccepted: {
+            if (index === -1)
+                return;
+            var name = txtInputPatternName.text.trim();
+            console.log("==> " + name);
+            patternNameInputDialog.close();
+            idPattName.itemAt(index).text = name;
+        }
+        onRejected: patternNameInputDialog.close();
+
+    }
+
     MessageDialog {
         id: confirmReplaceWorkoutDialog
         title: "Save workout..."
@@ -2186,7 +2285,7 @@ MuseScore {
         }
 
         text: "The following workout:\n" + origworkout.label +
-        "\nwill be " + ((origworkout.label !== newworkout.label) ? "renamed into" : "redefined as") + ":\n" +
+        "\nwill be " + ((origworkout.hash == newworkout.hash) ? "renamed into" : "redefined as") + ":\n" +
         newworkout.label + "\n\n.Do you want to proceed ?"
 
         onAccepted: {
@@ -2222,6 +2321,17 @@ MuseScore {
             }
         }
         onNo: confirmRemovePatternDialog.close();
+    }
+
+    MessageDialog {
+        id: invalidLibraryDialog
+        icon: StandardIcon.Critical
+        standardButtons: StandardButton.Ok
+        title: 'Invalid libraries'
+        text: "Invalid 'zparkingb/notehelper.js' versions.\nExpecting "+ noteHelperVersion + ".\n" + pluginName + " will stop here."
+        onAccepted: {
+            Qt.quit()
+        }
     }
 
     function getRoots(uglyHack) {
@@ -2287,16 +2397,18 @@ MuseScore {
 
     }
 
-    function patternClass(steps, loopMode, scale) {
+    function patternClass(steps, loopMode, scale, name) {
         this.steps = (steps !== undefined) ? steps : [];
         this.loopMode = loopMode;
         this.scale = scale;
+        this.name = (name && (name != null)) ? name : "";
 
         this.toJSON = function (key) {
             return {
                 steps: this.steps,
                 loopMode: this.loopMode,
-                scale: this.scale
+                scale: this.scale,
+                name: this.name
             };
 
         };
@@ -2353,7 +2465,7 @@ MuseScore {
      * Creation of a pattern from a pattern object containing the *enumerable* fields (ie. the non transient fields)
      */
     function patternClassRaw(raw) {
-        patternClass.call(this, raw.steps, raw.loopMode, raw.scale);
+        patternClass.call(this, raw.steps, raw.loopMode, raw.scale, raw.name);
     }
 
     function workoutClass(name, patterns, roots, bypattern, invert) {
