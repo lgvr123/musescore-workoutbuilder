@@ -11,7 +11,7 @@
 * Export to a MuseScore score
 
 ## Installation
-* Go to the **[Releases panel](/lgvr123/musescore-workoutbuilder/releases)** panel and download the latest release sources file 
+* Go to the **[Releases panel](https://github.com/lgvr123/musescore-workoutbuilder/releases)** panel and download the latest release sources file 
 * Install using the instructions in the MuseScore 3.x Handbook : Copy the QML file and the folders to the local MuseScore Plugin directory.
 * Open MuseScore and navigate to 'Plugins' -> 'Plugin Manager' to enable the plugin. Tick the box against 'Workout Builder' and apply with 'OK'.
 
