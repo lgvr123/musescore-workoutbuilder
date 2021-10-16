@@ -12,12 +12,13 @@ import "workoutbuilder"
 
 /**********************
 /* Parking B - MuseScore - Scale Workout builder plugin
-/* v1.1.0
+/* v1.2.1
 /* ChangeLog:
 /* 	- 0.0.0: Initial release
 /*  - 1.0.0: Tools and library of patterns and workouts
 /*  - 1.1.0: Transposing instruments, New options for measure management, order in the workouts list, ...
 /*  - 1.2.0: Pattern name
+/*  - 1.2.1: Bugfix on cycling mode
 /**********************************************/
 MuseScore {
     menuPath: "Plugins." + pluginName
@@ -796,12 +797,7 @@ MuseScore {
         extpattern["subpatterns"] = [];
 
         // first the original pattern
-        extpattern["subpatterns"].push(basesteps);
 
-        if (loopAt.type == 0) {
-            console.log("Looping patterns : no loop requested");
-            return extpattern;
-        }
 
         // looping patterns
 
@@ -818,56 +814,56 @@ MuseScore {
                 pattdir = 0; // first is equal to last, the pattern is staying flat
 
 
+            var notesteps = [].concat(basesteps); // clone basesteps to not alter the gloable pattern
+
+
             // We'll tweak the original pattern one to have flowing logically among the subpatterns
-            if (pattdir < 0) {
+            /*if (((loopAt.shift > 0) && (pattdir < 0)) || ((loopAt.shift < 0) && (pattdir > 0))) {
                 // En mode decreasing, je monte toute la pattern d'une octave
-                var octaveup = [];
                 for (var i = 0; i < basesteps.length; i++) {
                     basesteps[i] = basesteps[i] + 12;
                 }
-            } else if ((loopAt.shift < 0) && (pattdir > 0)) {
-                // En mode increasing mais reverse, je monte que la 1ère pattern
-                var octaveup = [];
+            }*/
+            if ((pattdir < 0)) {
+                // En mode decreasing, je monte toute la pattern d'une octave
                 for (var i = 0; i < basesteps.length; i++) {
-                    octaveup[i] = basesteps[i] + 12;
+                    basesteps[i] = basesteps[i] + 12;
                 }
-                extpattern["subpatterns"][0] = octaveup;
             }
-
+			
             var e2e = false;
             var e2edir = 0;
+            var notesteps = [].concat(basesteps); // clone basesteps to not alter the gloable pattern
             if ((Math.abs(basesteps[0] - basesteps[basesteps.length - 1]) == 12) || (basesteps[0] == basesteps[basesteps.length - 1])) {
                 //
                 e2e = true;
                 e2edir = (basesteps[basesteps.length - 1] - basesteps[0]) / 12; // -1: C4->C3, 0: C4->C4, 1: C4->C5
-                basesteps = [].concat(basesteps); // clone basesteps to not alter the gloable pattern
-                basesteps.pop(); // Remove the last step
+                notesteps.pop(); // Remove the last step
             }
 
             var debug = 0;
-            var from = (loopAt.shift > 0) ? 0 : basesteps.length; // delta in index of the pattern for the regular loopAt mode
+            var from = (loopAt.shift > 0) ? 0 : (basesteps.length-1); // delta in index of the pattern for the regular loopAt mode
             while (debug < 999) {
                 debug++;
 
                 // Building next start point
-                from += loopAt.shift;
                 console.log("Regular Looping at " + from);
 
                 // Have we reached the end ?
                 if ((loopAt.shift > 0) && (from > 0) && ((from % basesteps.length) == 0))
                     break;
-                else if ((loopAt.shift < 0) && (from == 0))
+                else if ((loopAt.shift < 0) && (from < 0))
                     break;
 
                 var p = [];
-                for (var j = 0; j < basesteps.length; j++) {
-                    var idx = (from + j) % basesteps.length
-                    var octave = Math.floor((from + j) / basesteps.length);
+                for (var j = 0; j < notesteps.length; j++) {
+                    var idx = (from + j) % notesteps.length
+                    var octave = Math.floor((from + j) / notesteps.length);
                     // octave up or down ? Is the pattern going up or going down ?
                     octave *= pattdir;
 
-                    console.log(">should play " + basesteps[idx] + " but I'm playing " + (basesteps[idx] + octave * 12) + " (" + octave + ")");
-                    p.push(basesteps[idx] + octave * 12);
+                    console.log(">should play " + notesteps[idx] + " but I'm playing " + (notesteps[idx] + octave * 12) + " (" + octave + ")");
+                    p.push(notesteps[idx] + octave * 12);
                 }
                 if (e2e) {
                     // We re-add the first note
@@ -875,10 +871,15 @@ MuseScore {
                 }
 
                 extpattern["subpatterns"].push(p);
+
+                from += loopAt.shift;
+
             }
         } else if (loopAt.type == 2) {
             // 2) REverse loopAt mode, we simply reverse the pattern
             console.log("Looping patterns : reverse mode ");
+
+            extpattern["subpatterns"].push(basesteps);
 
             var reversed = [].concat(basesteps); // clone the basesteps
             reversed.reverse();
@@ -928,6 +929,10 @@ MuseScore {
                         break;
                 }
             }
+
+        } else {
+            console.log("Looping patterns : no loop requested");
+            extpattern["subpatterns"].push(basesteps);
 
         }
 
