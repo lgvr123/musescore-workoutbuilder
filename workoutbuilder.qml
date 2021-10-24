@@ -29,7 +29,7 @@ MuseScore {
     pluginType: "dialog"
     requiresScore: false
     width: 1375
-    height: 750
+    height: 800
 
     id: mainWindow
 
@@ -73,6 +73,9 @@ MuseScore {
         //		console.log(rootPath() + "/MuseJazz.mss");
 
     }
+
+    readonly property var _SCALE_MODE: "scale"
+    readonly property var _GRID_MODE: "grid"
 
     property int _max_patterns: 10
     property int _max_steps: 12
@@ -344,12 +347,16 @@ MuseScore {
 
     property var library: []
     property var workouts: []
+    property var phrases: [new phraseClass(""), new phraseClass("Hello", [{
+                    "root": 2,
+                    "type": "7"
+                }
+            ])]
 
     readonly property int tooltipShow: 500
     readonly property int tooltipHide: 5000
 
     property var clipboard: undefined
-    property var gridClipboard: undefined
 
     property var rootSchemeName: undefined
     property var workoutName: undefined
@@ -454,7 +461,7 @@ MuseScore {
             var pp = patts[p];
             // On change de "page" entre chaque pattern
             console.log("page++ (SP)");
-            page=pages.length; // i.e. Go 1 index further (so if the array is empty, the first index will be 0)
+            page = pages.length; // i.e. Go 1 index further (so if the array is empty, the first index will be 0)
 
             for (var r = 0; r < roots.length; r++) {
                 console.log("By P, patterns: " + p + "/" + (patts.length - 1) + "; roots:" + r + "/" + (roots.length - 1) + " => " + page);
@@ -487,7 +494,7 @@ MuseScore {
 
                 // Looping through the "loopAt" subpatterns (keeping them as a whole)
                 for (var s = 0; s < subpatterns.length; s++) {
-					var placeAt=page+(chkByPattern.checked)?0:s;
+                    var placeAt = page + (chkByPattern.checked) ? 0 : s;
 
                     console.log(">> Looking at subpattern " + s);
                     if (pages[placeAt] === undefined)
@@ -1320,11 +1327,7 @@ MuseScore {
         if (scaleMode === undefined)
             scaleMode = (bar.currentIndex == 0);
         console.log("To Clipboard for pattern " + index);
-        if (scaleMode) {
-            clipboard = getPattern(index);
-        } else {
-            gridClipboard = getPattern(index);
-        }
+        clipboard = getPattern(index, scaleMode);
 
     }
 
@@ -1332,16 +1335,13 @@ MuseScore {
         if (scaleMode === undefined)
             scaleMode = (bar.currentIndex == 0);
 
-        if (scaleMode) {
-            console.log("From Clipboard for pattern " + index + "(clipboard is " + ((clipboard !== undefined) ? "defined" : "undefined") + ")");
-            if (clipboard === undefined)
-                return;
+        if (clipboard === undefined)
+            return;
+
+        if (clipboard.type === (scaleMode ? _SCALE_MODE : _GRID_MODE)) {
             setPattern(index, clipboard);
         } else {
-            console.log("From Clipboard for pattern " + index + "(gridClipboard is " + ((gridClipboard !== undefined) ? "defined" : "undefined") + ")");
-            if (gridClipboard === undefined)
-                return;
-            setPattern(index, gridClipboard);
+            console.log("Non matching clipboard. Expected " + (scaleMode ? _SCALE_MODE : _GRID_MODE) + ", while clipboard is: " + clipboard.type);
         }
     }
 
@@ -1381,7 +1381,7 @@ MuseScore {
 
         var name = idPattName.itemAt(index).text;
 
-        var p = new patternClass(steps, mode, scale, name);
+        var p = new patternClass(steps, mode, scale, name, (scaleMode ? _SCALE_MODE : _GRID_MODE));
 
         console.log(p.label);
 
@@ -1393,7 +1393,12 @@ MuseScore {
         if (scaleMode === undefined)
             scaleMode = (bar.currentIndex == 0);
 
-        console.log("Setting pattern " + index + ", mode: " + (scaleMode ? "Scale" : "Grid"));
+        console.log("Setting pattern " + index + ", mode: " + (scaleMode ? _SCALE_MODE : _GRID_MODE));
+
+        if (pattern.type !== (scaleMode ? _SCALE_MODE : _GRID_MODE)) {
+            console.log("!! Cannot setPattern due to non-matching pattern. Expected " + (scaleMode ? _SCALE_MODE : _GRID_MODE) + ", while pattern is: " + pattern.type);
+            return;
+        }
 
         for (var i = 0; i < _max_steps; i++) {
             var ip = index * _max_steps + i;
@@ -1443,7 +1448,7 @@ MuseScore {
         var p = getPattern(index, scaleMode);
         var i = findInLibrary(p);
         if (i < 0) { // pattern not found in library
-            console.log("Pattern " + p.label + " added to the library");
+            console.log("Pattern " + p.label + " added to the library (type " + p.type + ")");
             library.push(p);
             resetL = !resetL;
             saveLibrary();
@@ -1701,285 +1706,279 @@ MuseScore {
             }
         }
 
-        StackLayout {
+        GridLayout { // un small element within the fullWidth/fullHeight where we paint the repeater
+            //anchors.verticalCenter : parent.verticalCenter
+            id: idNoteGrid
+            rows: _max_patterns + 1
+            columns: _max_steps + 2
+            columnSpacing: 0
+            rowSpacing: 0
+
             Layout.columnSpan: 2
             Layout.alignment: Qt.AlignCenter
-            currentIndex: 0 //bar.currentIndex
+            Layout.fillHeight: false
 
-            GridLayout { // un small element within the fullWidth/fullHeight where we paint the repeater
-                //anchors.verticalCenter : parent.verticalCenter
-                id: idNoteGrid
-                rows: _max_patterns + 1
-                columns: _max_steps + 2
-                columnSpacing: 0
-                rowSpacing: 0
+            //Layout.preferredWidth : _max_steps * 20
+            //Layout.preferredHeight : (_max_patterns + 1) * 20
 
-                //Layout.preferredWidth : _max_steps * 20
-                //Layout.preferredHeight : (_max_patterns + 1) * 20
+            Repeater {
+                id: idPatternLabels
+                model: _max_patterns
 
-                Repeater {
-                    id: idPatternLabels
-                    model: _max_patterns
-
-                    Label {
-                        Layout.row: index + 1
-                        Layout.column: 0
-                        Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
-                        Layout.rightMargin: 10
-                        Layout.leftMargin: 2
-                        text: "Pattern " + (index + 1) + ":"
-                    }
+                Label {
+                    Layout.row: index + 1
+                    Layout.column: 0
+                    Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
+                    Layout.rightMargin: 10
+                    Layout.leftMargin: 2
+                    text: "Pattern " + (index + 1) + ":"
                 }
+            }
 
-                Repeater {
-                    id: idNoteLabels
-                    model: _max_steps
+            Repeater {
+                id: idNoteLabels
+                model: _max_steps
 
-                    Label {
-                        Layout.row: 0
-                        Layout.column: index + 1
-                        Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
-                        Layout.rightMargin: 2
-                        Layout.leftMargin: 2
-                        Layout.bottomMargin: 5
-                        text: (index + 1)
-                    }
-                }
-                Repeater {
-                    id: idStepNotes
-                    model: getPatterns(resetP)
-
-                    StackLayout {
-                        width: parent.width
-                        currentIndex: bar.currentIndex
-
-                        property int stepIndex: index % _max_steps
-                        property int patternIndex: Math.floor(index / _max_steps)
-                        Layout.row: 1 + patternIndex
-                        Layout.column: 1 + stepIndex
-
-                        Loader {
-                            id: loaderNotes
-                            Binding {
-                                target: loaderNotes.item
-                                property: "step"
-                                value: patterns[patternIndex * _max_steps + stepIndex]
-                            }
-
-                            sourceComponent: stepComponent
-                        }
-
-                        Loader {
-                            id: loaderGridNotes
-                            Binding {
-                                target: loaderGridNotes.item
-                                property: "step"
-                                value: patterns[patternIndex * _max_steps + stepIndex]
-                            }
-
-                            sourceComponent: gridStepComponent
-                        }
-
-                    }
-                }
                 Label {
                     Layout.row: 0
-                    Layout.column: _max_steps + 2
+                    Layout.column: index + 1
                     Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
                     Layout.rightMargin: 2
                     Layout.leftMargin: 2
                     Layout.bottomMargin: 5
-                    text: "Repeat"
+                    text: (index + 1)
                 }
+            }
+            Repeater {
+                id: idStepNotes
+                model: getPatterns(resetP)
 
-                Repeater {
-                    id: idLoopingMode
-                    model: _max_patterns
+                StackLayout {
+                    width: parent.width
+                    currentIndex: bar.currentIndex
 
-                    ComboBox {
-                        //Layout.fillWidth : true
-                        id: lstLoop
-                        model: _loops
+                    property int stepIndex: index % _max_steps
+                    property int patternIndex: Math.floor(index / _max_steps)
+                    Layout.row: 1 + patternIndex
+                    Layout.column: 1 + stepIndex
 
-                        //clip: true
-                        //focus: true
-                        Layout.row: index + 1
-                        Layout.column: _max_steps + 2
-                        Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
-                        Layout.rightMargin: 2
-                        Layout.preferredHeight: 30
-                        Layout.preferredWidth: 80
-
-                        delegate: ItemDelegate { // requiert QuickControls 2.2
-                            contentItem: Image {
-                                height: 25
-                                width: 25
-                                source: "./workoutbuilder/" + _loops[index].image
-                                fillMode: Image.Pad
-                                verticalAlignment: Text.AlignVCenter
-                                ToolTip.text: _loops[index].label
-                                ToolTip.delay: tooltipShow
-                                ToolTip.timeout: tooltipHide
-                                ToolTip.visible: hovered
-                            }
-                            highlighted: lstLoop.highlightedIndex === index
-
+                    Loader {
+                        id: loaderNotes
+                        Binding {
+                            target: loaderNotes.item
+                            property: "step"
+                            value: patterns[patternIndex * _max_steps + stepIndex]
                         }
 
+                        sourceComponent: stepComponent
+                    }
+
+                    Loader {
+                        id: loaderGridNotes
+                        Binding {
+                            target: loaderGridNotes.item
+                            property: "step"
+                            value: patterns[patternIndex * _max_steps + stepIndex]
+                        }
+
+                        sourceComponent: gridStepComponent
+                    }
+
+                }
+            }
+            Label {
+                Layout.row: 0
+                Layout.column: _max_steps + 2
+                Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
+                Layout.rightMargin: 2
+                Layout.leftMargin: 2
+                Layout.bottomMargin: 5
+                text: "Repeat"
+            }
+
+            Repeater {
+                id: idLoopingMode
+                model: _max_patterns
+
+                ComboBox {
+                    //Layout.fillWidth : true
+                    id: lstLoop
+                    model: _loops
+
+                    //clip: true
+                    //focus: true
+                    Layout.row: index + 1
+                    Layout.column: _max_steps + 2
+                    Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
+                    Layout.rightMargin: 2
+                    Layout.preferredHeight: 30
+                    Layout.preferredWidth: 80
+
+                    delegate: ItemDelegate { // requiert QuickControls 2.2
                         contentItem: Image {
                             height: 25
                             width: 25
+                            source: "./workoutbuilder/" + _loops[index].image
                             fillMode: Image.Pad
-                            source: "./workoutbuilder/" + _loops[lstLoop.currentIndex].image
-
-                            ToolTip.text: _loops[lstLoop.currentIndex].label
+                            verticalAlignment: Text.AlignVCenter
+                            ToolTip.text: _loops[index].label
                             ToolTip.delay: tooltipShow
                             ToolTip.timeout: tooltipHide
                             ToolTip.visible: hovered
-
                         }
+                        highlighted: lstLoop.highlightedIndex === index
+
+                    }
+
+                    contentItem: Image {
+                        height: 25
+                        width: 25
+                        fillMode: Image.Pad
+                        source: "./workoutbuilder/" + _loops[lstLoop.currentIndex].image
+
+                        ToolTip.text: _loops[lstLoop.currentIndex].label
+                        ToolTip.delay: tooltipShow
+                        ToolTip.timeout: tooltipHide
+                        ToolTip.visible: hovered
+
                     }
                 }
+            }
 
-                Label {
-                    Layout.row: 0
+            Label {
+                Layout.row: 0
+                Layout.column: _max_steps + 3
+                Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
+                Layout.rightMargin: 2
+                Layout.leftMargin: 2
+                Layout.bottomMargin: 5
+                text: "Scale"
+            }
+
+            Repeater {
+                id: idChordType
+                model: _max_patterns
+
+                ComboBox {
+                    id: ccCT
+                    model: _ddChordTypes
+                    editable: true
+                    Layout.row: index + 1
                     Layout.column: _max_steps + 3
-                    Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
+                    Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
                     Layout.rightMargin: 2
                     Layout.leftMargin: 2
-                    Layout.bottomMargin: 5
-                    text: "Scale"
+                    Layout.preferredWidth: 90
+
+                    states: [
+                        State {
+                            when: bar.currentIndex == 0
+                            PropertyChanges {
+                                target: ccCT;
+                                enabled: true
+                            }
+                        },
+                        State {
+                            when: bar.currentIndex != 0;
+                            PropertyChanges {
+                                target: ccCT;
+                                enabled: false
+                            }
+                        }
+                    ]
+
                 }
+            }
 
-                Repeater {
-                    id: idChordType
-                    model: _max_patterns
+            Repeater {
+                id: idTools
+                model: _max_patterns
 
-                    ComboBox {
-                        id: ccCT
-                        model: _ddChordTypes
-                        editable: true
-                        Layout.row: index + 1
-                        Layout.column: _max_steps + 3
-                        Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
-                        Layout.rightMargin: 2
-                        Layout.leftMargin: 2
-                        Layout.preferredWidth: 90
+                Rectangle {
 
-                        states: [
-                            State {
-                                when: bar.currentIndex == 0
-                                PropertyChanges {
-                                    target: ccCT;
-                                    enabled: true
-                                }
-                            },
-                            State {
-                                when: bar.currentIndex != 0;
-                                PropertyChanges {
-                                    target: ccCT;
-                                    enabled: false
-                                }
+                    Layout.row: index + 1
+                    Layout.column: _max_steps + 4
+                    Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
+                    Layout.rightMargin: 0
+                    Layout.leftMargin: 0
+                    width: gridTools.width + 6
+                    height: gridTools.height + 6
+
+                    color: "#E8E8E8"
+                    radius: 4
+
+                    Grid {
+                        id: gridTools
+                        anchors.centerIn: parent
+                        rows: 1
+                        columnSpacing: 2
+                        rowSpacing: 0
+
+                        ImageButton {
+                            id: btnClear
+                            imageSource: "cancel.svg"
+                            ToolTip.text: "Clear"
+                            onClicked: clearPattern(index);
+                        }
+                        ImageButton {
+                            id: btnCopy
+                            imageSource: "copy.svg"
+                            ToolTip.text: "Copy"
+                            onClicked: toClipboard(index);
+                        }
+                        ImageButton {
+                            id: btnPaste
+                            imageSource: "paste.svg"
+                            ToolTip.text: "Paste"
+                            enabled: clipboard !== undefined
+                            onClicked: fromClipboard(index);
+                        }
+                        ImageButton {
+                            id: btnLoad
+                            imageSource: "upload.svg"
+                            ToolTip.text: "Reuse saved pattern"
+                            //onClicked: loadPattern(index);
+                            onClicked: {
+                                loadWindow.state = "pattern";
+                                loadWindow.index = index;
+                                loadWindow.show();
                             }
-                        ]
+                        }
+                        ImageButton {
+                            id: btnSave
+                            imageSource: "download.svg"
+                            ToolTip.text: "Save for later reuse"
+                            onClicked: savePattern(index);
+                        }
+                        ImageButton {
+                            id: btnSetName
+                            imageSource: "edittext.svg"
+                            ToolTip.text: "Set pattern's name" +
+                            ((idPattName.itemAt(index).text != "") ? ("\n\"" + idPattName.itemAt(index).text + "\"") : "\n--default--")
+                            highlighted: (idPattName.itemAt(index).text != "")
+                            onClicked: {
+                                patternNameInputDialog.index = index;
+                                patternNameInputDialog.open();
 
-                    }
-                }
-
-                Repeater {
-                    id: idTools
-                    model: _max_patterns
-
-                    Rectangle {
-
-                        Layout.row: index + 1
-                        Layout.column: _max_steps + 4
-                        Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
-                        Layout.rightMargin: 0
-                        Layout.leftMargin: 0
-                        width: gridTools.width + 6
-                        height: gridTools.height + 6
-
-                        color: "#E8E8E8"
-                        radius: 4
-
-                        Grid {
-                            id: gridTools
-                            anchors.centerIn: parent
-                            rows: 1
-                            columnSpacing: 2
-                            rowSpacing: 0
-
-                            ImageButton {
-                                id: btnClear
-                                imageSource: "cancel.svg"
-                                ToolTip.text: "Clear"
-                                onClicked: clearPattern(index);
-                            }
-                            ImageButton {
-                                id: btnCopy
-                                imageSource: "copy.svg"
-                                ToolTip.text: "Copy"
-                                onClicked: toClipboard(index);
-                            }
-                            ImageButton {
-                                id: btnPaste
-                                imageSource: "paste.svg"
-                                ToolTip.text: "Paste"
-                                enabled: clipboard !== undefined
-                                onClicked: fromClipboard(index);
-                            }
-                            ImageButton {
-                                id: btnLoad
-                                imageSource: "upload.svg"
-                                ToolTip.text: "Reuse saved pattern"
-                                //onClicked: loadPattern(index);
-                                onClicked: {
-                                    loadWindow.state = "pattern";
-                                    loadWindow.index = index;
-                                    loadWindow.show();
-                                }
-                            }
-                            ImageButton {
-                                id: btnSave
-                                imageSource: "download.svg"
-                                ToolTip.text: "Save for later reuse"
-                                onClicked: savePattern(index);
-                            }
-                            ImageButton {
-                                id: btnSetName
-                                imageSource: "edittext.svg"
-                                ToolTip.text: "Set pattern's name" +
-                                ((idPattName.itemAt(index).text != "") ? ("\n\"" + idPattName.itemAt(index).text + "\"") : "\n--default--")
-                                highlighted: (idPattName.itemAt(index).text != "")
-                                onClicked: {
-                                    patternNameInputDialog.index = index;
-                                    patternNameInputDialog.open();
-
-                                }
                             }
                         }
                     }
                 }
+            }
 
-                Repeater {
-                    id: idPattName
-                    model: _max_patterns
+            Repeater {
+                id: idPattName
+                model: _max_patterns
 
-                    Text {
-                        id: txtPN
-                        text: ""
-                        visible: false
-                        Layout.row: index + 1
-                        Layout.column: _max_steps + 5
-                    }
+                Text {
+                    id: txtPN
+                    text: ""
+                    visible: false
+                    Layout.row: index + 1
+                    Layout.column: _max_steps + 5
                 }
-
             }
 
-            Text {
-                text: "Hello"
-            }
         }
 
         // Presets
@@ -1989,82 +1988,108 @@ MuseScore {
             text: "Presets:"
             id: labPresets
 
-            states: [
-                State {
-                    when: bar.currentIndex == 0
-                    PropertyChanges {
-                        target: labPresets;
-                        visible: true
-                    }
-                },
-                State {
-                    when: bar.currentIndex != 0;
-                    PropertyChanges {
-                        target: labPresets;
-                        visible: false
-                    }
-                }
-            ]
-
         }
 
-        ComboBox {
-            id: lstPresets
-            model: presets
-
+        StackLayout {
+            currentIndex: bar.currentIndex
             Layout.preferredWidth: 220
+            Layout.preferredHeight: 30
+            Layout.fillHeight: false
 
-            //Layout.column : 1
-            //Layout.row : 2
+            ComboBox {
+                id: lstPresets
+                model: presets
 
-            contentItem: Text {
-                text: lstPresets.displayText
-                verticalAlignment: Qt.AlignVCenter
-            }
+                implicitHeight: 10
+                Layout.preferredWidth: 220
+                Layout.preferredHeight: 30
+                Layout.fillWidth: false
 
-            delegate: ItemDelegate { // requiert QuickControls 2.2
                 contentItem: Text {
-                    text: modelData.name
-                    verticalAlignment: Text.AlignVCenter
+                    text: lstPresets.displayText
+                    verticalAlignment: Qt.AlignVCenter
+                    padding: 5
                 }
-                highlighted: lstPresets.highlightedIndex === index
+
+                delegate: ItemDelegate { // requiert QuickControls 2.2
+                    contentItem: Text {
+                        text: modelData.name
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                    highlighted: lstPresets.highlightedIndex === index
+
+                }
+                onActivated: {
+                    var __preset = model[currentIndex];
+                    var rr = __preset.roots;
+                    console.log("Preset Changed: " + __preset.name + " -- " + rr);
+                    for (var i = 0; i < _max_roots; i++) {
+                        if (i < rr.length) {
+                            steproots[i] = _roots[rr[i]];
+                        } else {
+                            steproots[i] = '';
+                        }
+
+                        console.log("selecting root " + i + ": " + steproots[i]);
+                    }
+                    reset = false;
+                    reset = true;
+
+                    rootSchemeName = __preset.name;
+                }
 
             }
-            onCurrentIndexChanged: {
-                var __preset = model[currentIndex];
-                var rr = __preset.roots;
-                console.log("Preset Changed: " + __preset.name + " -- " + rr);
-                for (var i = 0; i < _max_roots; i++) {
-                    if (i < rr.length) {
-                        steproots[i] = _roots[rr[i]];
-                    } else {
-                        steproots[i] = '';
-                    }
 
-                    console.log("selecting root " + i + ": " + steproots[i]);
+            ComboBox {
+                id: lstPhrases
+                model: phrases
+
+                Layout.preferredWidth: 220
+                Layout.preferredHeight: 30
+                Layout.fillWidth: false
+
+                currentIndex: 0
+
+                displayText: phrases[currentIndex].label
+
+                contentItem: Text {
+                    text: lstPhrases.displayText
+                    verticalAlignment: Qt.AlignVCenter
+                    padding: 5
                 }
-                reset = false;
-                reset = true;
 
-                rootSchemeName = __preset.name;
+                delegate: ItemDelegate { // requiert QuickControls 2.2
+                    contentItem: Text {
+                        text: modelData.label
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                    highlighted: lstPhrases.highlightedIndex === index
+
+                }
+                onActivated: {
+                    var __phrase = model[currentIndex];
+                    console.log("Phrase Changed: " + __phrase.label);
+                    var rr = __phrase.chords;
+                    console.log("Phrase Changed: " + __phrase.label + " -- " + rr);
+                    for (var i = 0; i < _max_roots; i++) {
+                        if (i < rr.length) {
+                            steproots[i] = _roots[rr[i].root];
+                            idGridChordType.itemAt(i).currentIndex = _ddChordTypes.indexOf(rr[i].type);
+                        } else {
+                            steproots[i] = '';
+                            idGridChordType.itemAt(i).currentIndex = 0;
+                        }
+
+                        console.log("selecting root " + i + ": " + steproots[i]);
+                    }
+                    reset = false;
+                    reset = true;
+
+                    rootSchemeName = __phrase.label;
+                }
+
             }
 
-            states: [
-                State {
-                    when: bar.currentIndex == 0
-                    PropertyChanges {
-                        target: lstPresets;
-                        visible: true
-                    }
-                },
-                State {
-                    when: bar.currentIndex != 0;
-                    PropertyChanges {
-                        target: lstPresets;
-                        visible: false
-                    }
-                }
-            ]
         }
 
         // Roots
@@ -2179,7 +2204,7 @@ MuseScore {
                 id: chkInvert
                 text: "Invert pattern every two roots"
                 checked: false
-                enabled: chkByPattern.checked || bar.currentIndex!=0
+                enabled: chkByPattern.checked || bar.currentIndex != 0
                 ToolTip.text: "During a pattern over different root notes, every two root notes, the pattern will be apply in the reversed order.\n (Meaning in a descending way for an ascending pattern)."
                 ToolTip.delay: tooltipShow
                 ToolTip.timeout: tooltipHide
@@ -2284,6 +2309,7 @@ MuseScore {
                 contentItem: Text {
                     text: lstTransposition.displayText
                     verticalAlignment: Qt.AlignVCenter
+                    padding: 5
                 }
 
                 delegate: ItemDelegate { // requiert QuickControls 2.2
@@ -2834,10 +2860,11 @@ MuseScore {
 
     }
 
-    function patternClass(steps, loopMode, scale, name) {
+    function patternClass(steps, loopMode, scale, name, type) {
         this.steps = (steps !== undefined) ? steps : [];
         this.loopMode = loopMode;
         this.scale = scale;
+        this.type = (type === undefined || (type !== _SCALE_MODE && type !== _GRID_MODE)) ? _SCALE_MODE : type;
         this.name = (name && (name != null)) ? name : "";
 
         this.toJSON = function (key) {
@@ -2845,7 +2872,8 @@ MuseScore {
                 steps: this.steps,
                 loopMode: this.loopMode,
                 scale: this.scale,
-                name: this.name
+                name: this.name,
+                type: this.type
             };
 
         };
@@ -2859,7 +2887,11 @@ MuseScore {
             for (var i = 0; ((i < steps.length) && (steps[i] !== undefined)); i++) {
                 if (i > 0)
                     label += "-";
-                label += _degrees[steps[i]];
+                if (this.type === _SCALE_MODE) {
+                    label += _degrees[steps[i]];
+                } else {
+                    label += _griddegrees[steps[i]];
+                }
             }
 
         if (name && name !== "") {
@@ -2897,6 +2929,7 @@ MuseScore {
         } else {
             hash = hash * 31 + "--".hashCode();
         }
+        hash = hash * 31 + (this.type === _SCALE_MODE ? 1 : 2);
 
         this.hash = hash;
 
@@ -2906,11 +2939,11 @@ MuseScore {
      * Creation of a pattern from a pattern object containing the *enumerable* fields (ie. the non transient fields)
      */
     function patternClassRaw(raw) {
-        patternClass.call(this, raw.steps, raw.loopMode, raw.scale, raw.name);
+        patternClass.call(this, raw.steps, raw.loopMode, raw.scale, raw.name, raw.type);
     }
 
-    function workoutClass(name, type, patterns, roots, bypattern, invert) {
-        this.type = (type === undefined || type !== "scale" || type !== "grid") ? "scale" : type;
+    function workoutClass(name, patterns, roots, bypattern, invert) {
+        this.type = _SCALE_MODE;
         this.patterns = (patterns !== undefined) ? patterns : [];
         this.name = ((name !== undefined) && (name.trim() !== "")) ? name.trim() : "???";
         this.roots = roots;
@@ -2957,7 +2990,67 @@ MuseScore {
         if (this.invert !== undefined) {
             hash = hash * 31 + (this.invert ? 1 : 2);
         }
-        hash = hash * 31 + (this.type === "scale" ? 1 : 2);
+        hash = hash * 31 + (this.type === _SCALE_MODE ? 1 : 2);
+
+        this.hash = hash;
+
+        // makes object immutable
+        Object.freeze(this.patterns);
+        if (this.roots !== undefined)
+            Object.freeze(this.roots);
+        Object.freeze(this);
+
+    }
+
+    function gridWorkoutClass(name, patterns, roots, bypattern, invert) {
+        this.type = _GRID_MODE;
+        this.patterns = (patterns !== undefined) ? patterns : [];
+        this.name = ((name !== undefined) && (name.trim() !== "")) ? name.trim() : "???";
+        this.roots = roots;
+        this.bypattern = bypattern;
+        this.invert = invert;
+
+        this.toJSON = function (key) {
+            return {
+                patterns: this.patterns,
+                name: this.name,
+                type: this.type,
+                roots: this.roots,
+                bypattern: this.bypattern,
+                invert: this.invert
+            };
+
+        };
+
+        // transient properties
+        // label
+        var label = this.name;
+
+        if (patterns.length == 1) {
+            label += " (" + patterns[0].label + ")"
+        } else if (patterns.length > 1) {
+            label += " (" + patterns[0].label + ", +" + (patterns.length - 1) + " )"
+        }
+
+        this.label = label;
+
+        // hash
+        var hash = 7;
+        for (var i = 0; i < this.patterns.length; i++) {
+            hash = hash * 31 + this.patterns[i].hash;
+        }
+        if (this.roots != undefined) {
+            for (var i = 0; i < this.roots.length; i++) {
+                hash = hash * 31 + this.roots[i].hash;
+            }
+        }
+        if (this.bypattern !== undefined) {
+            hash = hash * 31 + (this.bypattern ? 1 : 2);
+        }
+        if (this.invert !== undefined) {
+            hash = hash * 31 + (this.invert ? 1 : 2);
+        }
+        hash = hash * 31 + (this.type === _SCALE_MODE ? 1 : 2);
 
         this.hash = hash;
 
@@ -2973,14 +3066,70 @@ MuseScore {
      * Creation of a complete workout from a workout object containing the *enumerable* fields (ie. the non transient fields)
      */
     function workoutClassRaw(raw) {
+
+        var type = (raw.type === undefined || raw.type !== _SCALE_MODE || raw.type !== _GRID_MODE) ? _SCALE_MODE : raw.type;
+
         var p = raw.patterns;
         var pp = [];
         for (var i = 0; i < p.length; i++) {
-
+            // Keep only the patterns with of the same type (and if no type is set, force it to the workout's type)
+            if (p[i]["type"] === undefined)
+                p[i].type = type;
+            if (p[i].type !== type)
+                continue;
             pp.push(new patternClassRaw(p[i]));
         }
 
-        workoutClass.call(this, raw.name, raw["type"], pp, raw["roots"], raw["bypattern"], raw["invert"]);
+        if (type === _SCALE_MODE)
+            workoutClass.call(this, raw.name, pp, raw["roots"], raw["bypattern"], raw["invert"]);
+        else
+            gridWorkoutClass.call(this, raw.name, pp, raw["chords"], raw["bypattern"], raw["invert"]);
+    }
+
+    /**
+     * chords is an array of {"root": index_in__chords_array, "type": key_in__chordTypes_map}
+     */
+    function phraseClass(name, chords) {
+        this.name = ((name !== undefined) && (name.trim() !== "")) ? name.trim() : "";
+        this.chords = (chords !== undefined) ? chords : [];
+
+        this.toJSON = function (key) {
+            return {
+                name: this.name,
+                chords: this.chords,
+            };
+
+        };
+
+        // transient properties
+        // label
+        if (this.name!=="") {
+            this.label = this.name;
+        } else {
+            var label = "";
+            for (var i = 0; i < Math.min(5,this.chords.length); i++) {
+                if (i > 0)
+                    label += ", ";
+                label += _chords[chords[i].root].root + this.chords[i].type;
+            }
+            if (this.chords.length > 5) {
+                label += ", ..."
+            }
+
+            this.label = label;
+        }
+        // hash
+        var hash = 7;
+        for (var i = 0; i < this.chords.length; i++) {
+            hash = hash * 31 + this.chords[i].root;
+            hash = hash * 31 + this.chords[i].type.hashCode();
+        }
+        this.hash = hash;
+
+        // makes object immutable
+        Object.freeze(this.chords);
+        Object.freeze(this);
+
     }
 
     FileIO {
