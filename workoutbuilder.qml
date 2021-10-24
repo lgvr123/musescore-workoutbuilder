@@ -4,7 +4,7 @@ import MuseScore 3.0
 import QtQuick.Window 2.2
 import QtQuick.Dialogs 1.2
 import QtQuick.Controls.Styles 1.4
-import QtQuick.Layouts 1.1
+import QtQuick.Layouts 1.3
 import FileIO 3.0
 
 import "zparkingb/notehelper.js" as NoteHelper
@@ -19,16 +19,17 @@ import "workoutbuilder"
 /*  - 1.1.0: Transposing instruments, New options for measure management, order in the workouts list, ...
 /*  - 1.2.0: Pattern name
 /*  - 1.2.1: Bugfix on cycling mode
+/*  - 2.0.0: Grid workout
 /**********************************************/
 MuseScore {
     menuPath: "Plugins." + pluginName
     description: "This plugin builds chordscale workouts based on patterns defined by the user."
-    version: "1.2.0"
+    version: "2.0.0 (SNAPSHOT)"
 
     pluginType: "dialog"
     requiresScore: false
     width: 1375
-    height: 700
+    height: 750
 
     id: mainWindow
 
@@ -37,7 +38,7 @@ MuseScore {
 
     readonly property var librarypath: { {
             var f = Qt.resolvedUrl("workoutbuilder/workoutbuilder.library");
-            f = f.slice(8); // remove the "file:///" added by Qt.resolveUrl and not understood by the FileIO API
+            f = f.slice(8); // remove the "file:" added by Qt.resolveUrl and not understood by the FileIO API
             return f;
         }
     }
@@ -78,6 +79,8 @@ MuseScore {
     property int _max_roots: 12
     property var _degrees: ['1', 'b2', '2', 'm3', 'M3', '4', 'b5', '5', 'm6', 'M6', 'm7', 'M7',
         '(8)', 'b9', '9', '#9', 'b11', '11', '#11', '(12)', 'b13', '13', '#13', '(14)']
+
+    property var _griddegrees: ['1', '3', '5', '7', '8', '9', '11'];
 
     property var _instruments: [{
             "label": "C Instruments (default)",
@@ -174,25 +177,40 @@ MuseScore {
 
     property var _chordTypes: {
 
-        "Maj": {
+        "M": {
             "symb": "",
-            "scale": [0, 2, 4, 5, 7, 9, 11, 12]
+            "scale": [0, 2, 4, 5, 7, 9, 11, 12],
+            "mode": "major"
         },
-        "Min": {
-            "symb": "-",
-            "scale": [0, 2, 3, 5, 7, 8, 10, 12]
+        "m": {
+            "symb": "m",
+            "scale": [0, 2, 3, 5, 7, 8, 10, 12],
+            "mode": "minor"
         },
-        "Maj7": {
+        "△7": {
             "symb": "t7",
-            "scale": [0, 2, 4, 5, 7, 9, 11, 12]
+            "scale": [0, 2, 4, 5, 7, 9, 11, 12],
+            "mode": "major"
         },
-        "Dom7": {
+        "7": {
             "symb": "7",
-            "scale": [0, 2, 4, 5, 7, 9, 10, 12]
+            "scale": [0, 2, 4, 5, 7, 9, 10, 12],
+            "mode": "major"
         },
-        "Min7": {
-            "symb": "-7",
-            "scale": [0, 2, 3, 5, 7, 8, 10, 12]
+        "m7": {
+            "symb": "m7",
+            "scale": [0, 2, 3, 5, 7, 8, 10, 12],
+            "mode": "minor"
+        },
+        "ø": {
+            "symb": "0",
+            "scale": [0, 2, 3, 5, 6, 8, 10, 12],
+            "mode": "minor"
+        },
+        "dim": {
+            "symb": "o",
+            "scale": [0, 1, 3, 4, 6, 7, 9, 12],
+            "mode": "minor"
         },
         "Bepop": {
             "symb": "-7",
@@ -201,8 +219,18 @@ MuseScore {
     }
 
     property var _ddChordTypes: { {
-            var dd = [''];
-            dd = dd.concat(Object.keys(_chordTypes));
+            var keys = Object.keys(_chordTypes);
+            // keep this order
+            var dd = ['M', 'm', '△7', '7', 'm7', 'ø', 'dim', 'extra'];
+            dd = dd.filter(function (s) {
+                return keys.indexOf(s) > -1;
+            });
+            // and the new ones, one could have forgotten in the previous list
+            keys = keys.filter(function (s) {
+                return dd.indexOf(s) == -1;
+            });
+            dd = [''].concat(dd).concat(keys);
+            //dd = [' '].concat(dd);
             return dd;
         }
     }
@@ -281,6 +309,13 @@ MuseScore {
         }
     }
 
+    property var _ddGridNotes: { {
+            var dd = [''];
+            dd = dd.concat(_griddegrees);
+            return dd;
+        }
+    }
+
     property var patterns: { {
 
             var sn = [];
@@ -288,9 +323,8 @@ MuseScore {
             for (var i = 0; i < _max_patterns; i++) {
                 for (var j = 0; j < _max_steps; j++) {
                     var _sn = {
-                        "pattern": i,
-                        "step": j,
-                        "note": '',
+                        "note": '', // scale mode
+                        "degree": '', // grid mode
                     };
                     sn.push(_sn);
                 }
@@ -315,11 +349,185 @@ MuseScore {
     readonly property int tooltipHide: 5000
 
     property var clipboard: undefined
+    property var gridClipboard: undefined
 
     property var rootSchemeName: undefined
     property var workoutName: undefined
 
     function printWorkout() {
+        var scaleMode = (bar.currentIndex == 0);
+
+        var pages = (scaleMode) ? printWorkout_forScale() : printWorkout_forGrid();
+
+        if (pages.length == 0) {
+            missingStuffDialog.open();
+            return;
+        }
+
+        // Debug
+        for (var i = 0; i < pages.length; i++) {
+            console.log("[" + i + "]" + pages[i]);
+            //if (pages[i]===undefined) continue; // ne devrait plus arriver
+            for (var j = 0; j < pages[i].length; j++) {
+                for (var k = 0; k < pages[i][j].notes.length; k++) {
+                    console.log(i + ") [" + pages[i][j].root + "/" + pages[i][j].mode + "/" + pages[i][j].chord + "] " + k + ": " + pages[i][j].notes[k]);
+                }
+            }
+        }
+
+        printWorkout_pushToScore(pages);
+
+    }
+    function printWorkout_forGrid() {
+        // 1) Collecting the roots
+        var roots = [];
+        for (var i = 0; i < _max_roots; i++) {
+            var txt = steproots[i];
+            // console.log("Next Root: " + txt);
+            if (txt === '' || txt === undefined)
+                continue;
+            var r = _roots.indexOf(txt);
+            // console.log("-- => " + r);
+            if (r == -1)
+                continue;
+
+            var cText = idGridChordType.itemAt(i).currentText; // non-editable
+            if (cText === '') {
+                cText = 'M'; // Major by default
+            }
+
+            roots.push({
+                "root": r,
+                "chord": cText,
+            });
+
+            console.log("Adding " + r + "[" + cText + "]");
+        }
+
+        var patts = [];
+
+        // 2) Collect the patterns and their definition
+        for (var i = 0; i < _max_patterns; i++) {
+            // 1.1) Collecting the basesteps
+            var p = [];
+            for (var j = 0; j < _max_steps; j++) {
+                var sn = patterns[i * _max_steps + j];
+                if (sn.degree !== '') {
+                    var d = _griddegrees.indexOf(sn.degree);
+                    if (d > -1)
+                        p.push(sn.degree); // we keep the degree !!!
+                } else
+                    break;
+            }
+
+            if (p.length == 0) {
+                break;
+            }
+
+            // 1.2) Retrieving loop mode
+            var mode = idLoopingMode.itemAt(i).currentIndex
+                mode = _loops[mode];
+            console.log("looping mode : " + mode.label);
+
+            // Retrieving Chord type
+            // Build final pattern
+            var pattern = {
+                "notes": p,
+                "loopAt": mode,
+                "name": idPattName.itemAt(i).text
+            };
+            patts.push(pattern);
+
+        }
+
+        // Must have at least 1 pattern and 1 root
+        var pages = [];
+        if (patts.length == 0 || roots.length == 0) {
+            return [];
+        }
+
+        var pages = [];
+        var page = -1;
+
+        // We sort by patterns. By pattern, repeat over each root
+        for (var p = 0; p < patts.length; p++) {
+            var pp = patts[p];
+            // On change de "page" entre chaque pattern
+            console.log("page++ (SP)");
+            page=pages.length; // i.e. Go 1 index further (so if the array is empty, the first index will be 0)
+
+            for (var r = 0; r < roots.length; r++) {
+                console.log("By P, patterns: " + p + "/" + (patts.length - 1) + "; roots:" + r + "/" + (roots.length - 1) + " => " + page);
+
+                var root = roots[r].root;
+                var chordname = roots[r].chord;
+                var scale = _chordTypes[chordname].scale;
+                var steps = [];
+                for (var n = 0; n < pp.notes.length; n++) {
+                    var ip = parseInt(pp.notes[n]) - 1; // TODO: This is not clean: using a label "1" and trying to deduce the valid array index
+                    console.log(n + ": " + pp.notes[n] + " --> " + ip + " --> " + scale[ip]);
+                    steps.push(scale[ip]);
+                }
+
+                var pattern = {
+                    "notes": steps,
+                    "loopAt": pp.loopAt,
+                    "chord": _chordTypes[chordname],
+                    "name": pp.name
+                };
+
+                var local = extendPattern(pattern);
+                // tweak the representation
+                local.representation = (pattern.name && pattern.name !== "") ? pattern.name : pp.notes.join("/");
+                var subpatterns = local["subpatterns"];
+
+                //console.log("# subpatterns: "+subpatterns.length);
+                //debugO("Orig",pattern);
+                //debugO("Extended",local);
+
+                // Looping through the "loopAt" subpatterns (keeping them as a whole)
+                for (var s = 0; s < subpatterns.length; s++) {
+					var placeAt=page+(chkByPattern.checked)?0:s;
+
+                    console.log(">> Looking at subpattern " + s);
+                    if (pages[placeAt] === undefined)
+                        pages[placeAt] = [];
+
+                    var basesteps = subpatterns[s];
+
+                    var notes = [];
+
+                    if (!chkInvert.checked || ((r % 2) == 0)) {
+                        console.log("-- => normal");
+                        for (var j = 0; j < basesteps.length; j++) {
+                            console.log(">>> Looking at note " + j + ": " + basesteps[j]);
+                            notes.push(root + basesteps[j]);
+                        }
+                    } else {
+                        console.log("-- => reverse");
+                        for (var j = basesteps.length - 1; j >= 0; j--) {
+                            console.log(">>> Looking at note " + j + ": " + basesteps[j]);
+                            notes.push(root + basesteps[j]);
+                        }
+                    }
+
+                    pages[placeAt].push({
+                        "root": root,
+                        "chord": local.chord,
+                        "mode": local.chord.mode,
+                        "notes": notes,
+                        "representation": local.representation
+                    });
+
+                }
+
+            }
+        }
+
+        return pages;
+
+    }
+    function printWorkout_forScale() {
 
         var patts = [];
 
@@ -352,17 +560,17 @@ MuseScore {
             if (cText === '') {
                 var m3 = (p.indexOf(3) > -1); // if we have the "m3" the we are in minor mode.
                 if (p.indexOf(10) > -1) { //m7
-                    cText = m3 ? "Min7" : "Dom7";
+                    cText = m3 ? "m7" : "7";
                 } else if (p.indexOf(11) > -1) { //M7
-                    cText = m3 ? "Min7" : "Maj7";
+                    cText = m3 ? "m7" : "M7";
                 } else {
-                    cText = m3 ? "Min" : "Maj";
+                    cText = m3 ? "m" : "M";
                 }
 
             }
             var cSymb = _chordTypes[cText];
             if (cSymb === undefined) {
-                cSymb = cText.includes("-") ? _chordTypes['Min'] : _chordTypes['Maj']; // For user-specific chord type, we take a Major scale, or the Min scale of we found a "-"
+                cSymb = cText.includes("-") ? _chordTypes['m'] : _chordTypes['M']; // For user-specific chord type, we take a Major scale, or the Min scale of we found a "-"
                 cSymb.symb = cText;
             }
 
@@ -395,8 +603,7 @@ MuseScore {
         // Must have at least 1 pattern and 1 root
         var pages = [];
         if (patts.length == 0 || roots.length == 0) {
-            missingStuffDialog.open();
-            return;
+            return [];
         }
 
         // Extending the patterns with their subpatterns
@@ -533,16 +740,11 @@ MuseScore {
 
         }
 
-        // Debug
-        /*for (var i = 0; i < pages.length; i++) {
-        console.log("[" + i + "]" + pages[i]);
-        //if (pages[i]===undefined) continue; // ne devrait plus arriver
-        for (var j = 0; j < pages[i].length; j++) {
-        for (var k = 0; k < pages[i][j].notes.length; k++) {
-        console.log(i + ") [" + pages[i][j].root + "/" + pages[i][j].mode + "] " + pages[i][j].notes[k]);
-        }
-        }
-        }*/
+        return pages;
+
+    }
+
+    function printWorkout_pushToScore(pages) {
 
         var instru = _instruments[lstTransposition.currentIndex];
         console.log("Instrument is " + instru.label);
@@ -819,10 +1021,10 @@ MuseScore {
 
             // We'll tweak the original pattern one to have flowing logically among the subpatterns
             /*if (((loopAt.shift > 0) && (pattdir < 0)) || ((loopAt.shift < 0) && (pattdir > 0))) {
-                // En mode decreasing, je monte toute la pattern d'une octave
-                for (var i = 0; i < basesteps.length; i++) {
-                    basesteps[i] = basesteps[i] + 12;
-                }
+            // En mode decreasing, je monte toute la pattern d'une octave
+            for (var i = 0; i < basesteps.length; i++) {
+            basesteps[i] = basesteps[i] + 12;
+            }
             }*/
             if ((pattdir < 0)) {
                 // En mode decreasing, je monte toute la pattern d'une octave
@@ -830,7 +1032,7 @@ MuseScore {
                     basesteps[i] = basesteps[i] + 12;
                 }
             }
-			
+
             var e2e = false;
             var e2edir = 0;
             var notesteps = [].concat(basesteps); // clone basesteps to not alter the gloable pattern
@@ -842,7 +1044,7 @@ MuseScore {
             }
 
             var debug = 0;
-            var from = (loopAt.shift > 0) ? 0 : (basesteps.length-1); // delta in index of the pattern for the regular loopAt mode
+            var from = (loopAt.shift > 0) ? 0 : (basesteps.length - 1); // delta in index of the pattern for the regular loopAt mode
             while (debug < 999) {
                 debug++;
 
@@ -1030,9 +1232,14 @@ MuseScore {
             if (i > 0)
                 str += "/";
             var d = _degrees[pattern[i]];
-            d = d.replace("(", "");
-            d = d.replace(")", "");
-            str += d;
+            if (d !== undefined) {
+                d = d.replace("(", "");
+                d = d.replace(")", "");
+                str += d;
+            } else {
+
+                str += "?";
+            }
         }
 
         if (loopAt.type != 0) {
@@ -1109,31 +1316,61 @@ MuseScore {
         console.log("delta:" + delta + ", pitch:" + n.pitch + ", tpc:" + n.tpc + ", name:" + n.extname.fullname);
     }
 
-    function toClipboard(index) {
+    function toClipboard(index, scaleMode) {
+        if (scaleMode === undefined)
+            scaleMode = (bar.currentIndex == 0);
         console.log("To Clipboard for pattern " + index);
-        clipboard = getPattern(index);
+        if (scaleMode) {
+            clipboard = getPattern(index);
+        } else {
+            gridClipboard = getPattern(index);
+        }
+
     }
 
-    function fromClipboard(index) {
-        console.log("From Clipboard for pattern " + index + "(clipboard is " + ((clipboard !== undefined) ? "defined" : "undefined") + ")");
-        if (clipboard === undefined)
-            return;
-        setPattern(index, clipboard);
+    function fromClipboard(index, scaleMode) {
+        if (scaleMode === undefined)
+            scaleMode = (bar.currentIndex == 0);
+
+        if (scaleMode) {
+            console.log("From Clipboard for pattern " + index + "(clipboard is " + ((clipboard !== undefined) ? "defined" : "undefined") + ")");
+            if (clipboard === undefined)
+                return;
+            setPattern(index, clipboard);
+        } else {
+            console.log("From Clipboard for pattern " + index + "(gridClipboard is " + ((gridClipboard !== undefined) ? "defined" : "undefined") + ")");
+            if (gridClipboard === undefined)
+                return;
+            setPattern(index, gridClipboard);
+        }
     }
 
-    function clearPattern(index) {
-        setPattern(index, undefined)
+    function clearPattern(index, scaleMode) {
+        setPattern(index, undefined, scaleMode)
     }
 
-    function getPattern(index) {
+    function getPattern(index, scaleMode) {
+        if (scaleMode === undefined)
+            scaleMode = (bar.currentIndex == 0);
+
         var steps = [];
         for (var i = 0; i < _max_steps; i++) {
-            var note = patterns[index * _max_steps + i].note;
-            if (note !== '') {
-                var d = _degrees.indexOf(note);
-                if (d > -1)
-                    steps.push(d);
-            } else
+            var d = -1;
+            if (scaleMode) {
+                var note = patterns[index * _max_steps + i].note;
+                if (note !== '') {
+                    var d = _degrees.indexOf(note);
+                }
+            } else {
+                var degree = patterns[index * _max_steps + i].degree;
+                if (degree !== '') {
+                    var d = _griddegrees.indexOf(degree);
+                }
+            }
+
+            if (d > -1)
+                steps.push(d);
+            else
                 break;
         }
 
@@ -1152,17 +1389,26 @@ MuseScore {
 
     }
 
-    function setPattern(index, pattern) {
-        console.log("Setting pattern " + index);
+    function setPattern(index, pattern, scaleMode) {
+        if (scaleMode === undefined)
+            scaleMode = (bar.currentIndex == 0);
+
+        console.log("Setting pattern " + index + ", mode: " + (scaleMode ? "Scale" : "Grid"));
 
         for (var i = 0; i < _max_steps; i++) {
             var ip = index * _max_steps + i;
-            var note = (pattern !== undefined && (i < pattern.steps.length)) ? _degrees[pattern.steps[i]] : '';
             // setting  only the 'note' field the doesn't work because the binding is not that intelligent...
             var sn = patterns[ip];
-            sn.note = note;
+            if (scaleMode) {
+                var note = (pattern !== undefined && (i < pattern.steps.length)) ? _degrees[pattern.steps[i]] : '';
+                sn.note = note;
+            } else {
+                var degree = (pattern !== undefined && (i < pattern.steps.length)) ? _griddegrees[pattern.steps[i]] : '';
+                sn.degree = degree;
+            }
+
             // ..one must reassign explicitely the whole object in the combobox to trigger the binding's update
-            idStepNotes.itemAt(ip).item.step = sn;
+            idStepNotes.itemAt(ip).children[bar.currentIndex].item.step = sn;
 
         }
 
@@ -1191,8 +1437,10 @@ MuseScore {
 
     }
 
-    function savePattern(index) {
-        var p = getPattern(index);
+    function savePattern(index, scaleMode) {
+        if (scaleMode === undefined)
+            scaleMode = (bar.currentIndex == 0);
+        var p = getPattern(index, scaleMode);
         var i = findInLibrary(p);
         if (i < 0) { // pattern not found in library
             console.log("Pattern " + p.label + " added to the library");
@@ -1204,7 +1452,10 @@ MuseScore {
         }
     }
 
-    function deletePattern(pattern) {
+    function deletePattern(pattern, scaleMode) {
+        if (scaleMode === undefined)
+            scaleMode = (bar.currentIndex == 0);
+
         var i = findInLibrary(pattern);
         if (i >= 0) { // pattern found in library
             console.log("Pattern " + pattern.label + " deleted from the library (at " + i + ")");
@@ -1435,245 +1686,300 @@ MuseScore {
         rowSpacing: 10
         columns: 2
 
-        GridLayout { // un small element within the fullWidth/fullHeight where we paint the repeater
-            //anchors.verticalCenter : parent.verticalCenter
-            id: idNoteGrid
-            rows: _max_patterns + 1
-            columns: _max_steps + 2
-            columnSpacing: 0
-            rowSpacing: 0
-
-            //Layout.column : 0
-            //Layout.row : 0
+        TabBar {
+            id: bar
+            width: parent.width
             Layout.columnSpan: 2
-
-            Layout.alignment: Qt.AlignCenter
-            //Layout.preferredWidth : _max_steps * 20
-            //Layout.preferredHeight : (_max_patterns + 1) * 20
-
-            Repeater {
-                id: idPatternLabels
-                model: _max_patterns
-
-                Label {
-                    Layout.row: index + 1
-                    Layout.column: 0
-                    Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
-                    Layout.rightMargin: 10
-                    Layout.leftMargin: 2
-                    text: "Pattern " + (index + 1) + ":"
-                }
+            Layout.alignment: Qt.AlignLeft
+            TabButton {
+                text: qsTr("Scale workout")
+                width: implicitWidth
             }
+            TabButton {
+                text: qsTr("Grid workout")
+                width: implicitWidth
+            }
+        }
 
-            Repeater {
-                id: idNoteLabels
-                model: _max_steps
+        StackLayout {
+            Layout.columnSpan: 2
+            Layout.alignment: Qt.AlignCenter
+            currentIndex: 0 //bar.currentIndex
 
+            GridLayout { // un small element within the fullWidth/fullHeight where we paint the repeater
+                //anchors.verticalCenter : parent.verticalCenter
+                id: idNoteGrid
+                rows: _max_patterns + 1
+                columns: _max_steps + 2
+                columnSpacing: 0
+                rowSpacing: 0
+
+                //Layout.preferredWidth : _max_steps * 20
+                //Layout.preferredHeight : (_max_patterns + 1) * 20
+
+                Repeater {
+                    id: idPatternLabels
+                    model: _max_patterns
+
+                    Label {
+                        Layout.row: index + 1
+                        Layout.column: 0
+                        Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
+                        Layout.rightMargin: 10
+                        Layout.leftMargin: 2
+                        text: "Pattern " + (index + 1) + ":"
+                    }
+                }
+
+                Repeater {
+                    id: idNoteLabels
+                    model: _max_steps
+
+                    Label {
+                        Layout.row: 0
+                        Layout.column: index + 1
+                        Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
+                        Layout.rightMargin: 2
+                        Layout.leftMargin: 2
+                        Layout.bottomMargin: 5
+                        text: (index + 1)
+                    }
+                }
+                Repeater {
+                    id: idStepNotes
+                    model: getPatterns(resetP)
+
+                    StackLayout {
+                        width: parent.width
+                        currentIndex: bar.currentIndex
+
+                        property int stepIndex: index % _max_steps
+                        property int patternIndex: Math.floor(index / _max_steps)
+                        Layout.row: 1 + patternIndex
+                        Layout.column: 1 + stepIndex
+
+                        Loader {
+                            id: loaderNotes
+                            Binding {
+                                target: loaderNotes.item
+                                property: "step"
+                                value: patterns[patternIndex * _max_steps + stepIndex]
+                            }
+
+                            sourceComponent: stepComponent
+                        }
+
+                        Loader {
+                            id: loaderGridNotes
+                            Binding {
+                                target: loaderGridNotes.item
+                                property: "step"
+                                value: patterns[patternIndex * _max_steps + stepIndex]
+                            }
+
+                            sourceComponent: gridStepComponent
+                        }
+
+                    }
+                }
                 Label {
                     Layout.row: 0
-                    Layout.column: index + 1
+                    Layout.column: _max_steps + 2
                     Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
                     Layout.rightMargin: 2
                     Layout.leftMargin: 2
                     Layout.bottomMargin: 5
-                    text: (index + 1)
-                }
-            }
-            Repeater {
-                id: idStepNotes
-                model: getPatterns(resetP)
-
-                Loader {
-                    id: loaderNotes
-                    property int stepIndex: index % _max_steps
-                    property int patternIndex: Math.floor(index / _max_steps)
-                    Layout.row: 1 + patternIndex
-                    Layout.column: 1 + stepIndex
-                    Binding {
-                        target: loaderNotes.item
-                        property: "step"
-                        value: patterns[patternIndex * _max_steps + stepIndex]
-                    }
-                    sourceComponent: stepComponent
+                    text: "Repeat"
                 }
 
-            }
+                Repeater {
+                    id: idLoopingMode
+                    model: _max_patterns
 
-            Label {
-                Layout.row: 0
-                Layout.column: _max_steps + 2
-                Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
-                Layout.rightMargin: 2
-                Layout.leftMargin: 2
-                Layout.bottomMargin: 5
-                text: "Repeat"
-            }
+                    ComboBox {
+                        //Layout.fillWidth : true
+                        id: lstLoop
+                        model: _loops
 
-            Repeater {
-                id: idLoopingMode
-                model: _max_patterns
+                        //clip: true
+                        //focus: true
+                        Layout.row: index + 1
+                        Layout.column: _max_steps + 2
+                        Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
+                        Layout.rightMargin: 2
+                        Layout.preferredHeight: 30
+                        Layout.preferredWidth: 80
 
-                ComboBox {
-                    //Layout.fillWidth : true
-                    id: lstLoop
-                    model: _loops
+                        delegate: ItemDelegate { // requiert QuickControls 2.2
+                            contentItem: Image {
+                                height: 25
+                                width: 25
+                                source: "./workoutbuilder/" + _loops[index].image
+                                fillMode: Image.Pad
+                                verticalAlignment: Text.AlignVCenter
+                                ToolTip.text: _loops[index].label
+                                ToolTip.delay: tooltipShow
+                                ToolTip.timeout: tooltipHide
+                                ToolTip.visible: hovered
+                            }
+                            highlighted: lstLoop.highlightedIndex === index
 
-                    //clip: true
-                    //focus: true
-                    Layout.row: index + 1
-                    Layout.column: _max_steps + 2
-                    Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
-                    Layout.rightMargin: 2
-                    Layout.preferredHeight: 30
-                    Layout.preferredWidth: 80
+                        }
 
-                    delegate: ItemDelegate { // requiert QuickControls 2.2
                         contentItem: Image {
                             height: 25
                             width: 25
-                            source: "./workoutbuilder/" + _loops[index].image
                             fillMode: Image.Pad
-                            verticalAlignment: Text.AlignVCenter
-                            ToolTip.text: _loops[index].label
+                            source: "./workoutbuilder/" + _loops[lstLoop.currentIndex].image
+
+                            ToolTip.text: _loops[lstLoop.currentIndex].label
                             ToolTip.delay: tooltipShow
                             ToolTip.timeout: tooltipHide
                             ToolTip.visible: hovered
+
                         }
-                        highlighted: lstLoop.highlightedIndex === index
-
-                    }
-
-                    contentItem: Image {
-                        height: 25
-                        width: 25
-                        fillMode: Image.Pad
-                        source: "./workoutbuilder/" + _loops[lstLoop.currentIndex].image
-
-                        ToolTip.text: _loops[lstLoop.currentIndex].label
-                        ToolTip.delay: tooltipShow
-                        ToolTip.timeout: tooltipHide
-                        ToolTip.visible: hovered
-
                     }
                 }
-            }
 
-            Label {
-                Layout.row: 0
-                Layout.column: _max_steps + 3
-                Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
-                Layout.rightMargin: 2
-                Layout.leftMargin: 2
-                Layout.bottomMargin: 5
-                text: "Scale"
-            }
-
-            Repeater {
-                id: idChordType
-                model: _max_patterns
-
-                ComboBox {
-                    id: ccCT
-                    model: _ddChordTypes
-                    editable: true
-                    Layout.row: index + 1
+                Label {
+                    Layout.row: 0
                     Layout.column: _max_steps + 3
-                    Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
+                    Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
                     Layout.rightMargin: 2
                     Layout.leftMargin: 2
-                    Layout.preferredWidth: 90
+                    Layout.bottomMargin: 5
+                    text: "Scale"
                 }
-            }
 
-            Repeater {
-                id: idTools
-                model: _max_patterns
+                Repeater {
+                    id: idChordType
+                    model: _max_patterns
 
-                Rectangle {
+                    ComboBox {
+                        id: ccCT
+                        model: _ddChordTypes
+                        editable: true
+                        Layout.row: index + 1
+                        Layout.column: _max_steps + 3
+                        Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
+                        Layout.rightMargin: 2
+                        Layout.leftMargin: 2
+                        Layout.preferredWidth: 90
 
-                    Layout.row: index + 1
-                    Layout.column: _max_steps + 4
-                    Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
-                    Layout.rightMargin: 0
-                    Layout.leftMargin: 0
-                    width: gridTools.width + 6
-                    height: gridTools.height + 6
-
-                    color: "#E8E8E8"
-                    radius: 4
-
-                    Grid {
-                        id: gridTools
-                        anchors.centerIn: parent
-                        rows: 1
-                        columnSpacing: 2
-                        rowSpacing: 0
-
-                        ImageButton {
-                            id: btnClear
-                            imageSource: "cancel.svg"
-                            ToolTip.text: "Clear"
-                            onClicked: clearPattern(index);
-                        }
-                        ImageButton {
-                            id: btnCopy
-                            imageSource: "copy.svg"
-                            ToolTip.text: "Copy"
-                            onClicked: toClipboard(index);
-                        }
-                        ImageButton {
-                            id: btnPaste
-                            imageSource: "paste.svg"
-                            ToolTip.text: "Paste"
-                            enabled: clipboard !== undefined
-                            onClicked: fromClipboard(index);
-                        }
-                        ImageButton {
-                            id: btnLoad
-                            imageSource: "upload.svg"
-                            ToolTip.text: "Reuse saved pattern"
-                            //onClicked: loadPattern(index);
-                            onClicked: {
-                                loadWindow.state = "pattern";
-                                loadWindow.index = index;
-                                loadWindow.show();
+                        states: [
+                            State {
+                                when: bar.currentIndex == 0
+                                PropertyChanges {
+                                    target: ccCT;
+                                    enabled: true
+                                }
+                            },
+                            State {
+                                when: bar.currentIndex != 0;
+                                PropertyChanges {
+                                    target: ccCT;
+                                    enabled: false
+                                }
                             }
-                        }
-                        ImageButton {
-                            id: btnSave
-                            imageSource: "download.svg"
-                            ToolTip.text: "Save for later reuse"
-                            onClicked: savePattern(index);
-                        }
-                        ImageButton {
-                            id: btnSetName
-                            imageSource: "edittext.svg"
-                            ToolTip.text: "Set pattern's name" +
-                            ((idPattName.itemAt(index).text != "") ? ("\n\"" + idPattName.itemAt(index).text + "\"") : "\n--default--")
-                            highlighted: (idPattName.itemAt(index).text != "")
-                            onClicked: {
-                                patternNameInputDialog.index = index;
-                                patternNameInputDialog.open();
+                        ]
 
+                    }
+                }
+
+                Repeater {
+                    id: idTools
+                    model: _max_patterns
+
+                    Rectangle {
+
+                        Layout.row: index + 1
+                        Layout.column: _max_steps + 4
+                        Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
+                        Layout.rightMargin: 0
+                        Layout.leftMargin: 0
+                        width: gridTools.width + 6
+                        height: gridTools.height + 6
+
+                        color: "#E8E8E8"
+                        radius: 4
+
+                        Grid {
+                            id: gridTools
+                            anchors.centerIn: parent
+                            rows: 1
+                            columnSpacing: 2
+                            rowSpacing: 0
+
+                            ImageButton {
+                                id: btnClear
+                                imageSource: "cancel.svg"
+                                ToolTip.text: "Clear"
+                                onClicked: clearPattern(index);
+                            }
+                            ImageButton {
+                                id: btnCopy
+                                imageSource: "copy.svg"
+                                ToolTip.text: "Copy"
+                                onClicked: toClipboard(index);
+                            }
+                            ImageButton {
+                                id: btnPaste
+                                imageSource: "paste.svg"
+                                ToolTip.text: "Paste"
+                                enabled: clipboard !== undefined
+                                onClicked: fromClipboard(index);
+                            }
+                            ImageButton {
+                                id: btnLoad
+                                imageSource: "upload.svg"
+                                ToolTip.text: "Reuse saved pattern"
+                                //onClicked: loadPattern(index);
+                                onClicked: {
+                                    loadWindow.state = "pattern";
+                                    loadWindow.index = index;
+                                    loadWindow.show();
+                                }
+                            }
+                            ImageButton {
+                                id: btnSave
+                                imageSource: "download.svg"
+                                ToolTip.text: "Save for later reuse"
+                                onClicked: savePattern(index);
+                            }
+                            ImageButton {
+                                id: btnSetName
+                                imageSource: "edittext.svg"
+                                ToolTip.text: "Set pattern's name" +
+                                ((idPattName.itemAt(index).text != "") ? ("\n\"" + idPattName.itemAt(index).text + "\"") : "\n--default--")
+                                highlighted: (idPattName.itemAt(index).text != "")
+                                onClicked: {
+                                    patternNameInputDialog.index = index;
+                                    patternNameInputDialog.open();
+
+                                }
                             }
                         }
                     }
                 }
-            }
 
-            Repeater {
-                id: idPattName
-                model: _max_patterns
+                Repeater {
+                    id: idPattName
+                    model: _max_patterns
 
-                Text {
-                    id: txtPN
-                    text: ""
-                    visible: false
-                    Layout.row: index + 1
-                    Layout.column: _max_steps + 5
+                    Text {
+                        id: txtPN
+                        text: ""
+                        visible: false
+                        Layout.row: index + 1
+                        Layout.column: _max_steps + 5
+                    }
                 }
+
             }
 
+            Text {
+                text: "Hello"
+            }
         }
 
         // Presets
@@ -1681,6 +1987,24 @@ MuseScore {
             //Layout.column : 0
             //Layout.row : 2
             text: "Presets:"
+            id: labPresets
+
+            states: [
+                State {
+                    when: bar.currentIndex == 0
+                    PropertyChanges {
+                        target: labPresets;
+                        visible: true
+                    }
+                },
+                State {
+                    when: bar.currentIndex != 0;
+                    PropertyChanges {
+                        target: labPresets;
+                        visible: false
+                    }
+                }
+            ]
 
         }
 
@@ -1724,6 +2048,23 @@ MuseScore {
 
                 rootSchemeName = __preset.name;
             }
+
+            states: [
+                State {
+                    when: bar.currentIndex == 0
+                    PropertyChanges {
+                        target: lstPresets;
+                        visible: true
+                    }
+                },
+                State {
+                    when: bar.currentIndex != 0;
+                    PropertyChanges {
+                        target: lstPresets;
+                        visible: false
+                    }
+                }
+            ]
         }
 
         // Roots
@@ -1732,18 +2073,22 @@ MuseScore {
             //Layout.row : 3
             text: "Roots:"
         }
-        RowLayout {
-            spacing: 5
+        //RowLayout {
+        GridLayout {
+            columnSpacing: 5
+            rowSpacing: 10
             Layout.alignment: Qt.AlignLeft
-            //Layout.column : 1
-            //Layout.row : 3
+            rows: 1
 
             Repeater {
+
                 id: idRoot
                 model: getRoots(reset)
 
                 Loader {
                     id: loaderRoots
+                    Layout.row: 0
+                    Layout.column: index
                     Binding {
                         target: loaderRoots.item
                         property: "rootIndex"
@@ -1752,6 +2097,40 @@ MuseScore {
                     sourceComponent: rootComponent
                 }
 
+            }
+            Repeater {
+                id: idGridChordType
+                model: _max_roots
+
+                ComboBox {
+                    id: ccGCT
+                    model: _ddChordTypes
+                    editable: false
+                    Layout.row: 1
+                    Layout.column: index
+                    Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
+                    Layout.rightMargin: 2
+                    Layout.leftMargin: 2
+                    Layout.preferredWidth: 90
+
+                    states: [
+                        State {
+                            when: bar.currentIndex == 0
+                            PropertyChanges {
+                                target: ccGCT;
+                                visible: false
+                            }
+                        },
+                        State {
+                            when: bar.currentIndex != 0;
+                            PropertyChanges {
+                                target: ccGCT;
+                                visible: true
+                            }
+                        }
+                    ]
+
+                }
             }
 
         }
@@ -1769,17 +2148,38 @@ MuseScore {
             CheckBox {
                 id: chkByPattern
                 text: "Group workouts by patterns"
-                checked: true
                 ToolTip.text: "All the patterns will be applied on the first root notes. Then the next root note. And so on.\nAlternatively, the first pattern will be applied for all the root notes. Then the next pattern. And so on."
+                checked: true
                 ToolTip.delay: tooltipShow
                 ToolTip.timeout: tooltipHide
                 ToolTip.visible: hovered
+
+                states: [
+                    State {
+                        when: bar.currentIndex == 0
+                        PropertyChanges {
+                            target: chkByPattern;
+                            //enabled: true
+                            text: "Group workouts by patterns"
+                            ToolTip.text: "All the patterns will be applied on the first root notes. Then the next root note. And so on.\nAlternatively, the first pattern will be applied for all the root notes. Then the next pattern. And so on."
+                        }
+                    },
+                    State {
+                        when: bar.currentIndex != 0;
+                        PropertyChanges {
+                            target: chkByPattern;
+                            //enabled: false
+                            text: "Group patterns repetition"
+                            ToolTip.text: "Keep the patterns repetitions in the same phrase.\nAlternatively, the repetions will laid on as new phrases."
+                        }
+                    }
+                ]
             }
             CheckBox {
                 id: chkInvert
                 text: "Invert pattern every two roots"
                 checked: false
-                enabled: chkByPattern.checked
+                enabled: chkByPattern.checked || bar.currentIndex!=0
                 ToolTip.text: "During a pattern over different root notes, every two root notes, the pattern will be apply in the reversed order.\n (Meaning in a descending way for an ascending pattern)."
                 ToolTip.delay: tooltipShow
                 ToolTip.timeout: tooltipHide
@@ -1924,8 +2324,6 @@ MuseScore {
         ComboBox {
             id: lstStep
             property var step: {
-                "step": 0,
-                "pattern": 0,
                 "note": ''
             }
             Layout.alignment: Qt.AlignLeft | Qt.QtAlignBottom
@@ -1936,6 +2334,26 @@ MuseScore {
             currentIndex: find(step.note, Qt.MatchExactly)
             onCurrentIndexChanged: {
                 step.note = model[currentIndex];
+            }
+        }
+    }
+
+    Component {
+        id: gridStepComponent
+
+        ComboBox {
+            id: lstGStep
+            property var step: {
+                "degree": ''
+            }
+            Layout.alignment: Qt.AlignLeft | Qt.QtAlignBottom
+            editable: false
+            model: _ddGridNotes
+            Layout.preferredHeight: 30
+            implicitWidth: 75
+            currentIndex: find(step.degree, Qt.MatchExactly)
+            onCurrentIndexChanged: {
+                step.degree = model[currentIndex];
             }
         }
     }
@@ -2491,7 +2909,8 @@ MuseScore {
         patternClass.call(this, raw.steps, raw.loopMode, raw.scale, raw.name);
     }
 
-    function workoutClass(name, patterns, roots, bypattern, invert) {
+    function workoutClass(name, type, patterns, roots, bypattern, invert) {
+        this.type = (type === undefined || type !== "scale" || type !== "grid") ? "scale" : type;
         this.patterns = (patterns !== undefined) ? patterns : [];
         this.name = ((name !== undefined) && (name.trim() !== "")) ? name.trim() : "???";
         this.roots = roots;
@@ -2502,6 +2921,7 @@ MuseScore {
             return {
                 patterns: this.patterns,
                 name: this.name,
+                type: this.type,
                 roots: this.roots,
                 bypattern: this.bypattern,
                 invert: this.invert
@@ -2537,6 +2957,7 @@ MuseScore {
         if (this.invert !== undefined) {
             hash = hash * 31 + (this.invert ? 1 : 2);
         }
+        hash = hash * 31 + (this.type === "scale" ? 1 : 2);
 
         this.hash = hash;
 
@@ -2559,7 +2980,7 @@ MuseScore {
             pp.push(new patternClassRaw(p[i]));
         }
 
-        workoutClass.call(this, raw.name, pp, raw["roots"], raw["bypattern"], raw["invert"]);
+        workoutClass.call(this, raw.name, raw["type"], pp, raw["roots"], raw["bypattern"], raw["invert"]);
     }
 
     FileIO {
