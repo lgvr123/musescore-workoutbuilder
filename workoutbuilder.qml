@@ -336,15 +336,6 @@ MuseScore {
         }
     }
 
-    property var steproots: { {
-            var sr = [];
-            for (var j = 0; j < _max_roots; j++) {
-                sr.push('');
-            }
-            return sr;
-        }
-    }
-
     property var library: []
     property var workouts: []
     property var phrases: [new phraseClass(""), new phraseClass("Hello", [{
@@ -440,6 +431,7 @@ MuseScore {
             // On change de "page" entre chaque pattern
             console.log("page++ (SP)");
             page = pages.length; // i.e. Go 1 index further (so if the array is empty, the first index will be 0)
+			console.log(">>page for pattern "+p+": "+page);
 
             for (var r = 0; r < roots.length; r++) {
                 console.log("By P, patterns: " + p + "/" + (patts.length - 1) + "; roots:" + r + "/" + (roots.length - 1) + " => " + page);
@@ -472,9 +464,9 @@ MuseScore {
 
                 // Looping through the "loopAt" subpatterns (keeping them as a whole)
                 for (var s = 0; s < subpatterns.length; s++) {
-                    var placeAt = page + (chkByPattern.checked) ? 0 : s;
+                    var placeAt = page + ((chkByPattern.checked) ? 0 : s);
 
-                    console.log(">> Looking at subpattern " + s);
+                    console.log(">> Looking at pattern " + p +", subpattern " + s +" => will be placed at page "+placeAt +" (page="+page+")");
                     if (pages[placeAt] === undefined)
                         pages[placeAt] = [];
 
@@ -575,7 +567,7 @@ MuseScore {
         // Collecting the roots
         var roots = [];
         for (var i = 0; i < _max_roots; i++) {
-            var txt = steproots[i];
+            var txt = idRoot.itemAt(i).currentText;
             // console.log("Next Root: " + txt);
             if (txt === '' || txt === undefined)
                 continue;
@@ -742,10 +734,15 @@ MuseScore {
         if (rootSchemeName != undefined) {
             title += rootSchemeName;
         } else {
-            var sr = steproots.filter(function (s) {
-                return (s !== undefined) && (s.trim() !== "");
-            });
-            title += sr.join(", ");
+            for (var i = 0; i < _max_roots; i++) {
+                var txt = idRoot.itemAt(i).currentText;
+                // console.log("Next Root: " + txt);
+                if (txt === '' || txt === undefined)
+                    break;
+                if (i > 0)
+                    title += ", ";
+                title += txt;
+            }
         }
 
         // Styling
@@ -761,6 +758,7 @@ MuseScore {
         score.style.setValue("chordStyle", "std");
         score.style.setValue("chordDescriptionFile", "chords_std.xml");
 
+        score.style.setValue("minNoteDistance", "2.00");
         score.style.setValue("enableIndentationOnFirstSystem", "false");
 
         score.style.setValue("showFooter", "true");
@@ -1373,7 +1371,7 @@ MuseScore {
 
         console.log("Setting pattern " + index + ", mode: " + (scaleMode ? _SCALE_MODE : _GRID_MODE));
 
-        if (pattern.type !== (scaleMode ? _SCALE_MODE : _GRID_MODE)) {
+        if (pattern !== undefined && pattern.type !== (scaleMode ? _SCALE_MODE : _GRID_MODE)) {
             console.log("!! Cannot setPattern due to non-matching pattern. Expected " + (scaleMode ? _SCALE_MODE : _GRID_MODE) + ", while pattern is: " + pattern.type);
             return;
         }
@@ -1467,7 +1465,7 @@ MuseScore {
         var roots = [];
 
         for (var i = 0; i < _max_roots; i++) {
-            var txt = steproots[i];
+            var txt = idRoot.itemAt(i).currentText;
             // console.log("Next Root: " + txt);
             if (txt === '' || txt === undefined)
                 continue;
@@ -1498,20 +1496,24 @@ MuseScore {
     }
 
     function setPhrase(phrase) {
+        //console.log("setPhrase: in: " + ((typeof phrase !== 'undefined') ? phrase.label : undefined));
         if (!phrase)
             phrase = new phraseClass("");
+        //console.log("setPhrase: clear: " + ((typeof phrase !== 'undefined') ? phrase.label : undefined));
         var rr = phrase.chords;
-        console.log("Phrase Changed: " + phrase.label + " -- " + rr);
+        //debugO("setPhrase: chords", rr);
         for (var i = 0; i < _max_roots; i++) {
             if (i < rr.length) {
-                steproots[i] = _roots[rr[i].root];
+                //debugO("setPhrase: " + i, rr[i]);
+                idRoot.itemAt(i).currentIndex = _ddRoots.indexOf(_roots[rr[i].root]);
                 idGridChordType.itemAt(i).currentIndex = _ddChordTypes.indexOf(rr[i].type);
             } else {
-                steproots[i] = '';
+                //debugO("setPhrase: " + i, "/");
+                idRoot.itemAt(i).currentIndex = 0;
                 idGridChordType.itemAt(i).currentIndex = 0;
             }
 
-            console.log("selecting root " + i + ": " + steproots[i]);
+            //console.log("selecting root " + i + ": " + steproots[i]);
         }
         resetR = false;
         resetR = true;
@@ -1526,27 +1528,31 @@ MuseScore {
     function verifyPhrase(phrase, ask) {
 
         // 1) look for an existing workput with the same name
-        var filtered = phrases;
-        if (phrase.name !== "")
-            phrases.filter(function (w) {
-                return (w.name !== "" && w.name.localeCompare(phrase.name) == 0);
+        var filtered;
+        if (phrase.name !== "") {
+            console.log(">>Comparing at name level (" + phrase.name + ")");
+            filtered = phrases.filter(function (w) {
+                return (w.name !== "" && w.name.localeCompare(phrase.name) === 0);
             });
-        if (filtered.length > 0) {
-            if (ask) {
-                confirmReplaceWorkoutDialog.origworkout = filtered[0];
-                confirmReplaceWorkoutDialog.newworkout = phrase;
-                confirmReplaceWorkoutDialog.state = "phrase";
-                confirmReplaceWorkoutDialog.open();
+            if (filtered.length > 0) {
+                console.log(">>Got a conflict at name level (" + filtered[0].name + ")");
+                if (ask) {
+                    confirmReplaceWorkoutDialog.origworkout = filtered[0];
+                    confirmReplaceWorkoutDialog.newworkout = phrase;
+                    confirmReplaceWorkoutDialog.state = "phrase";
+                    confirmReplaceWorkoutDialog.open();
+                }
+                return filtered[0];
             }
-            return filtered[0];
         }
-        // 2) looking for a workoout with the same patterns
+        // 2) looking for a phrase with the same chords
+        console.log(">>Comparing at hash level (" + phrase.hash + ")");
         filtered = phrases.filter(function (w) {
             return w.hash == phrase.hash;
         });
-        console.log("phrases <> " + phrase.name + ": " + filtered.length);
 
         if (filtered.length > 0) {
+            console.log(">>Got a conflict at hash level (" + filtered[0].hash + ")");
             if (ask) {
                 confirmReplaceWorkoutDialog.origworkout = filtered[0];
                 confirmReplaceWorkoutDialog.newworkout = phrase;
@@ -1602,6 +1608,13 @@ MuseScore {
     }
 
     function applyWorkout(workout) {
+
+        var log = ((workout === undefined) ? "Null" : workout.label);
+        if (workout !== undefined)
+            log += ", mode: " + workout.type;
+        console.log("Appying workout " + log);
+        debugO("Workout", workout);
+
         // patterns
         var m = (workout !== undefined) ? Math.min(_max_patterns, workout.patterns.length) : 0;
 
@@ -1613,18 +1626,27 @@ MuseScore {
             setPattern(i, undefined);
         }
 
-        // roots, if defined in the workout
-        if (workout !== undefined && workout.roots !== undefined) {
-            m = Math.min(_max_roots, workout.roots.length);
+        // roots/phrase
+        if (workout !== undefined && (workout.type === _SCALE_MODE)) {
+            // SCALE workout. If the roots are defined
+            if (workout.roots !== undefined) {
+                m = Math.min(_max_roots, workout.roots.length);
 
-            for (var i = 0; i < m; i++) {
-                steproots[i] = _roots[workout.roots[i]];
+                for (var i = 0; i < m; i++) {
+                    idRoot.itemAt(i).currentIndex = _ddRoots.indexOf(_roots[workout.roots[i]]); // id --> label --> indexOf dans le tableau de présentation
+                }
+
+                for (var i = m; i < _max_patterns; i++) {
+                    idRoot.itemAt(i).currentIndex = 0;
+                }
             }
 
-            for (var i = m; i < _max_patterns; i++) {
-                steproots[i] = '';
-            }
-
+        } else if (workout !== undefined && (workout.type === _GRID_MODE)) {
+            // GRID workout. If the phrase is defined
+            if (workout.phrase !== undefined)
+                setPhrase(workout.phrase);
+        } else {
+            setPhrase(undefined);
         }
 
         // options, if defined in the workout
@@ -1633,14 +1655,16 @@ MuseScore {
 
         }
         if (workout !== undefined && workout.invert !== undefined) {
-            chkInvert.checkState = (workout.invert === "true") ? Qt.Checked : Qt.Unchecked;
+            chkInvert.checkState = (workout.invert === "true") ? Qt.Che.cked : Qt.Unchecked;
         }
 
         workoutName = (workout !== undefined) ? workout.name : undefined;
 
     }
 
-    function buildWorkout(label) {
+    function buildWorkout(label, withPhrase) {
+
+        withPhrase = (withPhrase) ? true : false;
 
         var pp = [];
         for (var i = 0; i < _max_patterns; i++) {
@@ -1650,8 +1674,14 @@ MuseScore {
             pp.push(p);
         }
 
-        var workout = new workoutClass(label, pp);
+        var workout;
+        if (bar.currentIndex == 0) {
+            workout = new workoutClass(label, pp, undefined, chkByPattern.checked, chkInvert.checked);
+        } else {
+            var phrase = (withPhrase) ? getPhrase() : undefined;
+            workout = new gridWorkoutClass(label, pp, phrase, chkByPattern.checked, chkInvert.checked);
 
+        }
         return workout;
     }
 
@@ -1699,6 +1729,9 @@ MuseScore {
      * Simply adds that workout on top of the workouts list. No verification of duplicates is performed.
      */
     function saveWorkout(workout) {
+
+        debugO("Workout à sauver", workout);
+
         workouts.push(workout);
         resetL = !resetL;
         saveLibrary();
@@ -1710,7 +1743,7 @@ MuseScore {
      */
     function replaceWorkout(oldWorkout, newWorkout) {
         for (var i = 0; i < workouts.length; i++) {
-            console.log(workouts[i].name + " (" + workouts[i].hash + ") <> " + oldWorkout.name + " (" + oldWorkout.hash + ")");
+            //console.log(workouts[i].name + " (" + workouts[i].hash + ") <> " + oldWorkout.name + " (" + oldWorkout.hash + ")");
             if (workouts[i].hash == oldWorkout.hash) {
                 console.log("REPLACING THIS ONE");
                 workouts[i] = newWorkout;
@@ -1751,6 +1784,7 @@ MuseScore {
             console.error('while reading the library file', e.message);
         }
 
+        // 1) Les patterns
         var allpresets = lib.patterns;
         library = [];
         if (allpresets !== undefined) {
@@ -1762,6 +1796,20 @@ MuseScore {
         }
         console.log("Library loaded");
 
+        //2) Les phrases
+        var allphrases = lib.phrases;
+
+        phrases = [];
+        if (allphrases !== undefined) {
+            for (var i = 0; i < allphrases.length; i++) {
+                var pp = allphrases[i];
+                var p = new phraseClassRaw(pp);
+                phrases.push(p);
+            }
+        }
+        console.log("Phrases loaded");
+
+        // 3) Les workouts
         var allworkouts = lib.workouts;
         workouts = [];
         if (allworkouts !== undefined) {
@@ -1776,18 +1824,6 @@ MuseScore {
         });
 
         console.log("Workouts loaded");
-
-        var allphrases = lib.phrases;
-
-        phrases = [];
-        if (allphrases !== undefined) {
-            for (var i = 0; i < allphrases.length; i++) {
-                var pp = allphrases[i];
-                var p = new phraseClassRaw(pp);
-                phrases.push(p);
-            }
-        }
-        console.log("Phrases loaded");
 
         resetL = !resetL;
     }
@@ -2073,7 +2109,7 @@ MuseScore {
                             ToolTip.text: "Reuse saved pattern"
                             //onClicked: loadPattern(index);
                             onClicked: {
-                                loadWindow.state = (bar.currentIndex == 0) ? "pattern" : "gridpattern";
+                                loadWindow.state = "pattern";
                                 loadWindow.index = index;
                                 loadWindow.show();
                             }
@@ -2160,12 +2196,12 @@ MuseScore {
                     console.log("Preset Changed: " + __preset.name + " -- " + rr);
                     for (var i = 0; i < _max_roots; i++) {
                         if (i < rr.length) {
-                            steproots[i] = _roots[rr[i]];
+                            idRoot.itemAt(i).currentIndex = _ddRoots.indexOf(_roots[rr[i]]);
                         } else {
-                            steproots[i] = '';
+                            idRoot.itemAt(i).currentIndex = 0;
                         }
 
-                        console.log("selecting root " + i + ": " + steproots[i]);
+                        //console.log("selecting root " + i + ": " + steproots[i]);
                     }
                     resetR = false;
                     resetR = true;
@@ -2253,18 +2289,20 @@ MuseScore {
             Repeater {
 
                 id: idRoot
-                model: getRoots(resetR)
+                model: _max_roots
 
-                Loader {
-                    id: loaderRoots
-                    Layout.row: 0
-                    Layout.column: index
-                    Binding {
-                        target: loaderRoots.item
-                        property: "rootIndex"
-                        value: model.index
+                ComboBox {
+                    id: lstRoot
+                    Layout.alignment: Qt.AlignLeft | Qt.QtAlignBottom
+                    editable: false
+                    model: _ddRoots
+                    Layout.preferredHeight: 30
+                    implicitWidth: 90
+
+                    onActivated: {
+                        // manual change, resetting the rootSchemeName
+                        rootSchemeName = undefined;
                     }
-                    sourceComponent: rootComponent
                 }
 
             }
@@ -2530,30 +2568,6 @@ MuseScore {
         }
     }
 
-    Component {
-        id: rootComponent
-
-        ComboBox {
-            id: lstRoot
-            property var rootIndex
-            Layout.alignment: Qt.AlignLeft | Qt.QtAlignBottom
-            editable: false
-            model: _ddRoots
-            currentIndex: find(steproots[rootIndex], Qt.MatchExactly)
-            Layout.preferredHeight: 30
-            implicitWidth: 90
-            onCurrentIndexChanged: {
-                steproots[rootIndex] = model[currentIndex]
-                    console.log("Root " + rootIndex + ": " + steproots[rootIndex]);
-            }
-
-            onActivated: {
-                // manual change, resetting the rootSchemeName
-                rootSchemeName = undefined;
-            }
-        }
-    }
-
     Window {
         id: aboutWindow
         title: "About..."
@@ -2650,23 +2664,7 @@ MuseScore {
                     }
                     PropertyChanges {
                         target: lstLibrary;
-                        model: getPresetsLibrary(resetL)
-                    }
-                    PropertyChanges {
-                        target: btnDelPatt;
-                        ToolTip.text: "Delete the selected pattern from the library"
-                    }
-
-                },
-                State {
-                    name: "gridpattern";
-                    PropertyChanges {
-                        target: loadWindow;
-                        title: "Reuse pattern..."
-                    }
-                    PropertyChanges {
-                        target: lstLibrary;
-                        model: getGridPresetsLibrary(resetL)
+                        model: getPresetsLibrary(resetL, (bar.currentIndex == 0) ? _SCALE_MODE : _GRID_MODE)
                     }
                     PropertyChanges {
                         target: btnDelPatt;
@@ -2682,7 +2680,7 @@ MuseScore {
                     }
                     PropertyChanges {
                         target: lstLibrary;
-                        model: getWorkoutsLibrary(resetL)
+                        model: getWorkoutsLibrary(resetL, (bar.currentIndex == 0) ? _SCALE_MODE : _GRID_MODE)
                     }
                     PropertyChanges {
                         target: btnDelPatt;
@@ -2751,7 +2749,6 @@ MuseScore {
                                 onDoubleClicked: {
                                     switch (loadWindow.state) {
                                     case "pattern":
-                                    case "gridpattern":
                                         setPattern(loadWindow.index, modelData);
                                         break;
                                     case "workout":
@@ -2823,7 +2820,6 @@ MuseScore {
                         onAccepted: {
                             switch (loadWindow.state) {
                             case "pattern":
-                            case "gridpattern":
                                 setPattern(loadWindow.index, lstLibrary.model[lstLibrary.currentIndex]);
                                 break;
                             case "workout":
@@ -2852,9 +2848,17 @@ MuseScore {
 
         property string state: "workout"
 
-        RowLayout {
+        GridLayout {
+            state: newWorkoutDialog.state
+            anchors.fill: parent
+            anchors.margins: 5
+            columnSpacing: 10
+            rowSpacing: 5
+            columns: 2
+
             Label {
-                text: "Save " + ((state === "workout") ? "workout" : "phrase") + " as:"
+                id: labSave
+                text: "Save as:"
             }
 
             TextField {
@@ -2863,10 +2867,58 @@ MuseScore {
                 //Layout.preferredHeight: 30
                 text: ""
                 Layout.fillWidth: true
+                Layout.preferredWidth: 200
                 placeholderText: "Enter new " + ((state === "workout") ? "workout" : "phrase") + "'s name"
                 maximumLength: 255
 
             }
+            CheckBox {
+                id: chkIncludePhrase
+                Layout.columnSpan: 2
+                Layout.alignment: Qt.AlignLeft
+                text: "Include the phrase in the workout"
+                checked: false
+                enabled: (bar.currentIndex != 0)
+                ToolTip.text: "Includes the current phrase in the workout or keep it blank."
+                ToolTip.delay: tooltipShow
+                ToolTip.timeout: tooltipHide
+                ToolTip.visible: hovered
+            }
+
+            states: [
+                State {
+                    name: "workout";
+                    PropertyChanges {
+                        target: newWorkoutDialog
+                        title: "Save workout as..."
+                    }
+                    PropertyChanges {
+                        target: txtWorkoutName;
+                        placeholderText: "Enter new workout's name"
+                    }
+                    PropertyChanges {
+                        target: chkIncludePhrase;
+                        visible: true
+                    }
+
+                },
+                State {
+                    name: "phrase";
+                    PropertyChanges {
+                        target: newWorkoutDialog
+                        title: "Save phrase as..."
+                    }
+                    PropertyChanges {
+                        target: txtWorkoutName;
+                        placeholderText: "Enter new phrase's name"
+                    }
+                    PropertyChanges {
+                        target: chkIncludePhrase;
+                        visible: false
+                    }
+
+                }
+            ]
         }
 
         onAccepted: {
@@ -2874,7 +2926,7 @@ MuseScore {
             console.log("==> " + name);
             if ("" === name)
                 return;
-            var workout = (state === "workout") ? buildWorkout(name) : getPhrase(name);
+            var workout = (state === "workout") ? buildWorkout(name, chkIncludePhrase.checked) : getPhrase(name);
             console.log(workout.label);
             newWorkoutDialog.close();
             var conflict = (state === "workout") ? verifyWorkout(workout, true) : verifyPhrase(workout, true);
@@ -2899,7 +2951,7 @@ MuseScore {
 
         RowLayout {
             Label {
-                text: "Save workout as:"
+                text: "Pattern name:"
             }
 
             TextField {
@@ -2981,7 +3033,7 @@ MuseScore {
         text: 'Please confirm the deletion of the following element: <br/>' + ((pattern == null) ? "--" : pattern.label)
         onYes: {
             confirmRemovePatternDialog.close();
-            if ((loadWindow.state === "pattern") || (loadWindow.state === "gridpattern")) {
+            if (loadWindow.state === "pattern") {
                 deletePattern(pattern);
             } else if (loadWindow.state === "phrase") {
                 deletePhrase(pattern);
@@ -3003,27 +3055,14 @@ MuseScore {
         }
     }
 
-    function getRoots(uglyHack) {
-        return steproots;
-    }
-
     function getPatterns(uglyHack) {
         return patterns;
     }
 
-    function getPresetsLibrary(uglyHack) {
+    function getPresetsLibrary(uglyHack, type) {
         var filtered = library.filter(function (p) {
-            return (p.type === _SCALE_MODE);
+            return (p.type === type);
         });
-        //console.log("Library has " + library.length + " elements");
-        return filtered;
-    }
-
-    function getGridPresetsLibrary(uglyHack) {
-        var filtered = library.filter(function (p) {
-            return (p.type === _GRID_MODE);
-        });
-        //console.log("Library has " + library.length + " elements");
         return filtered;
     }
 
@@ -3032,9 +3071,11 @@ MuseScore {
         return [new phraseClass("")].concat(phrases);
     }
 
-    function getWorkoutsLibrary(uglyHack) {
-        //console.log("Library has " + library.length + " elements");
-        return workouts;
+    function getWorkoutsLibrary(uglyHack, type) {
+        var filtered = workouts.filter(function (p) {
+            return (p.type === type);
+        });
+        return filtered;
     }
 
     property var presets: [{
@@ -3224,20 +3265,33 @@ MuseScore {
 
     }
 
-    function gridWorkoutClass(name, patterns, roots, bypattern, invert) {
+    function gridWorkoutClass(name, patterns, phrase, bypattern, invert) {
         this.type = _GRID_MODE;
         this.patterns = (patterns !== undefined) ? patterns : [];
         this.name = ((name !== undefined) && (name.trim() !== "")) ? name.trim() : "???";
-        this.roots = roots;
+        this.phrase = ((phrase === undefined) || (phrase.chords === undefined) || (phrase.chords.length == 0)) ? undefined : phrase;
         this.bypattern = bypattern;
         this.invert = invert;
+
+        // Trying to pick a name for the phrase
+        if (this.phrase !== undefined && this.phrase.name === "") {
+            console.log(">>Looking for name");
+            var named = verifyPhrase(this.phrase, false);
+            if (named != null) {
+                console.log(">>Found " + named.name);
+                //this.phrase.name = named.name; // readonly prop
+                this.phrase = named;
+                console.log(">>So now " + this.phrase.name);
+            }
+
+        }
 
         this.toJSON = function (key) {
             return {
                 patterns: this.patterns,
                 name: this.name,
                 type: this.type,
-                roots: this.roots,
+                phrase: this.phrase,
                 bypattern: this.bypattern,
                 invert: this.invert
             };
@@ -3254,6 +3308,10 @@ MuseScore {
             label += " (" + patterns[0].label + ", +" + (patterns.length - 1) + " )"
         }
 
+        if (this.phrase !== undefined) {
+            label += " - on " + this.phrase.label;
+        }
+
         this.label = label;
 
         // hash
@@ -3261,10 +3319,8 @@ MuseScore {
         for (var i = 0; i < this.patterns.length; i++) {
             hash = hash * 31 + this.patterns[i].hash;
         }
-        if (this.roots != undefined) {
-            for (var i = 0; i < this.roots.length; i++) {
-                hash = hash * 31 + this.roots[i].hash;
-            }
+        if (this.phrase != undefined) {
+            hash = hash * 31 + this.phrase.hash;
         }
         if (this.bypattern !== undefined) {
             hash = hash * 31 + (this.bypattern ? 1 : 2);
@@ -3289,7 +3345,7 @@ MuseScore {
      */
     function workoutClassRaw(raw) {
 
-        var type = (raw.type === undefined || raw.type !== _SCALE_MODE || raw.type !== _GRID_MODE) ? _SCALE_MODE : raw.type;
+        var type = (raw.type === undefined || (raw.type !== _SCALE_MODE && raw.type !== _GRID_MODE)) ? _SCALE_MODE : raw.type;
 
         var p = raw.patterns;
         var pp = [];
@@ -3304,8 +3360,10 @@ MuseScore {
 
         if (type === _SCALE_MODE)
             workoutClass.call(this, raw.name, pp, raw["roots"], raw["bypattern"], raw["invert"]);
-        else
-            gridWorkoutClass.call(this, raw.name, pp, raw["chords"], raw["bypattern"], raw["invert"]);
+        else {
+            var phrase = (raw.phrase !== undefined) ? new phraseClassRaw(raw["phrase"]) : undefined;
+            gridWorkoutClass.call(this, raw.name, pp, phrase, raw["bypattern"], raw["invert"]);
+        }
     }
 
     /**
@@ -3358,7 +3416,6 @@ MuseScore {
      * Creation of a phrase from a phrase object containing the *enumerable* fields (ie. the non transient fields)
      */
     function phraseClassRaw(raw) {
-
         phraseClass.call(this, raw.name, raw.chords);
     }
 
@@ -3381,7 +3438,7 @@ MuseScore {
 
             var kys = Object.keys(element);
             for (var i = 0; i < kys.length; i++) {
-                console.log(label + ": " + kys[i] + "=" + element[kys[i]]);
+                debugO(label + ": " + kys[i], element[kys[i]]);
             }
         } else if (typeof element === 'undefined') {
             console.log(label + ": undefined");
