@@ -8,6 +8,7 @@ import QtQuick.Layouts 1.3
 import FileIO 3.0
 
 import "zparkingb/notehelper.js" as NoteHelper
+import "zparkingb/chordanalyser.js" as ChordHelper
 import "workoutbuilder"
 
 /**********************
@@ -20,11 +21,12 @@ import "workoutbuilder"
 /*  - 1.2.0: Pattern name
 /*  - 1.2.1: Bugfix on cycling mode
 /*  - 2.0.0: Grid workout
+/*  - 2.1.0: Custom chords in Grid workout
 /**********************************************/
 MuseScore {
     menuPath: "Plugins." + pluginName
     description: "This plugin builds chordscale workouts based on patterns defined by the user."
-    version: "2.0.0 (SNAPSHOT)"
+    version: "2.1.0"
 
     pluginType: "dialog"
     requiresScore: false
@@ -35,6 +37,7 @@ MuseScore {
 
     readonly property var pluginName: "Scale Workout Builder"
     readonly property var noteHelperVersion: "1.0.3"
+    readonly property var chordHelperVersion: "1.0.0"
 
     readonly property var librarypath: { {
             var f = Qt.resolvedUrl("workoutbuilder/workoutbuilder.library");
@@ -45,8 +48,9 @@ MuseScore {
     onRun: {
 
         // Versionning
-        if ((typeof(NoteHelper.checkVersion) !== 'function') || !NoteHelper.checkVersion(noteHelperVersion)) {
-            console.log("Invalid zparkingb/notehelper.js versions. Expecting " + noteHelperVersion + ".");
+        if ((typeof(NoteHelper.checkVersion) !== 'function') || !NoteHelper.checkVersion(noteHelperVersion)||
+            (typeof(ChordHelper.checkVersion) !== 'function') || !ChordHelper.checkVersion(chordHelperVersion)) {
+            console.log("Invalid zparkingb/notehelper.js or zparkingb/chordanalyser.js versions. Expecting " + noteHelperVersion +" and "+chordHelperVersion + ".");
             invalidLibraryDialog.open();
             return;
         }
@@ -79,11 +83,13 @@ MuseScore {
 
     property int _max_patterns: 10
     property int _max_steps: 12
-    property int _max_roots: 12
+    property int _max_roots: 20
     property var _degrees: ['1', 'b2', '2', 'm3', 'M3', '4', 'b5', '5', 'm6', 'M6', 'm7', 'M7',
         '(8)', 'b9', '9', '#9', 'b11', '11', '#11', '(12)', 'b13', '13', '#13', '(14)']
 
-    property var _griddegrees: ['1', '3', '5', '7', '8', '9', '11'];
+	// v2.1.0
+    // property var _griddegrees: ['1', '3', '5', '7', '8', '9', '11'];
+    property var _griddegrees: ['1', '2' , '3', '4' , '5', '6', '7', '8', '9', '11'];
 
     property var _instruments: [{
             "label": "C Instruments (default)",
@@ -431,25 +437,51 @@ MuseScore {
             // On change de "page" entre chaque pattern
             console.log("page++ (SP)");
             page = pages.length; // i.e. Go 1 index further (so if the array is empty, the first index will be 0)
-			console.log(">>page for pattern "+p+": "+page);
+            console.log(">>page for pattern " + p + ": " + page);
 
             for (var r = 0; r < roots.length; r++) {
                 console.log("By P, patterns: " + p + "/" + (patts.length - 1) + "; roots:" + r + "/" + (roots.length - 1) + " => " + page);
 
                 var root = roots[r].root;
                 var chordname = roots[r].type;
-                var scale = _chordTypes[chordname].scale;
+                // var scale = _chordTypes[chordname].scale;
+				// v2.1.0
+				var effective_chord;
+                var scale;
+				console.log(Object.keys(_chordTypes));
+				if (Object.keys(_chordTypes).indexOf(chordname)>=0) {
+					// known scale
+					effective_chord=_chordTypes[chordname];
+					scale = _chordTypes[chordname].scale;
+
+				}
+				else {
+				    //unknown scale
+				    var s = ChordHelper.scaleFromText(chordname);
+				    effective_chord = {
+				        "symb": chordname,
+				        "scale": s.scale,
+				        "mode": s.mode
+				    };
+				    scale = s.keys;
+
+				}
                 var steps = [];
                 for (var n = 0; n < pp.notes.length; n++) {
                     var ip = parseInt(pp.notes[n]) - 1; // TODO: This is not clean: using a label "1" and trying to deduce the valid array index
-                    console.log(n + ": " + pp.notes[n] + " --> " + ip + " --> " + scale[ip]);
-                    steps.push(scale[ip]);
+
+                    console.log(ip + "--" + (ip % 7) + "--" + Math.floor(ip / 7) + "--" + (Math.floor(ip / 7) * 12) + "**" + scale[ip % 7] + "**" + (scale[ip % 7] + (Math.floor(ip / 7) * 12)));
+
+                    var inScale = (scale[ip % 7]) + (Math.floor(ip / 7) * 12);
+
+                    console.log(n + ": " + pp.notes[n] + " --> " + ip + " --> " + inScale);
+                    steps.push(inScale);
                 }
 
                 var pattern = {
                     "notes": steps,
                     "loopAt": pp.loopAt,
-                    "chord": _chordTypes[chordname],
+                    "chord": effective_chord,
                     "name": pp.name
                 };
 
@@ -466,7 +498,7 @@ MuseScore {
                 for (var s = 0; s < subpatterns.length; s++) {
                     var placeAt = page + ((chkByPattern.checked) ? 0 : s);
 
-                    console.log(">> Looking at pattern " + p +", subpattern " + s +" => will be placed at page "+placeAt +" (page="+page+")");
+                    console.log(">> Looking at pattern " + p + ", subpattern " + s + " => will be placed at page " + placeAt + " (page=" + page + ")");
                     if (pages[placeAt] === undefined)
                         pages[placeAt] = [];
 
@@ -1474,7 +1506,8 @@ MuseScore {
             if (r == -1)
                 continue;
 
-            var cText = idGridChordType.itemAt(i).currentText; // non-editable
+            // var cText = idGridChordType.itemAt(i).currentText; // non-editable  // v2.1.0
+            var cText = idGridChordType.itemAt(i).editText; // non-editable
             if (cText === '') {
                 cText = 'M'; // Major by default
             }
@@ -1506,7 +1539,14 @@ MuseScore {
             if (i < rr.length) {
                 //debugO("setPhrase: " + i, rr[i]);
                 idRoot.itemAt(i).currentIndex = _ddRoots.indexOf(_roots[rr[i].root]);
+				//v2.1.0
+                // idGridChordType.itemAt(i).currentIndex = _ddChordTypes.indexOf(rr[i].type);
+				console.log("LOADING "+rr[i].type);
+				if (_ddChordTypes.indexOf(rr[i].type)>=0) {
                 idGridChordType.itemAt(i).currentIndex = _ddChordTypes.indexOf(rr[i].type);
+				} else {
+						idGridChordType.itemAt(i).editText = rr[i].type;
+								}
             } else {
                 //debugO("setPhrase: " + i, "/");
                 idRoot.itemAt(i).currentIndex = 0;
@@ -2279,70 +2319,87 @@ MuseScore {
             //Layout.row : 3
             text: "Roots:"
         }
-        //RowLayout {
-        GridLayout {
-            columnSpacing: 5
-            rowSpacing: 10
+        Flickable {
+            id: flickable
             Layout.alignment: Qt.AlignLeft
-            rows: 1
+            Layout.fillWidth: true
+            Layout.preferredHeight: idRootsGrid.implicitHeight + sbRoots.height + 5
+            contentWidth: idRootsGrid.width
+            clip: true
+            GridLayout {
+                id: idRootsGrid
+                columnSpacing: 5
+                rowSpacing: 10
+                Layout.alignment: Qt.AlignLeft
+                rows: 1
 
-            Repeater {
+                Repeater {
 
-                id: idRoot
-                model: _max_roots
+                    id: idRoot
+                    model: _max_roots
 
-                ComboBox {
-                    id: lstRoot
-                    Layout.alignment: Qt.AlignLeft | Qt.QtAlignBottom
-                    editable: false
-                    model: _ddRoots
-                    Layout.preferredHeight: 30
-                    implicitWidth: 90
+                    ComboBox {
+                        id: lstRoot
+                        Layout.alignment: Qt.AlignLeft | Qt.QtAlignBottom
+                        editable: false
+                        model: _ddRoots
+                        Layout.preferredHeight: 30
+                        implicitWidth: 90
 
-                    onActivated: {
-                        // manual change, resetting the rootSchemeName
-                        rootSchemeName = undefined;
+                        onActivated: {
+                            // manual change, resetting the rootSchemeName
+                            rootSchemeName = undefined;
+                        }
+                    }
+
+                }
+                Repeater {
+                    id: idGridChordType
+                    model: _max_roots
+
+                    ComboBox {
+                        id: ccGCT
+                        model: _ddChordTypes
+                    // editable: false  // v2.1.0
+                        editable: true
+                        Layout.row: 1
+                        Layout.column: index
+                        Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
+                        Layout.rightMargin: 2
+                        Layout.leftMargin: 2
+                        Layout.preferredWidth: 90
+
+                        states: [
+                            State {
+                                when: bar.currentIndex == 0
+                                PropertyChanges {
+                                    target: ccGCT;
+                                    visible: false
+                                }
+                            },
+                            State {
+                                when: bar.currentIndex != 0;
+                                PropertyChanges {
+                                    target: ccGCT;
+                                    visible: true
+                                }
+                            }
+                        ]
+
                     }
                 }
 
             }
-            Repeater {
-                id: idGridChordType
-                model: _max_roots
+            ScrollBar.horizontal: ScrollBar {
+            id: sbRoots
 
-                ComboBox {
-                    id: ccGCT
-                    model: _ddChordTypes
-                    editable: false
-                    Layout.row: 1
-                    Layout.column: index
-                    Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
-                    Layout.rightMargin: 2
-                    Layout.leftMargin: 2
-                    Layout.preferredWidth: 90
-
-                    states: [
-                        State {
-                            when: bar.currentIndex == 0
-                            PropertyChanges {
-                                target: ccGCT;
-                                visible: false
-                            }
-                        },
-                        State {
-                            when: bar.currentIndex != 0;
-                            PropertyChanges {
-                                target: ccGCT;
-                                visible: true
-                            }
-                        }
-                    ]
-
-                }
+                //anchors.top: idRootsGrid.bottom
+                anchors.right: flickable.right
+                anchors.left: flickable.left
+                active: true
+                visible: true
             }
-
         }
-
         Label {
             //Layout.column : 0
             //Layout.row : 1
@@ -3049,7 +3106,7 @@ MuseScore {
         icon: StandardIcon.Critical
         standardButtons: StandardButton.Ok
         title: 'Invalid libraries'
-        text: "Invalid 'zparkingb/notehelper.js' versions.\nExpecting " + noteHelperVersion + ".\n" + pluginName + " will stop here."
+        text: "Invalid 'zparkingb/notehelper.js' or 'zparkingb/chordanalyser.js' versions.\nExpecting " + noteHelperVersion +" and "+ chordHelperVersion+ ".\n" + pluginName + " will stop here."
         onAccepted: {
             Qt.quit()
         }
