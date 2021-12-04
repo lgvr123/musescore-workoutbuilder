@@ -31,7 +31,7 @@ MuseScore {
     pluginType: "dialog"
     requiresScore: false
     width: 1375
-    height: 800
+    height: 820
 
     id: mainWindow
 
@@ -359,7 +359,7 @@ MuseScore {
     property var workoutName: undefined
 
     function printWorkout() {
-        var scaleMode = (bar.currentIndex == 0);
+        var scaleMode = (modeIndex() == 0);
 
         var pages = (scaleMode) ? printWorkout_forScale() : printWorkout_forGrid();
 
@@ -1333,7 +1333,7 @@ MuseScore {
 
     function toClipboard(index, scaleMode) {
         if (scaleMode === undefined)
-            scaleMode = (bar.currentIndex == 0);
+            scaleMode = (modeIndex() == 0);
         console.log("To Clipboard for pattern " + index);
         clipboard = getPattern(index, scaleMode);
 
@@ -1341,7 +1341,7 @@ MuseScore {
 
     function fromClipboard(index, scaleMode) {
         if (scaleMode === undefined)
-            scaleMode = (bar.currentIndex == 0);
+            scaleMode = (modeIndex() == 0);
 
         if (clipboard === undefined)
             return;
@@ -1359,7 +1359,7 @@ MuseScore {
 
     function getPattern(index, scaleMode) {
         if (scaleMode === undefined)
-            scaleMode = (bar.currentIndex == 0);
+            scaleMode = (modeIndex() == 0);
 
         var steps = [];
         for (var i = 0; i < _max_steps; i++) {
@@ -1399,7 +1399,7 @@ MuseScore {
 
     function setPattern(index, pattern, scaleMode) {
         if (scaleMode === undefined)
-            scaleMode = (bar.currentIndex == 0);
+            scaleMode = (modeIndex() == 0);
 
         console.log("Setting pattern " + index + ", mode: " + (scaleMode ? _SCALE_MODE : _GRID_MODE));
 
@@ -1421,7 +1421,7 @@ MuseScore {
             }
 
             // ..one must reassign explicitely the whole object in the combobox to trigger the binding's update
-            idStepNotes.itemAt(ip).children[bar.currentIndex].item.step = sn;
+            idStepNotes.itemAt(ip).children[modeIndex()].item.step = sn;
 
         }
 
@@ -1452,7 +1452,7 @@ MuseScore {
 
     function savePattern(index, scaleMode) {
         if (scaleMode === undefined)
-            scaleMode = (bar.currentIndex == 0);
+            scaleMode = (modeIndex() == 0);
         var p = getPattern(index, scaleMode);
         var i = findInLibrary(p);
         if (i < 0) { // pattern not found in library
@@ -1467,7 +1467,7 @@ MuseScore {
 
     function deletePattern(pattern, scaleMode) {
         if (scaleMode === undefined)
-            scaleMode = (bar.currentIndex == 0);
+            scaleMode = (modeIndex() == 0);
 
         var i = findInLibrary(pattern);
         if (i >= 0) { // pattern found in library
@@ -1715,7 +1715,7 @@ MuseScore {
         }
 
         var workout;
-        if (bar.currentIndex == 0) {
+        if (modeIndex() == 0) {
             workout = new workoutClass(label, pp, undefined, chkByPattern.checked, chkInvert.checked);
         } else {
             var phrase = (withPhrase) ? getPhrase() : undefined;
@@ -1901,22 +1901,67 @@ MuseScore {
         rowSpacing: 10
         columns: 2
 
-        TabBar {
-            id: bar
-            width: parent.width
-            Layout.columnSpan: 2
-            Layout.alignment: Qt.AlignLeft
-            TabButton {
-                text: qsTr("Scale workout")
-                width: implicitWidth
-            }
-            TabButton {
-                text: qsTr("Grid workout")
-                width: implicitWidth
-            }
-        }
+        SystemPalette { id: systemPalette; colorGroup: SystemPalette.Active }
 
-        GridLayout { // un small element within the fullWidth/fullHeight where we paint the repeater
+		GroupBox {
+		    title: "Mode selection..."
+		    id: grpModes
+
+		    Layout.columnSpan: 2
+		    Layout.alignment: Qt.AlignHCenter
+		    Layout.margins: 0
+		    Layout.bottomMargin: 10
+		    topPadding: 10
+		    bottomPadding: 10
+		    rightPadding: 20
+		    leftPadding: 20
+			
+		    // Layout.preferredHeight: layModes.height + padding * 2 + labMode.height / 2
+
+		    background: Rectangle {
+		        id: r100
+		        y: grpModes.topPadding - grpModes.bottomPadding
+		        width: parent.width
+		        implicitHeight: layModes.height + grpModes.padding * 2
+		        border.color: "#929292"
+		        color: "transparent"
+		        radius: 5
+		    }
+
+		    label:
+		    Rectangle {
+		        x: grpModes.leftPadding
+		        y: grpModes.topPadding - grpModes.bottomPadding - labMode.height / 2
+		        implicitWidth: labMode.width + 12
+		        implicitHeight: labMode.height
+		        color: systemPalette.window
+		        Label {
+		            id: labMode
+		            x: 6
+		            // width: grpModes.availableWidth
+		            text: grpModes.title
+		            elide: Text.ElideRight
+		        }
+		    }
+		    RowLayout {
+		        id: layModes
+		         ButtonGroup {
+		             id: bar
+		         }
+		         NiceRadioButton {
+		             id: rdbScale
+		             text: qsTr("Scale workout")
+		             checked: true
+		             ButtonGroup.group: bar
+		         }
+		         NiceRadioButton {
+		             id: rdbGrid
+		             text: qsTr("Grid workout")
+		             ButtonGroup.group: bar
+		         }
+		     }
+		 }
+		 GridLayout { // un small element within the fullWidth/fullHeight where we paint the repeater
             //anchors.verticalCenter : parent.verticalCenter
             id: idNoteGrid
             rows: _max_patterns + 1
@@ -1965,7 +2010,7 @@ MuseScore {
 
                 StackLayout {
                     width: parent.width
-                    currentIndex: bar.currentIndex
+                    currentIndex: modeIndex()
 
                     property int stepIndex: index % _max_steps
                     property int patternIndex: Math.floor(index / _max_steps)
@@ -2082,14 +2127,14 @@ MuseScore {
 
                     states: [
                         State {
-                            when: bar.currentIndex == 0
+                            when: modeIndex() == 0
                             PropertyChanges {
                                 target: ccCT;
                                 enabled: true
                             }
                         },
                         State {
-                            when: bar.currentIndex != 0;
+                            when: modeIndex() != 0;
                             PropertyChanges {
                                 target: ccCT;
                                 enabled: false
@@ -2201,7 +2246,7 @@ MuseScore {
         }
 
         StackLayout {
-            currentIndex: bar.currentIndex
+            currentIndex: modeIndex()
             //Layout.preferredWidth: 220
             Layout.preferredHeight: 30
             Layout.fillWidth: true
@@ -2371,14 +2416,14 @@ MuseScore {
 
                         states: [
                             State {
-                                when: bar.currentIndex == 0
+                                when: modeIndex() == 0
                                 PropertyChanges {
                                     target: ccGCT;
                                     visible: false
                                 }
                             },
                             State {
-                                when: bar.currentIndex != 0;
+                                when: modeIndex() != 0;
                                 PropertyChanges {
                                     target: ccGCT;
                                     visible: true
@@ -2421,7 +2466,7 @@ MuseScore {
 
                 states: [
                     State {
-                        when: bar.currentIndex == 0
+                        when: modeIndex() == 0
                         PropertyChanges {
                             target: chkByPattern;
                             //enabled: true
@@ -2430,7 +2475,7 @@ MuseScore {
                         }
                     },
                     State {
-                        when: bar.currentIndex != 0;
+                        when: modeIndex() != 0;
                         PropertyChanges {
                             target: chkByPattern;
                             //enabled: false
@@ -2444,7 +2489,7 @@ MuseScore {
                 id: chkInvert
                 text: "Invert pattern every two roots"
                 checked: false
-                enabled: chkByPattern.checked || bar.currentIndex != 0
+                enabled: chkByPattern.checked || modeIndex() != 0
                 ToolTip.text: "During a pattern over different root notes, every two root notes, the pattern will be apply in the reversed order.\n (Meaning in a descending way for an ascending pattern)."
                 ToolTip.delay: tooltipShow
                 ToolTip.timeout: tooltipHide
@@ -2721,7 +2766,7 @@ MuseScore {
                     }
                     PropertyChanges {
                         target: lstLibrary;
-                        model: getPresetsLibrary(resetL, (bar.currentIndex == 0) ? _SCALE_MODE : _GRID_MODE)
+                        model: getPresetsLibrary(resetL, (modeIndex() == 0) ? _SCALE_MODE : _GRID_MODE)
                     }
                     PropertyChanges {
                         target: btnDelPatt;
@@ -2737,7 +2782,7 @@ MuseScore {
                     }
                     PropertyChanges {
                         target: lstLibrary;
-                        model: getWorkoutsLibrary(resetL, (bar.currentIndex == 0) ? _SCALE_MODE : _GRID_MODE)
+                        model: getWorkoutsLibrary(resetL, (modeIndex() == 0) ? _SCALE_MODE : _GRID_MODE)
                     }
                     PropertyChanges {
                         target: btnDelPatt;
@@ -2935,7 +2980,7 @@ MuseScore {
                 Layout.alignment: Qt.AlignLeft
                 text: "Include the phrase in the workout"
                 checked: false
-                enabled: (bar.currentIndex != 0)
+                enabled: (modeIndex() != 0)
                 ToolTip.text: "Includes the current phrase in the workout or keep it blank."
                 ToolTip.delay: tooltipShow
                 ToolTip.timeout: tooltipHide
@@ -3134,6 +3179,14 @@ MuseScore {
         });
         return filtered;
     }
+	
+	/**
+	* @return 0 for Scale mode, 1 for Grid mode
+	*/
+	function modeIndex() {
+		// return bar.currentIndex;
+		return rdbScale.checked?0:1;
+	}
 
     property var presets: [{
             "name": '',
