@@ -22,11 +22,12 @@ import "workoutbuilder"
 /*  - 1.2.1: Bugfix on cycling mode
 /*  - 2.0.0: Grid workout
 /*  - 2.1.0: Custom chords in Grid workout
+/*  - 2.1.1: Better workout name management
 /**********************************************/
 MuseScore {
     menuPath: "Plugins." + pluginName
     description: "This plugin builds chordscale workouts based on patterns defined by the user."
-    version: "2.1.0"
+    version: "2.1.1"
 
     pluginType: "dialog"
     requiresScore: false
@@ -357,6 +358,9 @@ MuseScore {
 
     property var rootSchemeName: undefined
     property var workoutName: undefined
+    property var lastLoadedWorkoutName: undefined
+    property var lastLoadedGridWorkoutName: undefined
+    property var lastLoadedPhraseName: undefined
 
     function printWorkout() {
         var scaleMode = (modeIndex() == 0);
@@ -1447,6 +1451,10 @@ MuseScore {
 
         var name = (pattern && pattern.name) ? pattern.name : "";
         idPattName.itemAt(index).text = name;
+		
+		console.log("clearing the workout saved name");
+		workoutName=undefined; // resetting the name of the workout. One has to save it again to regain the name
+
 
     }
 
@@ -1611,17 +1619,18 @@ MuseScore {
     }
 
     /**
-     * Simply adds that workout on top of the workouts list. No verification of duplicates is performed.
+     * Simply adds that phrase on top of the phrases list. No verification of duplicates is performed.
      */
-    function savePhrase(workout) {
-        phrases.push(workout);
+    function savePhrase(phrase) {
+        phrases.push(phrase);
         resetL = !resetL;
         saveLibrary();
-        workoutName = workout.label;
+        // workoutName = phrase.label; // 14/12/21: incorrect
+		lastLoadedPhraseName = phrase.name;
     }
 
     /**
-     * Simply adds that phrase on top of the workouts list. No verification of duplicates is performed.
+     * Replace a phrase by another. Might be another name or another definition.
      */
     function replacePhrase(oldPhrase, newPhrase) {
         for (var i = 0; i < phrases.length; i++) {
@@ -1776,8 +1785,14 @@ MuseScore {
         resetL = !resetL;
         saveLibrary();
         workoutName = workout.name;
-    }
+		
+        if (workout.type == _SCALE_MODE) {
+            lastLoadedWorkoutName = workout.name;
+        } else {
+            lastLoadedGridWorkoutName = workout.name;
+        }
 
+    }
     /**
      * Simply adds that workout on top of the workouts list. No verification of duplicates is performed.
      */
@@ -1792,6 +1807,14 @@ MuseScore {
         }
         resetL = !resetL;
         saveLibrary();
+
+        workoutName = newWorkout.name;
+		
+        if (newWorkout.type == _SCALE_MODE) {
+            lastLoadedWorkoutName = newWorkout.name;
+        } else {
+            lastLoadedGridWorkoutName = newWorkout.name;
+        }
     }
 
     function deleteWorkout(workout) {
@@ -2097,6 +2120,12 @@ MuseScore {
                         ToolTip.visible: hovered
 
                     }
+
+					onCurrentIndexChanged: {
+						console.log("clearing the workout saved name");
+						workoutName=undefined; // resetting the name of the workout. One has to save it again to regain the name
+					}
+
                 }
             }
 
@@ -2142,6 +2171,10 @@ MuseScore {
                         }
                     ]
 
+					onCurrentIndexChanged: {
+						console.log("clearing the workout saved name");
+						workoutName=undefined; // resetting the name of the workout. One has to save it again to regain the name
+					}
                 }
             }
 
@@ -2327,6 +2360,7 @@ MuseScore {
                         var __phrase = model[currentIndex];
                         console.log("Phrase Changed: " + __phrase.label);
                         setPhrase(__phrase);
+						lastLoadedPhraseName = __phrase.name
                     }
 
                 }
@@ -2338,6 +2372,7 @@ MuseScore {
                     imagePadding: (buttonBox.contentItem.height - imageHeight) / 2
                     onClicked: {
                         newWorkoutDialog.state = "phrase";
+                        newWorkoutDialog.defname = lastLoadedPhraseName;
                         newWorkoutDialog.open();
                     }
 
@@ -2564,6 +2599,7 @@ MuseScore {
                 imagePadding: (buttonBox.contentItem.height - imageHeight) / 2
                 onClicked: {
                     newWorkoutDialog.state = "workout";
+					newWorkoutDialog.defname = ((modeIndex() == 0)?lastLoadedWorkoutName:lastLoadedGridWorkoutName);
                     newWorkoutDialog.open();
                 }
 
@@ -2646,6 +2682,7 @@ MuseScore {
             currentIndex: find(step.note, Qt.MatchExactly)
             onCurrentIndexChanged: {
                 step.note = model[currentIndex];
+				workoutName=undefined; // resetting the name of the workout. One has to save it again to regain the name
             }
         }
     }
@@ -2666,6 +2703,7 @@ MuseScore {
             currentIndex: find(step.degree, Qt.MatchExactly)
             onCurrentIndexChanged: {
                 step.degree = model[currentIndex];
+				workoutName=undefined; // resetting the name of the workout. One has to save it again to regain the name
             }
         }
     }
@@ -2855,9 +2893,15 @@ MuseScore {
                                         break;
                                     case "workout":
                                         applyWorkout(modelData);
+										if(modeIndex()==0){
+										lastLoadedWorkoutName=modelData.name;
+										} else {
+										lastLoadedGridWorkoutName=modelData.name;
+										}
                                         break;
                                     case "phrase":
                                         setPhrase(modelData);
+										lastLoadedPhraseName=modelData.name;
                                         break;
                                     }
                                 }
@@ -2920,15 +2964,22 @@ MuseScore {
                         }
 
                         onAccepted: {
+                            var modelData = lstLibrary.model[lstLibrary.currentIndex];
                             switch (loadWindow.state) {
                             case "pattern":
-                                setPattern(loadWindow.index, lstLibrary.model[lstLibrary.currentIndex]);
+                                setPattern(loadWindow.index, modelData);
                                 break;
                             case "workout":
-                                applyWorkout(lstLibrary.model[lstLibrary.currentIndex]);
+                                applyWorkout(modelData);
+                                if (modeIndex() == 0) {
+                                    lastLoadedWorkoutName = modelData.name;
+                                } else {
+                                    lastLoadedGridWorkoutName = modelData.name;
+                                }
                                 break;
                             case "phrase":
-                                setPhrase(lstLibrary.model[lstLibrary.currentIndex]);
+                                setPhrase(modelData);
+                                lastLoadedPhraseName = modelData.name;
                                 break;
                             }
 
@@ -2949,6 +3000,7 @@ MuseScore {
         standardButtons: Dialog.Save | Dialog.Cancel
 
         property string state: "workout"
+		property var defname: undefined
 
         GridLayout {
             state: newWorkoutDialog.state
@@ -2967,7 +3019,7 @@ MuseScore {
                 id: txtWorkoutName
 
                 //Layout.preferredHeight: 30
-                text: ""
+                text: "--"
                 Layout.fillWidth: true
                 Layout.preferredWidth: 200
                 placeholderText: "Enter new " + ((state === "workout") ? "workout" : "phrase") + "'s name"
@@ -3022,6 +3074,14 @@ MuseScore {
                 }
             ]
         }
+		
+		onVisibleChanged: {
+			if (visible) {
+				txtWorkoutName.text=((newWorkoutDialog.defname!==undefined)?newWorkoutDialog.defname:"");
+				txtWorkoutName.focus = true;
+				txtWorkoutName.selectAll();
+			}
+		}
 
         onAccepted: {
             var name = txtWorkoutName.text.trim();
