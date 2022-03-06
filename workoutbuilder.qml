@@ -50,8 +50,8 @@ MuseScore {
         }
     }
     onRun: {
-		
-		console.log("==========================================================");
+
+        console.log("==========================================================");
 
         // Versionning
         if ((typeof(SelHelper.checktVersion) !== 'function') || !SelHelper.checktVersion(selHelperVersion) ||
@@ -91,7 +91,7 @@ MuseScore {
 
     property int _max_patterns: 10
     property int _max_steps: 12
-    property int _max_roots: 20
+    property int _max_roots: 12
     property var _degrees: ['1', 'b2', '2', 'm3', 'M3', '4', 'b5', '5', 'm6', 'M6', 'm7', 'M7',
         '(8)', 'b9', '9', '#9', 'b11', '11', '#11', '(12)', 'b13', '13', '#13', '(14)']
 
@@ -464,7 +464,7 @@ MuseScore {
 
                 if (Object.keys(_chordTypes).indexOf(chordtype) >= 0) {
                     // known scale
-				effective_chord = JSON.parse(JSON.stringify( _chordTypes[chordtype])) ; // taking a copy
+                    effective_chord = JSON.parse(JSON.stringify(_chordTypes[chordtype])); // taking a copy
                     // scale = _chordTypes[chordtype].scale;
                     scale = effective_chord.scale;
 
@@ -540,7 +540,7 @@ MuseScore {
                         }
                     }
 
-debugO("pushing to pages (effective_chord): ",effective_chord, ["scale"]);
+                    debugO("pushing to pages (effective_chord): ", effective_chord, ["scale"]);
 
                     pages[placeAt].push({
                         "root": root,
@@ -785,10 +785,10 @@ debugO("pushing to pages (effective_chord): ",effective_chord, ["scale"]);
 
         var title = (workoutName !== undefined) ? workoutName : "Scale workout";
         title += " - ";
-        if (rootSchemeName !== undefined && rootSchemeName.trim()!=="") {
+        if (rootSchemeName !== undefined && rootSchemeName.trim() !== "") {
             title += rootSchemeName;
         } else if ((modeIndex() == 0)) {
-			// scale mode
+            // scale mode
             for (var i = 0; i < _max_roots; i++) {
                 var txt = idRoot.itemAt(i).currentText;
                 // console.log("Next Root: " + txt);
@@ -799,21 +799,21 @@ debugO("pushing to pages (effective_chord): ",effective_chord, ["scale"]);
                 title += txt;
             }
         } else {
-			// grid mode
-			var names=txtPhrase.text.split(";")
-			.map(function(c) {
-				return (c?c.trim():undefined);
-			})
-			.filter(function(c) {
-				return (c && c.trim()!=="")
-			});
-			if (names.length>5) {
-				names=names.slice(0,4);
-				names.push("...");
-			}
-			title +=names.join(", ");
-			
-		}
+            // grid mode
+            var names = txtPhrase.text.split(";")
+                .map(function (c) {
+                return (c ? c.trim() : undefined);
+            })
+                .filter(function (c) {
+                return (c && c.trim() !== "")
+            });
+            if (names.length > 5) {
+                names = names.slice(0, 4);
+                names.push("...");
+            }
+            title += names.join(", ");
+
+        }
 
         // Styling
         score.addText("title", title);
@@ -909,8 +909,6 @@ debugO("pushing to pages (effective_chord): ",effective_chord, ["scale"]);
                     preferredTpcs = filterTpcs(root, mode);
                 }
 
-
-
                 if (adaptativeMeasure) {
                     beatsByMeasure = signatureForPattern(pages[i][j].notes.length);
                 } else {
@@ -964,30 +962,7 @@ debugO("pushing to pages (effective_chord): ",effective_chord, ["scale"]);
                             csymb.text = chord.name;
                         } else {
                             // no preferred name set. Just a root(pitch). Computing a name.
-                            /*var rtxt = _chords[root].root.replace(/♯/gi, '#').replace(/♭/gi, "b");
-
-                            // chord's roots
-                            if (!rtxt.includes("/")) {
-                                csymb.text = rtxt;
-                            } else {
-                                var parts = rtxt.split("/");
-                                if (parts[0].includes("#")) {
-                                    if (sharp_mode)
-                                        csymb.text = parts[0];
-                                    else
-                                        csymb.text = parts[1]
-                                } else {
-                                    if (sharp_mode)
-                                        csymb.text = parts[1];
-                                    else
-                                        csymb.text = parts[0]
-                                }
-                            }
-
-                            // chord's type
-                            csymb.text += chord.symb;*/
-                            csymb.text = rootToName(root,sharp_mode,chord.symb);
-
+                            csymb.text = rootToName(root, sharp_mode, chord.symb);
                         }
 
                         //note.parent.parent.add(csymb); //note->chord->segment
@@ -1354,36 +1329,36 @@ debugO("pushing to pages (effective_chord): ",effective_chord, ["scale"]);
         return preferredTpcs;
 
     }
-	
-	function rootToName(root, sharp_mode, chordsymb) {
-	    // no preferred name set. Just a root(pitch). Computing a name.
-	    var rtxt = _chords[root].root.replace(/♯/gi, '#').replace(/♭/gi, "b");
-		var name;
 
-	    // chord's roots
-	    if (!rtxt.includes("/")) {
-	        name = rtxt;
-	    } else {
-	        var parts = rtxt.split("/");
-	        if (parts[0].includes("#")) {
-	            if (sharp_mode)
-	                name = parts[0];
-	            else
-	                name = parts[1]
-	        } else {
-	            if (sharp_mode)
-	                name = parts[1];
-	            else
-	                name = parts[0]
-	        }
-	    }
+    function rootToName(root, sharp_mode, chordsymb) {
+        // no preferred name set. Just a root(pitch). Computing a name.
+        var rtxt = _chords[root].root.replace(/♯/gi, '#').replace(/♭/gi, "b");
+        var name;
 
-	    // chord's type
-	    name += chordsymb;
-		
-		return name;
+        // chord's roots
+        if (!rtxt.includes("/")) {
+            name = rtxt;
+        } else {
+            var parts = rtxt.split("/");
+            if (parts[0].includes("#")) {
+                if (sharp_mode)
+                    name = parts[0];
+                else
+                    name = parts[1]
+            } else {
+                if (sharp_mode)
+                    name = parts[1];
+                else
+                    name = parts[0]
+            }
+        }
 
-	}
+        // chord's type
+        name += chordsymb;
+
+        return name;
+
+    }
     /**
      * Changes a ending measure bar line to a double one.
      * !! If the measure is the last one of the score, adding a new measure after will override this change.
@@ -1578,8 +1553,7 @@ debugO("pushing to pages (effective_chord): ",effective_chord, ["scale"]);
 
     function getPhrase(label) {
 
-        var phraseText=txtPhrase.text;
-        // var phraseText = "C7add13;Eb0;D#07;Gbbaddb9";
+        var phraseText = txtPhrase.text;
         var phraseArray = phraseText.split(";").map(function (e) {
             e = e.trim();
             return e;
@@ -1610,32 +1584,6 @@ debugO("pushing to pages (effective_chord): ",effective_chord, ["scale"]);
             return (chord != null);
         });
 
-        /*var roots = [];
-
-        for (var i = 0; i < _max_roots; i++) {
-        var txt = idRoot.itemAt(i).currentText;
-        // console.log("Next Root: " + txt);
-        if (txt === '' || txt === undefined)
-        continue;
-        var r = _roots.indexOf(txt);
-        // console.log("-- => " + r);
-        if (r == -1)
-        continue;
-
-        // var cText = idGridChordType.itemAt(i).currentText; // non-editable  // v2.1.0
-        var cText = idGridChordType.itemAt(i).editText; // non-editable
-        if (cText === '') {
-        cText = 'M'; // Major by default
-        }
-
-        roots.push({
-        "root": r,
-        "type": cText,
-        });
-
-        console.log("Adding " + r + "[" + cText + "]");
-        }*/
-
         var p = new phraseClass((label !== undefined) ? label : "", roots);
 
         console.log(p.label);
@@ -1651,40 +1599,19 @@ debugO("pushing to pages (effective_chord): ",effective_chord, ["scale"]);
         //console.log("setPhrase: clear: " + ((typeof phrase !== 'undefined') ? phrase.name : undefined));
         var rr = phrase.chords;
         //debugO("setPhrase: chords", rr);
-		var astext=rr.map(function(c) {
-			if(c.name!==undefined && c.name.trim()!=="") {
-				return c.name;
-			}
-			else {
-			    return rootToName(c.root, true, c.type); // no easy way to know if we should use sharps or flats
-			}
-			
-		}).join(";");
-		
-		console.log("Phrase as text: "+astext);
-		
-			txtPhrase.text=astext;
-		
-        /*for (var i = 0; i < _max_roots; i++) {
-            if (i < rr.length) {
-                //debugO("setPhrase: " + i, rr[i]);
-                idRoot.itemAt(i).currentIndex = _ddRoots.indexOf(_roots[rr[i].root]);
-                //v2.1.0
-                // idGridChordType.itemAt(i).currentIndex = _ddChordTypes.indexOf(rr[i].type);
-                console.log("LOADING " + rr[i].type);
-                if (_ddChordTypes.indexOf(rr[i].type) >= 0) {
-                    idGridChordType.itemAt(i).currentIndex = _ddChordTypes.indexOf(rr[i].type);
-                } else {
-                    idGridChordType.itemAt(i).editText = rr[i].type;
-                }
+        var astext = rr.map(function (c) {
+            if (c.name !== undefined && c.name.trim() !== "") {
+                return c.name;
             } else {
-                //debugO("setPhrase: " + i, "/");
-                idRoot.itemAt(i).currentIndex = 0;
-                idGridChordType.itemAt(i).currentIndex = 0;
+                return rootToName(c.root, true, c.type); // no easy way to know if we should use sharps or flats
             }
 
-            //console.log("selecting root " + i + ": " + steproots[i]);
-        }*/
+        }).join(";");
+
+        console.log("Phrase as text: " + astext);
+
+        txtPhrase.text = astext;
+
         resetR = false;
         resetR = true;
 
@@ -1863,7 +1790,8 @@ debugO("pushing to pages (effective_chord): ",effective_chord, ["scale"]);
 
         // building and pushing to gui the phrase
         var name = score.title;
-        if (!name || name=="") name=undefined;
+        if (!name || name == "")
+            name = undefined;
         //console.log("TITLE:"+score.title+":"+name+":");
         var phrase = new phraseClass(name, grid);
 
@@ -2622,10 +2550,13 @@ debugO("pushing to pages (effective_chord): ",effective_chord, ["scale"]);
         }
 
         // Roots
+
         Label {
             id: labRoots
             //Layout.column : 0
             //Layout.row : 3
+								height: 20
+
             states: [
                 State {
                     when: modeIndex() == 0
@@ -2644,23 +2575,26 @@ debugO("pushing to pages (effective_chord): ",effective_chord, ["scale"]);
             ]
 
         }
+		
         StackLayout {
             currentIndex: modeIndex()
-            width: parent.width
+            // width: parent.width
+			Layout.fillHeight: false // true is the default for a StackLayout
             Flickable {
                 id: flickable
                 Layout.alignment: Qt.AlignLeft
                 Layout.fillWidth: true
-                Layout.preferredHeight: idRootsGrid.implicitHeight + sbRoots.height + 5
+                implicitHeight: idRootsGrid.implicitHeight + sbRoots.height + 5
                 contentWidth: idRootsGrid.width
                 clip: true
 
                 GridLayout {
                     id: idRootsGrid
                     columnSpacing: 5
-                    rowSpacing: 10
+                    // rowSpacing: 10
                     Layout.alignment: Qt.AlignLeft
                     rows: 1
+					
 
                     Repeater {
 
@@ -2682,43 +2616,7 @@ debugO("pushing to pages (effective_chord): ",effective_chord, ["scale"]);
                         }
 
                     }
-                    Repeater {
-                        id: idGridChordType
-                        model: _max_roots
-
-                        ComboBox {
-                            id: ccGCT
-                            model: _ddChordTypes
-                            // editable: false  // v2.1.0
-                            editable: true
-                            Layout.row: 1
-                            Layout.column: index
-                            Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
-                            Layout.rightMargin: 2
-                            Layout.leftMargin: 2
-                            Layout.preferredWidth: 90
-
-                            states: [
-                                State {
-                                    when: modeIndex() == 0
-                                    PropertyChanges {
-                                        target: ccGCT;
-                                        visible: false
-                                    }
-                                },
-                                State {
-                                    when: modeIndex() != 0;
-                                    PropertyChanges {
-                                        target: ccGCT;
-                                        visible: true
-                                    }
-                                }
-                            ]
-
-                        }
-                    }
-
-                } // gridlayout Note mode
+                } // gridlayout scale mode
 
                 ScrollBar.horizontal: ScrollBar {
                     id: sbRoots
@@ -2729,13 +2627,12 @@ debugO("pushing to pages (effective_chord): ",effective_chord, ["scale"]);
                     active: true
                     visible: true
                 }
-            } // flicable note mode
+            } // flicable scale mode
 
             TextField {
                 id: txtPhrase
                 text: ""
                 Layout.fillWidth: true
-                // Layout.preferredWidth: 200
                 placeholderText: "Enter a grid such as Cm7;F7;C7;Ab7;G7;C7"
 
                 Layout.alignment: Qt.AlignLeft | Qt.QtAlignBottom
@@ -2744,7 +2641,7 @@ debugO("pushing to pages (effective_chord): ",effective_chord, ["scale"]);
 
 
         } // stacklayout
-
+		
         Label {
             //Layout.column : 0
             //Layout.row : 1
@@ -3865,16 +3762,16 @@ debugO("pushing to pages (effective_chord): ",effective_chord, ["scale"]);
 
         if (Array.isArray(element)) {
             for (var i = 0; i < element.length; i++) {
-                debugO(label + "-" + i, element[i],excludes);
+                debugO(label + "-" + i, element[i], excludes);
             }
 
         } else if (typeof element === 'object') {
 
             var kys = Object.keys(element);
             for (var i = 0; i < kys.length; i++) {
-				if(!excludes || excludes.indexOf(kys[i])==-1) {
-                debugO(label + ": " + kys[i], element[kys[i]],excludes);
-				}
+                if (!excludes || excludes.indexOf(kys[i]) == -1) {
+                    debugO(label + ": " + kys[i], element[kys[i]], excludes);
+                }
             }
         } else if (typeof element === 'undefined') {
             console.log(label + ": undefined");
