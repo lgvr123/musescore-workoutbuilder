@@ -9,11 +9,12 @@ import FileIO 3.0
 
 import "zparkingb/notehelper.js" as NoteHelper
 import "zparkingb/chordanalyser.js" as ChordHelper
+import "zparkingb/selectionhelper.js" as SelHelper
 import "workoutbuilder"
 
 /**********************
 /* Parking B - MuseScore - Scale Workout builder plugin
-/* v1.2.1
+/* v2.2.0
 /* ChangeLog:
 /* 	- 0.0.0: Initial release
 /*  - 1.0.0: Tools and library of patterns and workouts
@@ -23,11 +24,12 @@ import "workoutbuilder"
 /*  - 2.0.0: Grid workout
 /*  - 2.1.0: Custom chords in Grid workout
 /*  - 2.1.1: Better workout name management
+/*  - 2.2.0: Textual description of grids
 /**********************************************/
 MuseScore {
     menuPath: "Plugins." + pluginName
     description: "This plugin builds chordscale workouts based on patterns defined by the user."
-    version: "2.1.1"
+    version: "2.2.0"
 
     pluginType: "dialog"
     requiresScore: false
@@ -39,6 +41,7 @@ MuseScore {
     readonly property var pluginName: "Scale Workout Builder"
     readonly property var noteHelperVersion: "1.0.3"
     readonly property var chordHelperVersion: "1.0.0"
+    readonly property var selHelperVersion: "1.2.0"
 
     readonly property var librarypath: { {
             var f = Qt.resolvedUrl("workoutbuilder/workoutbuilder.library");
@@ -47,11 +50,15 @@ MuseScore {
         }
     }
     onRun: {
+		
+		console.log("==========================================================");
 
         // Versionning
-        if ((typeof(NoteHelper.checkVersion) !== 'function') || !NoteHelper.checkVersion(noteHelperVersion)||
+        if ((typeof(SelHelper.checktVersion) !== 'function') || !SelHelper.checktVersion(selHelperVersion) ||
+            (typeof(NoteHelper.checktVersion) !== 'function') || !NoteHelper.checktVersion(noteHelperVersion) ||
             (typeof(ChordHelper.checkVersion) !== 'function') || !ChordHelper.checkVersion(chordHelperVersion)) {
-            console.log("Invalid zparkingb/notehelper.js or zparkingb/chordanalyser.js versions. Expecting " + noteHelperVersion +" and "+chordHelperVersion + ".");
+            console.log("Invalid zparkingb/selectionhelper.js, zparkingb/notehelper.js or zparkingb/chordanalyser.js versions. Expecting "
+                 + selHelperVersion + " and " + noteHelperVersion + " and " + chordHelperVersion + ".");
             invalidLibraryDialog.open();
             return;
         }
@@ -88,9 +95,9 @@ MuseScore {
     property var _degrees: ['1', 'b2', '2', 'm3', 'M3', '4', 'b5', '5', 'm6', 'M6', 'm7', 'M7',
         '(8)', 'b9', '9', '#9', 'b11', '11', '#11', '(12)', 'b13', '13', '#13', '(14)']
 
-	// v2.1.0
+    // v2.1.0
     // property var _griddegrees: ['1', '3', '5', '7', '8', '9', '11'];
-    property var _griddegrees: ['1', '2' , '3', '4' , '5', '6', '7', '8', '9', '11'];
+    property var _griddegrees: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '11'];
 
     property var _instruments: [{
             "label": "C Instruments (default)",
@@ -378,7 +385,7 @@ MuseScore {
             //if (pages[i]===undefined) continue; // ne devrait plus arriver
             for (var j = 0; j < pages[i].length; j++) {
                 for (var k = 0; k < pages[i][j].notes.length; k++) {
-                    console.log(i + ") [" + pages[i][j].root + "/" + pages[i][j].mode + "/" + pages[i][j].chord + "] " + k + ": " + pages[i][j].notes[k]);
+                    console.log(i + ") [" + pages[i][j].root + "/" + pages[i][j].mode + "/" + pages[i][j].chord.name + "] " + k + ": " + pages[i][j].notes[k]);
                 }
             }
         }
@@ -388,7 +395,7 @@ MuseScore {
     }
     function printWorkout_forGrid() {
         // 1) Collecting the roots
-        var roots = getPhrase().chords;
+        var chords = getPhrase().chords;
 
         var patts = [];
 
@@ -428,7 +435,7 @@ MuseScore {
 
         // Must have at least 1 pattern and 1 root
         var pages = [];
-        if (patts.length == 0 || roots.length == 0) {
+        if (patts.length == 0 || chords.length == 0) {
             return [];
         }
 
@@ -443,33 +450,42 @@ MuseScore {
             page = pages.length; // i.e. Go 1 index further (so if the array is empty, the first index will be 0)
             console.log(">>page for pattern " + p + ": " + page);
 
-            for (var r = 0; r < roots.length; r++) {
-                console.log("By P, patterns: " + p + "/" + (patts.length - 1) + "; roots:" + r + "/" + (roots.length - 1) + " => " + page);
+            for (var r = 0; r < chords.length; r++) {
+                console.log("By P, patterns: " + p + "/" + (patts.length - 1) + "; chords:" + r + "/" + (chords.length - 1) + " => " + page);
 
-                var root = roots[r].root;
-                var chordname = roots[r].type;
-                // var scale = _chordTypes[chordname].scale;
-				// v2.1.0
-				var effective_chord;
+                var chord = chords[r];
+                var root = chord.root;
+                var chordtype = chord.type;
+                // var scale = _chordTypes[chordtype].scale;
+                // v2.1.0
+                var effective_chord;
                 var scale;
-				console.log(Object.keys(_chordTypes));
-				if (Object.keys(_chordTypes).indexOf(chordname)>=0) {
-					// known scale
-					effective_chord=_chordTypes[chordname];
-					scale = _chordTypes[chordname].scale;
+                console.log(Object.keys(_chordTypes));
 
-				}
-				else {
-				    //unknown scale
-				    var s = ChordHelper.scaleFromText(chordname);
-				    effective_chord = {
-				        "symb": chordname,
-				        "scale": s.scale,
-				        "mode": s.mode
-				    };
-				    scale = s.keys;
+                if (Object.keys(_chordTypes).indexOf(chordtype) >= 0) {
+                    // known scale
+				effective_chord = JSON.parse(JSON.stringify( _chordTypes[chordtype])) ; // taking a copy
+                    // scale = _chordTypes[chordtype].scale;
+                    scale = effective_chord.scale;
 
-				}
+                } else {
+                    //unknown scale
+                    var s = ChordHelper.scaleFromText(chordtype);
+                    effective_chord = {
+                        "symb": chordtype,
+                        "scale": s.scale,
+                        "mode": s.mode
+                    };
+                    scale = s.keys;
+
+                }
+                if (chord.sharp !== undefined)
+                    effective_chord.sharp = chord.sharp;
+                if (chord.name !== undefined)
+                    effective_chord.name = chord.name;
+
+                // debugO("effective_chord", effective_chord, ["scale"]);
+
                 var steps = [];
                 for (var n = 0; n < pp.notes.length; n++) {
                     var ip = parseInt(pp.notes[n]) - 1; // TODO: This is not clean: using a label "1" and trying to deduce the valid array index
@@ -524,10 +540,12 @@ MuseScore {
                         }
                     }
 
+debugO("pushing to pages (effective_chord): ",effective_chord, ["scale"]);
+
                     pages[placeAt].push({
                         "root": root,
-                        "chord": local.chord,
-                        "mode": local.chord.mode,
+                        "chord": effective_chord,
+                        "mode": effective_chord.mode,
                         "notes": notes,
                         "representation": local.representation
                     });
@@ -767,9 +785,10 @@ MuseScore {
 
         var title = (workoutName !== undefined) ? workoutName : "Scale workout";
         title += " - ";
-        if (rootSchemeName != undefined) {
+        if (rootSchemeName !== undefined && rootSchemeName.trim()!=="") {
             title += rootSchemeName;
-        } else {
+        } else if ((modeIndex() == 0)) {
+			// scale mode
             for (var i = 0; i < _max_roots; i++) {
                 var txt = idRoot.itemAt(i).currentText;
                 // console.log("Next Root: " + txt);
@@ -779,7 +798,22 @@ MuseScore {
                     title += ", ";
                 title += txt;
             }
-        }
+        } else {
+			// grid mode
+			var names=txtPhrase.text.split(";")
+			.map(function(c) {
+				return (c?c.trim():undefined);
+			})
+			.filter(function(c) {
+				return (c && c.trim()!=="")
+			});
+			if (names.length>5) {
+				names=names.slice(0,4);
+				names.push("...");
+			}
+			title +=names.join(", ");
+			
+		}
 
         // Styling
         score.addText("title", title);
@@ -863,64 +897,74 @@ MuseScore {
 
             var prevRoot = '';
             var prevMode = 'xxxxxxxxxxxxxxx';
-            var prevChord = 'xxxxxxxxxxxxxxx'
-                for (var j = 0; j < pages[i].length; j++) {
-                    var root = pages[i][j].root;
-                    var chord = pages[i][j].chord;
-                    var mode = pages[i][j].mode;
-                    if (root !== prevRoot || mode !== prevMode) {
-                        preferredTpcs = filterTpcs(root, mode);
-                    }
+            var prevChord = {
+                "symb": 'xxxxxxxxxxxxxxx',
+                "name": 'xxxxxxxxxxxxxxx'
+            };
+            for (var j = 0; j < pages[i].length; j++) {
+                var root = pages[i][j].root;
+                var chord = pages[i][j].chord;
+                var mode = pages[i][j].mode;
+                if (root !== prevRoot || mode !== prevMode) {
+                    preferredTpcs = filterTpcs(root, mode);
+                }
 
-                    if (adaptativeMeasure) {
-                        beatsByMeasure = signatureForPattern(pages[i][j].notes.length);
-                    } else {
-                        beatsByMeasure = 4;
-                    }
 
-                    for (var k = 0; k < pages[i][j].notes.length; k++, counter++) {
-                        if (counter > 0) {
-                            cursor.rewindToTick(cur_time); // be sure to move to the next rest, as now defined
-                            var success = cursor.next();
-                            if (!success) {
-                                score.appendMeasures(1);
-                                cursor.rewindToTick(cur_time);
 
-                                if (newLine) {
-                                    var measure = cursor.measure;
-                                    console.log("Delayed change of ending bar line");
-                                    addDoubleLineBar(measure, score);
-                                }
+                if (adaptativeMeasure) {
+                    beatsByMeasure = signatureForPattern(pages[i][j].notes.length);
+                } else {
+                    beatsByMeasure = 4;
+                }
 
-                                cursor.next();
+                for (var k = 0; k < pages[i][j].notes.length; k++, counter++) {
+                    if (counter > 0) {
+                        cursor.rewindToTick(cur_time); // be sure to move to the next rest, as now defined
+                        var success = cursor.next();
+                        if (!success) {
+                            score.appendMeasures(1);
+                            cursor.rewindToTick(cur_time);
+
+                            if (newLine) {
+                                var measure = cursor.measure;
+                                console.log("Delayed change of ending bar line");
+                                addDoubleLineBar(measure, score);
                             }
+
+                            cursor.next();
                         }
+                    }
 
-                        cursor.setDuration(1, 4); // quarter
-                        var note = cursor.element;
+                    cursor.setDuration(1, 4); // quarter
+                    var note = cursor.element;
 
-                        var delta = pages[i][j].notes[k];
-                        var pitch = instru.cpitch + delta;
-                        var sharp_mode = true;
-                        var f = _chords[root][mode];
-                        if (f !== undefined)
-                            sharp_mode = f;
+                    var delta = pages[i][j].notes[k];
+                    var pitch = instru.cpitch + delta;
+                    var sharp_mode = true;
+                    var f = (chord.sharp !== undefined) ? chord.sharp : _chords[root][mode]; // si un mode est spécifié on l'utilise sinon on prend celui par défaut
+                    if (f !== undefined)
+                        sharp_mode = f;
 
-                        var target = {
-                            "pitch": pitch,
-                            "concertPitch": false,
-                            "sharp_mode": f
-                        };
+                    var target = {
+                        "pitch": pitch,
+                        "concertPitch": false,
+                        "sharp_mode": f
+                    };
 
-                        //cur_time = note.parent.tick; // getting note's segment's tick
-                        cur_time = cursor.segment.tick;
+                    //cur_time = note.parent.tick; // getting note's segment's tick
+                    cur_time = cursor.segment.tick;
 
-                        note = NoteHelper.restToNote(note, target);
+                    note = NoteHelper.restToNote(note, target);
 
-                        // Adding the chord's name
-                        if (prevChord !== chord.symb || prevRoot !== root) {
-                            var csymb = newElement(Element.HARMONY);
-                            var rtxt = _chords[root].root.replace(/♯/gi, '#').replace(/♭/gi, "b");
+                    // Adding the chord's name
+                    if (prevChord.symb !== chord.symb || prevChord.name !== chord.name || prevRoot !== root) {
+                        var csymb = newElement(Element.HARMONY);
+                        if (chord.name !== undefined) {
+                            // preferred name set. Using it.
+                            csymb.text = chord.name;
+                        } else {
+                            // no preferred name set. Just a root(pitch). Computing a name.
+                            /*var rtxt = _chords[root].root.replace(/♯/gi, '#').replace(/♭/gi, "b");
 
                             // chord's roots
                             if (!rtxt.includes("/")) {
@@ -941,65 +985,68 @@ MuseScore {
                             }
 
                             // chord's type
-                            csymb.text += chord.symb;
-
-                            //note.parent.parent.add(csymb); //note->chord->segment
-                            cursor.add(csymb); //note->chord->segment
-
+                            csymb.text += chord.symb;*/
+                            csymb.text = rootToName(root,sharp_mode,chord.symb);
 
                         }
 
-                        // Adding the pattern description
-                        if (((i !== prevPage) || ((k == 0) && (j > 0) && (pages[i][j].representation != pages[i][j - 1].representation))) || newLine) {
-                            var ptext = newElement(Element.STAFF_TEXT);
-                            var t = "";
-                            ptext.text = pages[i][j].representation;
-                            cursor.add(ptext);
+                        //note.parent.parent.add(csymb); //note->chord->segment
+                        cursor.add(csymb); //note->chord->segment
 
-                        }
-
-                        // Adding the signature change if needed (must be done **after** a note has been added to the new measure.
-                        if ((beatsByMeasure != prevBeatsByM) || newLine) {
-                            console.log("Adapting measure to " + beatsByMeasure + "/4");
-                            var ts = newElement(Element.TIMESIG);
-                            ts.timesig = fraction(beatsByMeasure, 4);
-                            cursor.add(ts);
-                            //cursor.rewindToTick(cur_time); // be sure to move to the next rest, as now defined
-                            //cursor.next();
-                            prevBeatsByM = beatsByMeasure;
-                        }
-
-                        //debugNote(delta, note);
-
-                        prevRoot = root;
-                        prevChord = chord.symb;
-                        prevMode = mode;
-                        prevPage = i;
-                        newLine = false;
 
                     }
 
-                    // Fill with rests until end of measure
-                    if (chkStrictLayout.checked) {
-                        var fill = pages[i][j].notes.length % beatsByMeasure;
-                        if (fill > 0) {
-                            //fill = 4 - fill;
-                            console.log("Going to fill from :" + fill);
-                            for (var f = fill; f < beatsByMeasure; f++) {
-                                cursor.rewindToTick(cur_time); // rewing to the last note
-                                var success = cursor.next(); // move to the next position
-                                if (success) { // if we haven't reach the end of the part, add a rest, otherwise that's just fine
-                                    cursor.setDuration(1, 4); // quarter
-                                    cursor.addRest();
-                                    if (cursor.segment)
-                                        cur_time = cursor.segment.tick;
-                                    else
-                                        cur_time = score.lastSegment.tick
-                                }
+                    // Adding the pattern description
+                    if (((i !== prevPage) || ((k == 0) && (j > 0) && (pages[i][j].representation != pages[i][j - 1].representation))) || newLine) {
+                        var ptext = newElement(Element.STAFF_TEXT);
+                        var t = "";
+                        ptext.text = pages[i][j].representation;
+                        cursor.add(ptext);
+
+                    }
+
+                    // Adding the signature change if needed (must be done **after** a note has been added to the new measure.
+                    if ((beatsByMeasure != prevBeatsByM) || newLine) {
+                        console.log("Adapting measure to " + beatsByMeasure + "/4");
+                        var ts = newElement(Element.TIMESIG);
+                        ts.timesig = fraction(beatsByMeasure, 4);
+                        cursor.add(ts);
+                        //cursor.rewindToTick(cur_time); // be sure to move to the next rest, as now defined
+                        //cursor.next();
+                        prevBeatsByM = beatsByMeasure;
+                    }
+
+                    //debugNote(delta, note);
+
+                    prevRoot = root;
+                    prevChord = chord;
+                    prevMode = mode;
+                    prevPage = i;
+                    newLine = false;
+
+                }
+
+                // Fill with rests until end of measure
+                if (chkStrictLayout.checked) {
+                    var fill = pages[i][j].notes.length % beatsByMeasure;
+                    if (fill > 0) {
+                        //fill = 4 - fill;
+                        console.log("Going to fill from :" + fill);
+                        for (var f = fill; f < beatsByMeasure; f++) {
+                            cursor.rewindToTick(cur_time); // rewing to the last note
+                            var success = cursor.next(); // move to the next position
+                            if (success) { // if we haven't reach the end of the part, add a rest, otherwise that's just fine
+                                cursor.setDuration(1, 4); // quarter
+                                cursor.addRest();
+                                if (cursor.segment)
+                                    cur_time = cursor.segment.tick;
+                                else
+                                    cur_time = score.lastSegment.tick
                             }
                         }
                     }
                 }
+            }
 
         }
 
@@ -1307,7 +1354,36 @@ MuseScore {
         return preferredTpcs;
 
     }
+	
+	function rootToName(root, sharp_mode, chordsymb) {
+	    // no preferred name set. Just a root(pitch). Computing a name.
+	    var rtxt = _chords[root].root.replace(/♯/gi, '#').replace(/♭/gi, "b");
+		var name;
 
+	    // chord's roots
+	    if (!rtxt.includes("/")) {
+	        name = rtxt;
+	    } else {
+	        var parts = rtxt.split("/");
+	        if (parts[0].includes("#")) {
+	            if (sharp_mode)
+	                name = parts[0];
+	            else
+	                name = parts[1]
+	        } else {
+	            if (sharp_mode)
+	                name = parts[1];
+	            else
+	                name = parts[0]
+	        }
+	    }
+
+	    // chord's type
+	    name += chordsymb;
+		
+		return name;
+
+	}
     /**
      * Changes a ending measure bar line to a double one.
      * !! If the measure is the last one of the score, adding a new measure after will override this change.
@@ -1451,9 +1527,9 @@ MuseScore {
 
         var name = (pattern && pattern.name) ? pattern.name : "";
         idPattName.itemAt(index).text = name;
-		
-		console.log("clearing the workout saved name");
-		workoutName=undefined; // resetting the name of the workout. One has to save it again to regain the name
+
+        console.log("clearing the workout saved name");
+        workoutName = undefined; // resetting the name of the workout. One has to save it again to regain the name
 
 
     }
@@ -1502,31 +1578,63 @@ MuseScore {
 
     function getPhrase(label) {
 
-        var roots = [];
+        var phraseText=txtPhrase.text;
+        // var phraseText = "C7add13;Eb0;D#07;Gbbaddb9";
+        var phraseArray = phraseText.split(";").map(function (e) {
+            e = e.trim();
+            return e;
+        });
+
+        var roots = phraseArray.map(function (ptxt) {
+            var c = ChordHelper.chordFromText(ptxt);
+            if (c != null) {
+                var isSharp = undefined; // si accidental==NONE on garde `undefined`
+                if (c.accidental.startsWith("SHARP")) {
+                    isSharp = true;
+                }
+                if (c.accidental.startsWith("FLAT")) {
+                    isSharp = false;
+                }
+                var forPhrase = {
+                    "root": c.pitch,
+                    "type": c.name,
+                    "sharp": isSharp,
+                    "name": ptxt
+                };
+                debugO("Using chord : > ", forPhrase, ["scale"]);
+                return forPhrase;
+            } else {
+                return null;
+            }
+        }).filter(function (chord) {
+            return (chord != null);
+        });
+
+        /*var roots = [];
 
         for (var i = 0; i < _max_roots; i++) {
-            var txt = idRoot.itemAt(i).currentText;
-            // console.log("Next Root: " + txt);
-            if (txt === '' || txt === undefined)
-                continue;
-            var r = _roots.indexOf(txt);
-            // console.log("-- => " + r);
-            if (r == -1)
-                continue;
+        var txt = idRoot.itemAt(i).currentText;
+        // console.log("Next Root: " + txt);
+        if (txt === '' || txt === undefined)
+        continue;
+        var r = _roots.indexOf(txt);
+        // console.log("-- => " + r);
+        if (r == -1)
+        continue;
 
-            // var cText = idGridChordType.itemAt(i).currentText; // non-editable  // v2.1.0
-            var cText = idGridChordType.itemAt(i).editText; // non-editable
-            if (cText === '') {
-                cText = 'M'; // Major by default
-            }
-
-            roots.push({
-                "root": r,
-                "type": cText,
-            });
-
-            console.log("Adding " + r + "[" + cText + "]");
+        // var cText = idGridChordType.itemAt(i).currentText; // non-editable  // v2.1.0
+        var cText = idGridChordType.itemAt(i).editText; // non-editable
+        if (cText === '') {
+        cText = 'M'; // Major by default
         }
+
+        roots.push({
+        "root": r,
+        "type": cText,
+        });
+
+        console.log("Adding " + r + "[" + cText + "]");
+        }*/
 
         var p = new phraseClass((label !== undefined) ? label : "", roots);
 
@@ -1537,24 +1645,38 @@ MuseScore {
     }
 
     function setPhrase(phrase) {
-        //console.log("setPhrase: in: " + ((typeof phrase !== 'undefined') ? phrase.label : undefined));
+        //console.log("setPhrase: in: " + ((typeof phrase !== 'undefined') ? phrase.name : undefined));
         if (!phrase)
             phrase = new phraseClass("");
-        //console.log("setPhrase: clear: " + ((typeof phrase !== 'undefined') ? phrase.label : undefined));
+        //console.log("setPhrase: clear: " + ((typeof phrase !== 'undefined') ? phrase.name : undefined));
         var rr = phrase.chords;
         //debugO("setPhrase: chords", rr);
-        for (var i = 0; i < _max_roots; i++) {
+		var astext=rr.map(function(c) {
+			if(c.name!==undefined && c.name.trim()!=="") {
+				return c.name;
+			}
+			else {
+			    return rootToName(c.root, true, c.type); // no easy way to know if we should use sharps or flats
+			}
+			
+		}).join(";");
+		
+		console.log("Phrase as text: "+astext);
+		
+			txtPhrase.text=astext;
+		
+        /*for (var i = 0; i < _max_roots; i++) {
             if (i < rr.length) {
                 //debugO("setPhrase: " + i, rr[i]);
                 idRoot.itemAt(i).currentIndex = _ddRoots.indexOf(_roots[rr[i].root]);
-				//v2.1.0
+                //v2.1.0
                 // idGridChordType.itemAt(i).currentIndex = _ddChordTypes.indexOf(rr[i].type);
-				console.log("LOADING "+rr[i].type);
-				if (_ddChordTypes.indexOf(rr[i].type)>=0) {
-                idGridChordType.itemAt(i).currentIndex = _ddChordTypes.indexOf(rr[i].type);
-				} else {
-						idGridChordType.itemAt(i).editText = rr[i].type;
-								}
+                console.log("LOADING " + rr[i].type);
+                if (_ddChordTypes.indexOf(rr[i].type) >= 0) {
+                    idGridChordType.itemAt(i).currentIndex = _ddChordTypes.indexOf(rr[i].type);
+                } else {
+                    idGridChordType.itemAt(i).editText = rr[i].type;
+                }
             } else {
                 //debugO("setPhrase: " + i, "/");
                 idRoot.itemAt(i).currentIndex = 0;
@@ -1562,11 +1684,12 @@ MuseScore {
             }
 
             //console.log("selecting root " + i + ": " + steproots[i]);
-        }
+        }*/
         resetR = false;
         resetR = true;
 
-        rootSchemeName = phrase.label;
+        rootSchemeName = phrase.name;
+        console.log("rootSchemeName set to :" + rootSchemeName + ":");
 
     }
 
@@ -1625,8 +1748,9 @@ MuseScore {
         phrases.push(phrase);
         resetL = !resetL;
         saveLibrary();
-        // workoutName = phrase.label; // 14/12/21: incorrect
-		lastLoadedPhraseName = phrase.name;
+        // workoutName = phrase.name; // 14/12/21: incorrect
+        lastLoadedPhraseName = phrase.name;
+        rootSchemeName = phrase.name;
     }
 
     /**
@@ -1654,6 +1778,97 @@ MuseScore {
         }
         resetL = !resetL;
         saveLibrary();
+    }
+
+    function getPhraseFromSelection() {
+        var score = curScore;
+
+        if (score == null) {
+            console.log("!! No Score");
+            return;
+        }
+
+        var chords = SelHelper.getChordsRestsFromCursor();
+
+        if (chords && (chords.length > 0)) {
+            console.log("CHORDS FOUND FROM CURSOR");
+        } else {
+            chords = SelHelper.getChordsRestsFromSelection();
+            if (chords && (chords.length > 0)) {
+                console.log("CHORDS FOUND FROM SELECTION");
+            } else {
+                chords = SelHelper.getChordsRestsFromScore();
+                console.log("CHORDS FOUND FROM ENTIRE SCORE");
+            }
+        }
+
+        if (!chords || (chords.length == 0)) {
+            console.log("!! No selection");
+            return;
+        }
+
+        // Notes and Rests
+        var prevSeg = null;
+        var curChord = null;
+        var grid = [];
+        for (var i = 0; i < chords.length; i++) {
+            var el = chords[i];
+            var seg = el.parent;
+            //console.log(i + ")" + el.userName() + " / " + seg.segmentType);
+
+            // Looking for new Chord symbol
+            if (!prevSeg || (seg && (seg !== prevSeg))) {
+                // nouveau segment, on y cherche un accord
+                prevSeg = seg;
+
+                var annotations = seg.annotations;
+                //console.log(annotations.length + " annotations");
+                if (annotations && (annotations.length > 0)) {
+                    for (var j = 0; j < annotations.length; j++) {
+                        var ann = annotations[j];
+                        //console.log("  (" + i + ") " + ann.userName() + " / " + ann.text + " / " + ann.harmonyType);
+                        if (ann.type === Element.HARMONY) {
+                            // keeping 1st Chord
+                            var c = ChordHelper.chordFromText(ann.text);
+                            if (c != null) {
+                                curChord = c;
+                                var isSharp = undefined; // si accidental==NONE on garde `undefined`
+                                if (c.accidental.startsWith("SHARP")) {
+                                    isSharp = true;
+                                }
+                                if (c.accidental.startsWith("FLAT")) {
+                                    isSharp = false;
+                                }
+                                var forPhrase = {
+                                    "root": c.pitch,
+                                    "type": c.name,
+                                    "sharp": isSharp,
+                                    "name": ann.text
+                                };
+                                grid.push(forPhrase);
+                                debugO("Using chord : > ", forPhrase, ["scale"]);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+        }
+
+        if (grid.length == 0) {
+            console.log("!! No chords");
+            return;
+        }
+
+        // building and pushing to gui the phrase
+        var name = score.title;
+        if (!name || name=="") name=undefined;
+        //console.log("TITLE:"+score.title+":"+name+":");
+        var phrase = new phraseClass(name, grid);
+
+        setPhrase(phrase);
+
     }
 
     function applyWorkout(workout) {
@@ -1785,7 +2000,7 @@ MuseScore {
         resetL = !resetL;
         saveLibrary();
         workoutName = workout.name;
-		
+
         if (workout.type == _SCALE_MODE) {
             lastLoadedWorkoutName = workout.name;
         } else {
@@ -1809,7 +2024,7 @@ MuseScore {
         saveLibrary();
 
         workoutName = newWorkout.name;
-		
+
         if (newWorkout.type == _SCALE_MODE) {
             lastLoadedWorkoutName = newWorkout.name;
         } else {
@@ -1924,67 +2139,70 @@ MuseScore {
         rowSpacing: 10
         columns: 2
 
-        SystemPalette { id: systemPalette; colorGroup: SystemPalette.Active }
+        SystemPalette {
+            id: systemPalette;
+            colorGroup: SystemPalette.Active
+        }
 
-		GroupBox {
-		    title: "Mode selection..."
-		    id: grpModes
+        GroupBox {
+            title: "Mode selection..."
+            id: grpModes
 
-		    Layout.columnSpan: 2
-		    Layout.alignment: Qt.AlignHCenter
-		    Layout.margins: 0
-		    Layout.bottomMargin: 10
-		    topPadding: 10
-		    bottomPadding: 10
-		    rightPadding: 20
-		    leftPadding: 20
-			
-		    // Layout.preferredHeight: layModes.height + padding * 2 + labMode.height / 2
+            Layout.columnSpan: 2
+            Layout.alignment: Qt.AlignHCenter
+            Layout.margins: 0
+            Layout.bottomMargin: 10
+            topPadding: 10
+            bottomPadding: 10
+            rightPadding: 20
+            leftPadding: 20
 
-		    background: Rectangle {
-		        id: r100
-		        y: grpModes.topPadding - grpModes.bottomPadding
-		        width: parent.width
-		        implicitHeight: layModes.height + grpModes.padding * 2
-		        border.color: "#929292"
-		        color: "transparent"
-		        radius: 5
-		    }
+            // Layout.preferredHeight: layModes.height + padding * 2 + labMode.height / 2
 
-		    label:
-		    Rectangle {
-		        x: grpModes.leftPadding
-		        y: grpModes.topPadding - grpModes.bottomPadding - labMode.height / 2
-		        implicitWidth: labMode.width + 12
-		        implicitHeight: labMode.height
-		        color: systemPalette.window
-		        Label {
-		            id: labMode
-		            x: 6
-		            // width: grpModes.availableWidth
-		            text: grpModes.title
-		            elide: Text.ElideRight
-		        }
-		    }
-		    RowLayout {
-		        id: layModes
-		         ButtonGroup {
-		             id: bar
-		         }
-		         NiceRadioButton {
-		             id: rdbScale
-		             text: qsTr("Scale workout")
-		             checked: true
-		             ButtonGroup.group: bar
-		         }
-		         NiceRadioButton {
-		             id: rdbGrid
-		             text: qsTr("Grid workout")
-		             ButtonGroup.group: bar
-		         }
-		     }
-		 }
-		 GridLayout { // un small element within the fullWidth/fullHeight where we paint the repeater
+            background: Rectangle {
+                id: r100
+                y: grpModes.topPadding - grpModes.bottomPadding
+                width: parent.width
+                implicitHeight: layModes.height + grpModes.padding * 2
+                border.color: "#929292"
+                color: "transparent"
+                radius: 5
+            }
+
+            label:
+            Rectangle {
+                x: grpModes.leftPadding
+                y: grpModes.topPadding - grpModes.bottomPadding - labMode.height / 2
+                implicitWidth: labMode.width + 12
+                implicitHeight: labMode.height
+                color: systemPalette.window
+                Label {
+                    id: labMode
+                    x: 6
+                    // width: grpModes.availableWidth
+                    text: grpModes.title
+                    elide: Text.ElideRight
+                }
+            }
+            RowLayout {
+                id: layModes
+                ButtonGroup {
+                    id: bar
+                }
+                NiceRadioButton {
+                    id: rdbScale
+                    text: qsTr("Scale workout")
+                    checked: true
+                    ButtonGroup.group: bar
+                }
+                NiceRadioButton {
+                    id: rdbGrid
+                    text: qsTr("Grid workout")
+                    ButtonGroup.group: bar
+                }
+            }
+        }
+        GridLayout { // un small element within the fullWidth/fullHeight where we paint the repeater
             //anchors.verticalCenter : parent.verticalCenter
             id: idNoteGrid
             rows: _max_patterns + 1
@@ -2121,10 +2339,10 @@ MuseScore {
 
                     }
 
-					onCurrentIndexChanged: {
-						console.log("clearing the workout saved name");
-						workoutName=undefined; // resetting the name of the workout. One has to save it again to regain the name
-					}
+                    onCurrentIndexChanged: {
+                        console.log("clearing the workout saved name");
+                        workoutName = undefined; // resetting the name of the workout. One has to save it again to regain the name
+                    }
 
                 }
             }
@@ -2171,10 +2389,10 @@ MuseScore {
                         }
                     ]
 
-					onCurrentIndexChanged: {
-						console.log("clearing the workout saved name");
-						workoutName=undefined; // resetting the name of the workout. One has to save it again to regain the name
-					}
+                    onCurrentIndexChanged: {
+                        console.log("clearing the workout saved name");
+                        workoutName = undefined; // resetting the name of the workout. One has to save it again to regain the name
+                    }
                 }
             }
 
@@ -2358,9 +2576,9 @@ MuseScore {
                     }
                     onActivated: {
                         var __phrase = model[currentIndex];
-                        console.log("Phrase Changed: " + __phrase.label);
+                        console.log("Phrase Changed: " + __phrase.name);
                         setPhrase(__phrase);
-						lastLoadedPhraseName = __phrase.name
+                        lastLoadedPhraseName = __phrase.name
                     }
 
                 }
@@ -2388,6 +2606,16 @@ MuseScore {
                     }
 
                 }
+                ImageButton {
+                    imageSource: "upload.svg"
+                    ToolTip.text: "Retrieve from selection"
+                    imageHeight: 25
+                    imagePadding: (buttonBox.contentItem.height - imageHeight) / 2
+                    onClicked: {
+                        getPhraseFromSelection();
+                    }
+
+                }
 
             }
 
@@ -2395,97 +2623,133 @@ MuseScore {
 
         // Roots
         Label {
+            id: labRoots
             //Layout.column : 0
             //Layout.row : 3
-            text: "Roots:"
+            states: [
+                State {
+                    when: modeIndex() == 0
+                    PropertyChanges {
+                        target: labRoots
+                        text: "Roots:"
+                    }
+                },
+                State {
+                    when: modeIndex() != 0;
+                    PropertyChanges {
+                        target: labRoots
+                        text: "Grid:"
+                    }
+                }
+            ]
+
         }
-        Flickable {
-            id: flickable
-            Layout.alignment: Qt.AlignLeft
-            Layout.fillWidth: true
-            Layout.preferredHeight: idRootsGrid.implicitHeight + sbRoots.height + 5
-            contentWidth: idRootsGrid.width
-            clip: true
-            GridLayout {
-                id: idRootsGrid
-                columnSpacing: 5
-                rowSpacing: 10
+        StackLayout {
+            currentIndex: modeIndex()
+            width: parent.width
+            Flickable {
+                id: flickable
                 Layout.alignment: Qt.AlignLeft
-                rows: 1
+                Layout.fillWidth: true
+                Layout.preferredHeight: idRootsGrid.implicitHeight + sbRoots.height + 5
+                contentWidth: idRootsGrid.width
+                clip: true
 
-                Repeater {
+                GridLayout {
+                    id: idRootsGrid
+                    columnSpacing: 5
+                    rowSpacing: 10
+                    Layout.alignment: Qt.AlignLeft
+                    rows: 1
 
-                    id: idRoot
-                    model: _max_roots
+                    Repeater {
 
-                    ComboBox {
-                        id: lstRoot
-                        Layout.alignment: Qt.AlignLeft | Qt.QtAlignBottom
-                        editable: false
-                        model: _ddRoots
-                        Layout.preferredHeight: 30
-                        implicitWidth: 90
+                        id: idRoot
+                        model: _max_roots
 
-                        onActivated: {
-                            // manual change, resetting the rootSchemeName
-                            rootSchemeName = undefined;
+                        ComboBox {
+                            id: lstRoot
+                            Layout.alignment: Qt.AlignLeft | Qt.QtAlignBottom
+                            editable: false
+                            model: _ddRoots
+                            Layout.preferredHeight: 30
+                            implicitWidth: 90
+
+                            onActivated: {
+                                // manual change, resetting the rootSchemeName
+                                rootSchemeName = undefined;
+                            }
+                        }
+
+                    }
+                    Repeater {
+                        id: idGridChordType
+                        model: _max_roots
+
+                        ComboBox {
+                            id: ccGCT
+                            model: _ddChordTypes
+                            // editable: false  // v2.1.0
+                            editable: true
+                            Layout.row: 1
+                            Layout.column: index
+                            Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
+                            Layout.rightMargin: 2
+                            Layout.leftMargin: 2
+                            Layout.preferredWidth: 90
+
+                            states: [
+                                State {
+                                    when: modeIndex() == 0
+                                    PropertyChanges {
+                                        target: ccGCT;
+                                        visible: false
+                                    }
+                                },
+                                State {
+                                    when: modeIndex() != 0;
+                                    PropertyChanges {
+                                        target: ccGCT;
+                                        visible: true
+                                    }
+                                }
+                            ]
+
                         }
                     }
 
+                } // gridlayout Note mode
+
+                ScrollBar.horizontal: ScrollBar {
+                    id: sbRoots
+
+                    //anchors.top: idRootsGrid.bottom
+                    anchors.right: flickable.right
+                    anchors.left: flickable.left
+                    active: true
+                    visible: true
                 }
-                Repeater {
-                    id: idGridChordType
-                    model: _max_roots
+            } // flicable note mode
 
-                    ComboBox {
-                        id: ccGCT
-                        model: _ddChordTypes
-                    // editable: false  // v2.1.0
-                        editable: true
-                        Layout.row: 1
-                        Layout.column: index
-                        Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
-                        Layout.rightMargin: 2
-                        Layout.leftMargin: 2
-                        Layout.preferredWidth: 90
+            TextField {
+                id: txtPhrase
+                text: ""
+                Layout.fillWidth: true
+                // Layout.preferredWidth: 200
+                placeholderText: "Enter a grid such as Cm7;F7;C7;Ab7;G7;C7"
 
-                        states: [
-                            State {
-                                when: modeIndex() == 0
-                                PropertyChanges {
-                                    target: ccGCT;
-                                    visible: false
-                                }
-                            },
-                            State {
-                                when: modeIndex() != 0;
-                                PropertyChanges {
-                                    target: ccGCT;
-                                    visible: true
-                                }
-                            }
-                        ]
+                Layout.alignment: Qt.AlignLeft | Qt.QtAlignBottom
 
-                    }
-                }
+            } // text grid mode
 
-            }
-            ScrollBar.horizontal: ScrollBar {
-            id: sbRoots
 
-                //anchors.top: idRootsGrid.bottom
-                anchors.right: flickable.right
-                anchors.left: flickable.left
-                active: true
-                visible: true
-            }
-        }
+        } // stacklayout
+
         Label {
             //Layout.column : 0
             //Layout.row : 1
             text: "Options:"
         }
-
         RowLayout {
             //Layout.column : 1
             //Layout.row : 1
@@ -2599,7 +2863,7 @@ MuseScore {
                 imagePadding: (buttonBox.contentItem.height - imageHeight) / 2
                 onClicked: {
                     newWorkoutDialog.state = "workout";
-					newWorkoutDialog.defname = ((modeIndex() == 0)?lastLoadedWorkoutName:lastLoadedGridWorkoutName);
+                    newWorkoutDialog.defname = ((modeIndex() == 0) ? lastLoadedWorkoutName : lastLoadedGridWorkoutName);
                     newWorkoutDialog.open();
                 }
 
@@ -2682,7 +2946,7 @@ MuseScore {
             currentIndex: find(step.note, Qt.MatchExactly)
             onCurrentIndexChanged: {
                 step.note = model[currentIndex];
-				workoutName=undefined; // resetting the name of the workout. One has to save it again to regain the name
+                workoutName = undefined; // resetting the name of the workout. One has to save it again to regain the name
             }
         }
     }
@@ -2703,7 +2967,7 @@ MuseScore {
             currentIndex: find(step.degree, Qt.MatchExactly)
             onCurrentIndexChanged: {
                 step.degree = model[currentIndex];
-				workoutName=undefined; // resetting the name of the workout. One has to save it again to regain the name
+                workoutName = undefined; // resetting the name of the workout. One has to save it again to regain the name
             }
         }
     }
@@ -2893,15 +3157,15 @@ MuseScore {
                                         break;
                                     case "workout":
                                         applyWorkout(modelData);
-										if(modeIndex()==0){
-										lastLoadedWorkoutName=modelData.name;
-										} else {
-										lastLoadedGridWorkoutName=modelData.name;
-										}
+                                        if (modeIndex() == 0) {
+                                            lastLoadedWorkoutName = modelData.name;
+                                        } else {
+                                            lastLoadedGridWorkoutName = modelData.name;
+                                        }
                                         break;
                                     case "phrase":
                                         setPhrase(modelData);
-										lastLoadedPhraseName=modelData.name;
+                                        lastLoadedPhraseName = modelData.name;
                                         break;
                                     }
                                 }
@@ -3000,7 +3264,7 @@ MuseScore {
         standardButtons: Dialog.Save | Dialog.Cancel
 
         property string state: "workout"
-		property var defname: undefined
+        property var defname: undefined
 
         GridLayout {
             state: newWorkoutDialog.state
@@ -3074,14 +3338,14 @@ MuseScore {
                 }
             ]
         }
-		
-		onVisibleChanged: {
-			if (visible) {
-				txtWorkoutName.text=((newWorkoutDialog.defname!==undefined)?newWorkoutDialog.defname:"");
-				txtWorkoutName.focus = true;
-				txtWorkoutName.selectAll();
-			}
-		}
+
+        onVisibleChanged: {
+            if (visible) {
+                txtWorkoutName.text = ((newWorkoutDialog.defname !== undefined) ? newWorkoutDialog.defname : "");
+                txtWorkoutName.focus = true;
+                txtWorkoutName.selectAll();
+            }
+        }
 
         onAccepted: {
             var name = txtWorkoutName.text.trim();
@@ -3211,7 +3475,7 @@ MuseScore {
         icon: StandardIcon.Critical
         standardButtons: StandardButton.Ok
         title: 'Invalid libraries'
-        text: "Invalid 'zparkingb/notehelper.js' or 'zparkingb/chordanalyser.js' versions.\nExpecting " + noteHelperVersion +" and "+ chordHelperVersion+ ".\n" + pluginName + " will stop here."
+        text: "Invalid 'zparkingb/notehelper.js' or 'zparkingb/chordanalyser.js' versions.\nExpecting " + noteHelperVersion + " and " + chordHelperVersion + ".\n" + pluginName + " will stop here."
         onAccepted: {
             Qt.quit()
         }
@@ -3239,14 +3503,14 @@ MuseScore {
         });
         return filtered;
     }
-	
-	/**
-	* @return 0 for Scale mode, 1 for Grid mode
-	*/
-	function modeIndex() {
-		// return bar.currentIndex;
-		return rdbScale.checked?0:1;
-	}
+
+    /**
+     * @return 0 for Scale mode, 1 for Grid mode
+     */
+    function modeIndex() {
+        // return bar.currentIndex;
+        return rdbScale.checked ? 0 : 1;
+    }
 
     property var presets: [{
             "name": '',
@@ -3479,7 +3743,7 @@ MuseScore {
         }
 
         if (this.phrase !== undefined) {
-            label += " - on " + this.phrase.label;
+            label += " - on " + this.phrase.name;
         }
 
         this.label = label;
@@ -3540,7 +3804,7 @@ MuseScore {
      * chords is an array of {"root": index_in__chords_array, "type": key_in__chordTypes_map}
      */
     function phraseClass(name, chords) {
-        this.name = ((name !== undefined) && (name.trim() !== "")) ? name.trim() : "";
+        this.name = ((name !== undefined) && (name.trim() !== "")) ? name.trim() : undefined;
         this.chords = (chords !== undefined) ? chords : [];
 
         this.toJSON = function (key) {
@@ -3597,18 +3861,20 @@ MuseScore {
         }
     }
 
-    function debugO(label, element) {
+    function debugO(label, element, excludes) {
 
         if (Array.isArray(element)) {
             for (var i = 0; i < element.length; i++) {
-                debugO(label + "-" + i, element[i]);
+                debugO(label + "-" + i, element[i],excludes);
             }
 
         } else if (typeof element === 'object') {
 
             var kys = Object.keys(element);
             for (var i = 0; i < kys.length; i++) {
-                debugO(label + ": " + kys[i], element[kys[i]]);
+				if(!excludes || excludes.indexOf(kys[i])==-1) {
+                debugO(label + ": " + kys[i], element[kys[i]],excludes);
+				}
             }
         } else if (typeof element === 'undefined') {
             console.log(label + ": undefined");
