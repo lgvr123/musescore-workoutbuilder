@@ -1711,7 +1711,9 @@ MuseScore {
         var score = curScore;
 
         if (score == null) {
-            console.log("!! No Score");
+			console.log("no score");
+			cannotFetchPhraseFromSelectionDialog.message="No current score";
+            cannotFetchPhraseFromSelectionDialog.open();
             return;
         }
 
@@ -1730,7 +1732,9 @@ MuseScore {
         }
 
         if (!chords || (chords.length == 0)) {
-            console.log("!! No selection");
+			console.log("no selection");
+			cannotFetchPhraseFromSelectionDialog.message="No selection.";
+            cannotFetchPhraseFromSelectionDialog.open();
             return;
         }
 
@@ -1784,7 +1788,9 @@ MuseScore {
         }
 
         if (grid.length == 0) {
-            console.log("!! No chords");
+			console.log("no chords");
+			cannotFetchPhraseFromSelectionDialog.message="No chords text found in the selection";
+            cannotFetchPhraseFromSelectionDialog.open();
             return;
         }
 
@@ -2536,7 +2542,8 @@ MuseScore {
                 }
                 ImageButton {
                     imageSource: "upload.svg"
-                    ToolTip.text: "Retrieve from selection"
+                    ToolTip.text: "Fetch phrase from current score"
+					// enabled: curScore!=null
                     imageHeight: 25
                     imagePadding: (buttonBox.contentItem.height - imageHeight) / 2
                     onClicked: {
@@ -2569,7 +2576,7 @@ MuseScore {
                     when: modeIndex() != 0;
                     PropertyChanges {
                         target: labRoots
-                        text: "Grid:"
+                        text: "Phrase:"
                     }
                 }
             ]
@@ -3375,6 +3382,19 @@ MuseScore {
         text: "Invalid 'zparkingb/notehelper.js' or 'zparkingb/chordanalyser.js' versions.\nExpecting " + noteHelperVersion + " and " + chordHelperVersion + ".\n" + pluginName + " will stop here."
         onAccepted: {
             Qt.quit()
+        }
+    }
+
+    MessageDialog {
+        id: cannotFetchPhraseFromSelectionDialog
+        icon: StandardIcon.Warning
+        standardButtons: StandardButton.Ok
+		property var message: ""
+        title: 'Fetch phrase from score'
+        text: "Failed to fetch a phrase from the current score:\n"+message+
+		"\n\nNote: This action requires a score being openened and that a selection made, containing chord texts."
+        onAccepted: {
+            cannotFetchPhraseFromSelectionDialog.close()
         }
     }
 
