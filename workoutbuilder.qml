@@ -49,6 +49,10 @@ MuseScore {
             return f;
         }
     }
+	
+	readonly property var keyRegexp: /^(\((b*?|#*?)\))?\s*(.*?)(\|?)$/m
+	readonly property var endRegexp: /\|\s*;?/g
+	
     onRun: {
 
         console.log("==========================================================");
@@ -479,10 +483,16 @@ MuseScore {
                     scale = s.keys;
 
                 }
+				
+				// pushing other properties from the chord to the chord to be used
                 if (chord.sharp !== undefined)
                     effective_chord.sharp = chord.sharp;
                 if (chord.name !== undefined)
                     effective_chord.name = chord.name;
+                if (chord.end !== undefined)
+                    effective_chord.end = chord.end;
+                if (chord.key !== undefined)
+                    effective_chord.key = chord.key;
 
                 // debugO("effective_chord", effective_chord, ["scale"]);
 
@@ -800,9 +810,9 @@ MuseScore {
             }
         } else {
             // grid mode
-            var names = txtPhrase.text.split(";")
+			var names = txtPhrase.text.replace(endRegexp,'|;').split(";")
                 .map(function (c) {
-                return (c ? c.trim() : undefined);
+                return (c ? c.match(keyRegexp)[3] : undefined); // --> ["(bbb)Abadd9|" ,"(bbb)" ,"bbb" ,"Abadd9" ,"|"]
             })
                 .filter(function (c) {
                 return (c && c.trim() !== "")
@@ -953,6 +963,14 @@ MuseScore {
                     cur_time = cursor.segment.tick;
 
                     note = NoteHelper.restToNote(note, target);
+					
+					// Adding a key signature
+					// TODO: finalize
+					if (chord.key && (k == 0)) { 
+						var keysig = newElement(Element.KEYSIG);
+						//keysig.layoutBreakType = 1; //line break
+						cursor.add(keysig);
+					}					
 
                     // Adding the chord's name
                     if (prevChord.symb !== chord.symb || prevChord.name !== chord.name || prevRoot !== root) {
@@ -990,6 +1008,14 @@ MuseScore {
                         //cursor.next();
                         prevBeatsByM = beatsByMeasure;
                     }
+					
+					// Adding a Line break if required by a "|"
+					if (chord.end && (k == (pages[i][j].notes.length-1))) { 
+					
+						var lbreak = newElement(Element.LAYOUT_BREAK);
+						lbreak.layoutBreakType = 1; //line break
+						cursor.add(lbreak);
+					}
 
                     //debugNote(delta, note);
 
@@ -1554,13 +1580,20 @@ MuseScore {
     function getPhrase(label) {
 
         var phraseText = txtPhrase.text;
-        var phraseArray = phraseText.split(";").map(function (e) {
+        // var phraseArray = phraseText.replaceAll(/\|\s*<?!;|$>/g,'|;').split(";").map(function (e) {
+        var phraseArray = phraseText.replace(endRegexp,'|;').split(";").map(function (e) {
             e = e.trim();
             return e;
         });
 
         var roots = phraseArray.map(function (ptxt) {
-            var c = ChordHelper.chordFromText(ptxt);
+
+			var match = ptxt.match(keyRegexp); // --> ["(bbb)Abadd9|" ,"(bbb)" ,"bbb" ,"Abadd9" ,"|"]
+			var end = match[4] === "|";
+			var name = match[3];
+			var key = match[2];
+
+            var c = ChordHelper.chordFromText(name);
             if (c != null) {
                 var isSharp = undefined; // si accidental==NONE on garde `undefined`
                 if (c.accidental.startsWith("SHARP")) {
@@ -1573,7 +1606,9 @@ MuseScore {
                     "root": c.pitch,
                     "type": c.name,
                     "sharp": isSharp,
-                    "name": ptxt
+                    "name": name,
+					"end": end,
+					"key": key,
                 };
                 debugO("Using chord : > ", forPhrase, ["scale"]);
                 return forPhrase;
@@ -1600,13 +1635,14 @@ MuseScore {
         var rr = phrase.chords;
         //debugO("setPhrase: chords", rr);
         var astext = rr.map(function (c) {
-            if (c.name !== undefined && c.name.trim() !== "") {
-                return c.name;
-            } else {
-                return rootToName(c.root, true, c.type); // no easy way to know if we should use sharps or flats
-            }
+			var key=(c.key!==undefined)?("("+c.key+")"):"";
+			var end=(c.end)?"|":";";
+			var name=(c.name !== undefined && c.name.trim() !== "")?c.name:rootToName(c.root, true, c.type); // no easy way to know if we should use sharps or flats
+			return key+name+end;
+            
 
-        }).join(";");
+        }).join("");
+		astext=astext.slice(0,astext.length-1);
 
         console.log("Phrase as text: " + astext);
 
@@ -3734,7 +3770,7 @@ MuseScore {
 
         // transient properties
         // label
-        if (this.name !== "") {
+        if (this.name && this.name !== "") {
             this.label = this.name;
         } else {
             var label = "";
