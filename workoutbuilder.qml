@@ -14,7 +14,7 @@ import "workoutbuilder"
 
 /**********************
 /* Parking B - MuseScore - Scale Workout builder plugin
-/* v2.2.0
+/* v2.2.1
 /* ChangeLog:
 /* 	- 0.0.0: Initial release
 /*  - 1.0.0: Tools and library of patterns and workouts
@@ -25,6 +25,7 @@ import "workoutbuilder"
 /*  - 2.1.0: Custom chords in Grid workout
 /*  - 2.1.1: Better workout name management
 /*  - 2.2.0: Textual description of grids
+/*  - 2.2.1 (ongoing): Allow "|" et "(###)" in the textual description of grids
 /**********************************************/
 MuseScore {
     menuPath: "Plugins." + pluginName
@@ -49,10 +50,10 @@ MuseScore {
             return f;
         }
     }
-	
-	readonly property var keyRegexp: /^(\((b*?|#*?)\))?\s*(.*?)(\|?)$/m
-	readonly property var endRegexp: /\|\s*;?/g
-	
+
+    readonly property var keyRegexp: /^(\((b*?|#*?)\))?\s*(.*?)(\|?)$/m
+    readonly property var endRegexp: /\|\s*;?/g
+
     onRun: {
 
         console.log("==========================================================");
@@ -483,8 +484,8 @@ MuseScore {
                     scale = s.keys;
 
                 }
-				
-				// pushing other properties from the chord to the chord to be used
+
+                // pushing other properties from the chord to the chord to be used
                 if (chord.sharp !== undefined)
                     effective_chord.sharp = chord.sharp;
                 if (chord.name !== undefined)
@@ -810,7 +811,7 @@ MuseScore {
             }
         } else {
             // grid mode
-			var names = txtPhrase.text.replace(endRegexp,'|;').split(";")
+            var names = txtPhrase.text.replace(endRegexp, '|;').split(";")
                 .map(function (c) {
                 return (c ? c.match(keyRegexp)[3] : undefined); // --> ["(bbb)Abadd9|" ,"(bbb)" ,"bbb" ,"Abadd9" ,"|"]
             })
@@ -963,14 +964,14 @@ MuseScore {
                     cur_time = cursor.segment.tick;
 
                     note = NoteHelper.restToNote(note, target);
-					
-					// Adding a key signature
-					// TODO: finalize
-					if (chord.key && (k == 0)) { 
-						var keysig = newElement(Element.KEYSIG);
-						//keysig.layoutBreakType = 1; //line break
-						cursor.add(keysig);
-					}					
+
+                    // Adding a key signature
+                    // TODO: finalize
+                    if (chord.key && (k == 0)) {
+                        var keysig = newElement(Element.KEYSIG);
+                        //keysig.layoutBreakType = 1; //line break
+                        cursor.add(keysig);
+                    }
 
                     // Adding the chord's name
                     if (prevChord.symb !== chord.symb || prevChord.name !== chord.name || prevRoot !== root) {
@@ -1008,14 +1009,14 @@ MuseScore {
                         //cursor.next();
                         prevBeatsByM = beatsByMeasure;
                     }
-					
-					// Adding a Line break if required by a "|"
-					if (chord.end && (k == (pages[i][j].notes.length-1))) { 
-					
-						var lbreak = newElement(Element.LAYOUT_BREAK);
-						lbreak.layoutBreakType = 1; //line break
-						cursor.add(lbreak);
-					}
+
+                    // Adding a Line break if required by a "|"
+                    if (chord.end && (k == (pages[i][j].notes.length - 1))) {
+
+                        var lbreak = newElement(Element.LAYOUT_BREAK);
+                        lbreak.layoutBreakType = 1; //line break
+                        cursor.add(lbreak);
+                    }
 
                     //debugNote(delta, note);
 
@@ -1581,17 +1582,17 @@ MuseScore {
 
         var phraseText = txtPhrase.text;
         // var phraseArray = phraseText.replaceAll(/\|\s*<?!;|$>/g,'|;').split(";").map(function (e) {
-        var phraseArray = phraseText.replace(endRegexp,'|;').split(";").map(function (e) {
+        var phraseArray = phraseText.replace(endRegexp, '|;').split(";").map(function (e) {
             e = e.trim();
             return e;
         });
 
         var roots = phraseArray.map(function (ptxt) {
 
-			var match = ptxt.match(keyRegexp); // --> ["(bbb)Abadd9|" ,"(bbb)" ,"bbb" ,"Abadd9" ,"|"]
-			var end = match[4] === "|";
-			var name = match[3];
-			var key = match[2];
+            var match = ptxt.match(keyRegexp); // --> ["(bbb)Abadd9|" ,"(bbb)" ,"bbb" ,"Abadd9" ,"|"]
+            var end = match[4] === "|";
+            var name = match[3];
+            var key = match[2];
 
             var c = ChordHelper.chordFromText(name);
             if (c != null) {
@@ -1607,8 +1608,8 @@ MuseScore {
                     "type": c.name,
                     "sharp": isSharp,
                     "name": name,
-					"end": end,
-					"key": key,
+                    "end": end,
+                    "key": key,
                 };
                 debugO("Using chord : > ", forPhrase, ["scale"]);
                 return forPhrase;
@@ -1635,14 +1636,13 @@ MuseScore {
         var rr = phrase.chords;
         //debugO("setPhrase: chords", rr);
         var astext = rr.map(function (c) {
-			var key=(c.key!==undefined)?("("+c.key+")"):"";
-			var end=(c.end)?"|":";";
-			var name=(c.name !== undefined && c.name.trim() !== "")?c.name:rootToName(c.root, true, c.type); // no easy way to know if we should use sharps or flats
-			return key+name+end;
-            
+            var key = (c.key !== undefined) ? ("(" + c.key + ")") : "";
+            var end = (c.end) ? "|" : ";";
+            var name = (c.name !== undefined && c.name.trim() !== "") ? c.name : rootToName(c.root, true, c.type); // no easy way to know if we should use sharps or flats
+            return key + name + end;
 
         }).join("");
-		astext=astext.slice(0,astext.length-1);
+        astext = astext.slice(0, astext.length - 1);
 
         console.log("Phrase as text: " + astext);
 
@@ -1747,8 +1747,8 @@ MuseScore {
         var score = curScore;
 
         if (score == null) {
-			console.log("no score");
-			cannotFetchPhraseFromSelectionDialog.message="No current score";
+            console.log("no score");
+            cannotFetchPhraseFromSelectionDialog.message = "No current score";
             cannotFetchPhraseFromSelectionDialog.open();
             return;
         }
@@ -1768,15 +1768,15 @@ MuseScore {
         }
 
         if (!chords || (chords.length == 0)) {
-			console.log("no selection");
-			cannotFetchPhraseFromSelectionDialog.message="No selection.";
+            console.log("no selection");
+            cannotFetchPhraseFromSelectionDialog.message = "No selection.";
             cannotFetchPhraseFromSelectionDialog.open();
             return;
         }
 
         // Notes and Rests
         var prevSeg = null;
-        var curChord = null;
+        var prevChord = null;
         var grid = [];
         for (var i = 0; i < chords.length; i++) {
             var el = chords[i];
@@ -1798,7 +1798,6 @@ MuseScore {
                             // keeping 1st Chord
                             var c = ChordHelper.chordFromText(ann.text);
                             if (c != null) {
-                                curChord = c;
                                 var isSharp = undefined; // si accidental==NONE on garde `undefined`
                                 if (c.accidental.startsWith("SHARP")) {
                                     isSharp = true;
@@ -1812,8 +1811,13 @@ MuseScore {
                                     "sharp": isSharp,
                                     "name": ann.text
                                 };
-                                grid.push(forPhrase);
+
                                 debugO("Using chord : > ", forPhrase, ["scale"]);
+                                if ((prevChord===null) || (prevChord.root !== forPhrase.root) || (prevChord.type !== forPhrase.type)) {
+                                    prevChord = forPhrase;
+									console.log("ADD IT");
+                                    grid.push(forPhrase);
+                                }
                                 break;
                             }
                         }
@@ -1824,8 +1828,8 @@ MuseScore {
         }
 
         if (grid.length == 0) {
-			console.log("no chords");
-			cannotFetchPhraseFromSelectionDialog.message="No chords text found in the selection";
+            console.log("no chords");
+            cannotFetchPhraseFromSelectionDialog.message = "No chords text found in the selection";
             cannotFetchPhraseFromSelectionDialog.open();
             return;
         }
@@ -2579,7 +2583,7 @@ MuseScore {
                 ImageButton {
                     imageSource: "upload.svg"
                     ToolTip.text: "Fetch phrase from current score"
-					// enabled: curScore!=null
+                    // enabled: curScore!=null
                     imageHeight: 25
                     imagePadding: (buttonBox.contentItem.height - imageHeight) / 2
                     onClicked: {
@@ -2598,7 +2602,7 @@ MuseScore {
             id: labRoots
             //Layout.column : 0
             //Layout.row : 3
-								height: 20
+            height: 20
 
             states: [
                 State {
@@ -2618,11 +2622,11 @@ MuseScore {
             ]
 
         }
-		
+
         StackLayout {
             currentIndex: modeIndex()
             // width: parent.width
-			Layout.fillHeight: false // true is the default for a StackLayout
+            Layout.fillHeight: false // true is the default for a StackLayout
             Flickable {
                 id: flickable
                 Layout.alignment: Qt.AlignLeft
@@ -2637,7 +2641,6 @@ MuseScore {
                     // rowSpacing: 10
                     Layout.alignment: Qt.AlignLeft
                     rows: 1
-					
 
                     Repeater {
 
@@ -2684,7 +2687,7 @@ MuseScore {
 
 
         } // stacklayout
-		
+
         Label {
             //Layout.column : 0
             //Layout.row : 1
@@ -3425,10 +3428,10 @@ MuseScore {
         id: cannotFetchPhraseFromSelectionDialog
         icon: StandardIcon.Warning
         standardButtons: StandardButton.Ok
-		property var message: ""
+        property var message: ""
         title: 'Fetch phrase from score'
-        text: "Failed to fetch a phrase from the current score:\n"+message+
-		"\n\nNote: This action requires a score being openened and that a selection made, containing chord texts."
+        text: "Failed to fetch a phrase from the current score:\n" + message +
+        "\n\nNote: This action requires a score being openened and that a selection made, containing chord texts."
         onAccepted: {
             cannotFetchPhraseFromSelectionDialog.close()
         }
@@ -3816,7 +3819,12 @@ MuseScore {
 
     function debugO(label, element, excludes) {
 
-        if (Array.isArray(element)) {
+        if (typeof element === 'undefined') {
+            console.log(label + ": undefined");
+        } else if (element === null) {
+            console.log(label + ": null");
+
+        } else if (Array.isArray(element)) {
             for (var i = 0; i < element.length; i++) {
                 debugO(label + "-" + i, element[i], excludes);
             }
@@ -3829,8 +3837,6 @@ MuseScore {
                     debugO(label + ": " + kys[i], element[kys[i]], excludes);
                 }
             }
-        } else if (typeof element === 'undefined') {
-            console.log(label + ": undefined");
         } else {
             console.log(label + ": " + element);
         }
