@@ -41,7 +41,7 @@ MuseScore {
 
     readonly property var pluginName: "Scale Workout Builder"
     readonly property var noteHelperVersion: "1.0.3"
-    readonly property var chordHelperVersion: "1.0.0"
+    readonly property var chordHelperVersion: "1.0.1"
     readonly property var selHelperVersion: "1.2.0"
 
     readonly property var librarypath: { {
@@ -813,7 +813,9 @@ MuseScore {
             // grid mode
             var names = txtPhrase.text.replace(endRegexp, '|;').split(";")
                 .map(function (c) {
-                return (c ? c.match(keyRegexp)[3] : undefined); // --> ["(bbb)Abadd9|" ,"(bbb)" ,"bbb" ,"Abadd9" ,"|"]
+					var name=(c ? c.match(keyRegexp)[3] : ""); // --> ["(bbb)Abadd9|" ,"(bbb)" ,"bbb" ,"Abadd9" ,"|"]
+					name=name.replace('t7','△').replace('0','ø');
+					return name;
             })
                 .filter(function (c) {
                 return (c && c.trim() !== "")
@@ -967,11 +969,11 @@ MuseScore {
 
                     // Adding a key signature
                     // TODO: finalize
-                    if (chord.key && (k == 0)) {
+                    /*if (chord.key && (k == 0)) {
                         var keysig = newElement(Element.KEYSIG);
                         //keysig.layoutBreakType = 1; //line break
                         cursor.add(keysig);
-                    }
+                    }*/
 
                     // Adding the chord's name
                     if (prevChord.symb !== chord.symb || prevChord.name !== chord.name || prevRoot !== root) {
@@ -1586,6 +1588,8 @@ MuseScore {
             e = e.trim();
             return e;
         });
+		
+		var defaultSharp=undefined;
 
         var roots = phraseArray.map(function (ptxt) {
 
@@ -1593,10 +1597,17 @@ MuseScore {
             var end = match[4] === "|";
             var name = match[3];
             var key = match[2];
+            if (key && key.includes("#")) {
+                defaultSharp = true;
+            } else if (key && key.includes("b")) {
+                defaultSharp = false;
+            } else if (key && (key.trim()==="")) { // vide 
+                defaultSharp = undefined;
+            } // else: je ne fais rien. Je garde la définition précédente
 
             var c = ChordHelper.chordFromText(name);
             if (c != null) {
-                var isSharp = undefined; // si accidental==NONE on garde `undefined`
+                var isSharp = defaultSharp; // si l'accord n'a pas d'accidental on utilise la key signature
                 if (c.accidental.startsWith("SHARP")) {
                     isSharp = true;
                 }
