@@ -2,13 +2,15 @@
 /* Parking B - MuseScore - Chord analyser
 /* v1.0.0
 /* ChangeLog:
+/* 	- 1.0.0: Initial release
+/*  - 1.0.1: The 7th degree was sometime erased 
 /**********************************************/
 // -----------------------------------------------------------------------
 // --- Vesionning-----------------------------------------
 // -----------------------------------------------------------------------
 
 function checkVersion(expected) {
-    var version = "1.0.0";
+    var version = "1.0.1";
 
     var aV = version.split('.').map(function (v) {
         return parseInt(v);
@@ -179,7 +181,7 @@ function scaleFromText(text) {
         n7 = 10;
     } else if (n7 == null && def7 != null) {
         n7 = def7;
-    } else {
+    } else if (n7 == null) {
 		n7=11;
 	}
 
