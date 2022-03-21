@@ -1,17 +1,20 @@
 /**********************
 /* Parking B - MuseScore - Chord analyser
-/* v1.2.0
+/* v1.2.3
 /* ChangeLog:
 /* 	- 1.0.0: Initial release
 /*  - 1.0.1: The 7th degree was sometime erased
 /*  - 1.2.0: Exporting now the chord notes instead of n3/n5/n7 erased
+/*  - 1.2.1: Ajout de "^7" comme équivalent à "t7"
+/*  - 1.2.2: Ajout des 7th dans les accords 9
+/*  - 1.2.3: Ajout des maj7
 /**********************************************/
 // -----------------------------------------------------------------------
 // --- Vesionning-----------------------------------------
 // -----------------------------------------------------------------------
 
 function checkVersion(expected) {
-    var version = "1.2.0";
+    var version = "1.2.3";
 
     var aV = version.split('.').map(function (v) {
         return parseInt(v);
@@ -152,7 +155,7 @@ function scaleFromText(text) {
     }
 
     // Maj7
-    else if (text.startsWith("t7")) {
+    else if (text.startsWith("t7") || text.startsWith("^7")) {
         console.log("Starts with t7");
         n3 = 4;
         n5 = 7;
@@ -176,33 +179,25 @@ function scaleFromText(text) {
         def6 = 9; // Je force une 6ème par défaut. Qui sera peut-être écrasée après.
     }
 
-    // No indication => Major
+    // No indication => Major, with dominant 7
     else {
         n3 = 4;
         n5 = 7;
         def6 = 9; // Je force une 6ème par défaut. Qui sera peut-être écrasée après.
-        def7 = 11; // Je force une 7ème par défaut. Qui sera peut-être écrasée après.
+        def7 = 10; // Je force une 7ème par défaut. Qui sera peut-être écrasée après.
         outside = outside.concat([1, 3, 6, 8]);
     }
 
     // Compléments
     // ..7..
+    if (n7 == null && (text.includes("maj7")|| text.includes("ma7") || text.startsWith("t7") || text.startsWith("^7"))) {
+        console.log("Has M7");
+        n7 = 11;
+    } else 
     if (n7 == null && text.includes("7")) {
-        console.log("Has 7");
+        console.log("Has m7");
         n7 = 10;
     };
-
-    if (n7 != null) {
-        keys.push(n7);
-        chordnotes.push({
-            "note": n7,
-            "role": "7"
-        });
-    } else if (def7 != null) {
-        keys.push(def7);
-    } else {
-        keys.push(11);
-    }
 
     // ..3..
     if (n3 != null) {
@@ -233,32 +228,43 @@ function scaleFromText(text) {
     }
 
     // ..2/9..
+	var n9=null;
     if (text.includes("b9")) {
         console.log("Has b9");
-        keys.push(1);
+		n9=1;
+        keys.push(n9);
         chordnotes.push({
-            "note": 1,
+            "note": n9,
             "role": "b9"
         });
     } else if (text.includes("#9")) {
         console.log("Has #9");
-        keys.push(3);
+		n9=3;
+        keys.push(n9);
         chordnotes.push({
-            "note": 3,
+            "note": n9,
             "role": "#9"
         });
     } else if (text.includes("9")) {
-        console.log("Has 9");
-        keys.push(2);
+		n9=2;
+        keys.push(n9);
         chordnotes.push({
-            "note": 2,
+            "note": n9,
             "role": "9"
         });
-    } else if (def2 != null) {
+    } 
+	
+	if (def2 != null) { // 15/3: alignement sur Supercollider
         keys.push(def2)
     } else {
         keys.push(2)
     }
+
+	// Adding an explicit 7 if a 9 is present
+    if ((n9 != null) && (n7 == null) && (def7 != null)) {
+		n7=def7;
+    }
+
 
     // ..4/11..
     if (text.includes("b11")) {
@@ -324,6 +330,21 @@ function scaleFromText(text) {
     } else {
         keys.push(9)
     }
+
+	//..7..
+    if (n7 != null) {
+        keys.push(n7);
+        chordnotes.push({
+            "note": n7,
+            "role": "7"
+        });
+    } else if (def7 != null) {
+        keys.push(def7);
+    } else {
+        keys.push(11);
+    }
+
+	
 
     console.log("After analysis : >>" + text + "<<");
 
