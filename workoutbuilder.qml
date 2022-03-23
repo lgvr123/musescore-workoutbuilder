@@ -14,7 +14,7 @@ import "workoutbuilder"
 
 /**********************
 /* Parking B - MuseScore - Scale Workout builder plugin
-/* v2.2.1
+/* v2.2.2
 /* ChangeLog:
 /* 	- 0.0.0: Initial release
 /*  - 1.0.0: Tools and library of patterns and workouts
@@ -26,11 +26,12 @@ import "workoutbuilder"
 /*  - 2.1.1: Better workout name management
 /*  - 2.2.0: Textual description of grids
 /*  - 2.2.1 (ongoing): Allow "|" et "(###)" in the textual description of grids
+/*  - 2.2.2 Bug in chordanalyzer.js
 /**********************************************/
 MuseScore {
     menuPath: "Plugins." + pluginName
     description: "This plugin builds chordscale workouts based on patterns defined by the user."
-    version: "2.2.0"
+    version: "2.2.2"
 
     pluginType: "dialog"
     requiresScore: false
@@ -41,7 +42,7 @@ MuseScore {
 
     readonly property var pluginName: "Scale Workout Builder"
     readonly property var noteHelperVersion: "1.0.3"
-    readonly property var chordHelperVersion: "1.0.1"
+    readonly property var chordHelperVersion: "1.2.6"
     readonly property var selHelperVersion: "1.2.0"
 
     readonly property var librarypath: { {
@@ -478,7 +479,8 @@ MuseScore {
                     var s = ChordHelper.scaleFromText(chordtype);
                     effective_chord = {
                         "symb": chordtype,
-                        "scale": s.scale,
+                        // "scale": s.scale,
+                        "scale": s.keys,  // ChordHelper.scaleFromText exports "keys", not "scale"
                         "mode": s.mode
                     };
                     scale = s.keys;
@@ -814,7 +816,7 @@ MuseScore {
             var names = txtPhrase.text.replace(endRegexp, '|;').split(";")
                 .map(function (c) {
 					var name=(c ? c.match(keyRegexp)[3] : ""); // --> ["(bbb)Abadd9|" ,"(bbb)" ,"bbb" ,"Abadd9" ,"|"]
-					name=name.replace('t7','△').replace('0','ø');
+					name=name.replace('^7','△7').replace('t7','△7').replace('0','ø');
 					return name;
             })
                 .filter(function (c) {
@@ -2691,6 +2693,7 @@ MuseScore {
                 text: ""
                 Layout.fillWidth: true
                 placeholderText: "Enter a grid such as Cm7;F7;C7;Ab7;G7;C7"
+				selectByMouse: true
 
                 Layout.alignment: Qt.AlignLeft | Qt.QtAlignBottom
 
