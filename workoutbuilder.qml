@@ -10,11 +10,14 @@ import FileIO 3.0
 import "zparkingb/notehelper.js" as NoteHelper
 import "zparkingb/chordanalyser.js" as ChordHelper
 import "zparkingb/selectionhelper.js" as SelHelper
+/*try {
+import "xyz.js" as SoloAnalyzer
+}*/
 import "workoutbuilder"
 
 /**********************
 /* Parking B - MuseScore - Scale Workout builder plugin
-/* v2.2.2
+/* v2.3.0
 /* ChangeLog:
 /* 	- 0.0.0: Initial release
 /*  - 1.0.0: Tools and library of patterns and workouts
@@ -27,11 +30,12 @@ import "workoutbuilder"
 /*  - 2.2.0: Textual description of grids
 /*  - 2.2.1 (ongoing): Allow "|" et "(###)" in the textual description of grids
 /*  - 2.2.2 Bug in chordanalyzer.js
+/*  - 2.3.0 ...
 /**********************************************/
 MuseScore {
     menuPath: "Plugins." + pluginName
     description: "This plugin builds chordscale workouts based on patterns defined by the user."
-    version: "2.2.2"
+    version: "2.3.0"
 
     pluginType: "dialog"
     requiresScore: false
@@ -42,7 +46,7 @@ MuseScore {
 
     readonly property var pluginName: "Scale Workout Builder"
     readonly property var noteHelperVersion: "1.0.3"
-    readonly property var chordHelperVersion: "1.2.6"
+    readonly property var chordHelperVersion: "1.2.8"
     readonly property var selHelperVersion: "1.2.0"
 
     readonly property var librarypath: { {
@@ -81,14 +85,10 @@ MuseScore {
         }
 
         // Processing
-        //console.log(Qt.resolvedUrl("MuseJazz.mss"));
         console.log(librarypath);
         console.log(libraryFile.source);
 
         loadLibrary();
-
-        //		console.log(FileIO.homePath() + "/MuseJazz.mss");
-        //		console.log(rootPath() + "/MuseJazz.mss");
 
     }
 
@@ -139,6 +139,20 @@ MuseScore {
             "cpitch": 48,
         },
     ]
+
+    property var _gridtype: [{
+            "type": "grid",
+            "label": "Grid",
+            "image": "none.png",
+        }, {
+            "type": "chordup",
+            "label": "Notes of the chord ascending",
+            "image": "up.png",
+        }, {
+            "type": "chorddown",
+            "label": "Notes of the chord descending",
+            "image": "down.png",
+        }]
 
     property var _loops: [{
             "type": 0,
@@ -358,11 +372,7 @@ MuseScore {
 
     property var library: []
     property var workouts: []
-    property var phrases: [new phraseClass(""), new phraseClass("Hello", [{
-                    "root": 2,
-                    "type": "7"
-                }
-            ])]
+    property var phrases: []
 
     readonly property int tooltipShow: 500
     readonly property int tooltipHide: 5000
@@ -408,20 +418,29 @@ MuseScore {
         // 2) Collect the patterns and their definition
         for (var i = 0; i < _max_patterns; i++) {
             // 1.1) Collecting the basesteps
-            var p = [];
-            for (var j = 0; j < _max_steps; j++) {
-                var sn = patterns[i * _max_steps + j];
-                if (sn.degree !== '') {
-                    var d = _griddegrees.indexOf(sn.degree);
-                    if (d > -1)
-                        p.push(sn.degree); // we keep the degree !!!
-                } else
-                    break;
-            }
+            var p = null;
+			var isChordNotes=false;
+			console.log("Grid type for "+i+": "+_gridtype[idGridTypes.itemAt(i).currentIndex].type);
+			if (_gridtype[idGridTypes.itemAt(i).currentIndex].type!="grid") {
+				isChordNotes=_gridtype[idGridTypes.itemAt(i).currentIndex].type;
+			} else {
+				p = [];
+				for (var j = 0; j < _max_steps; j++) {
+					var sn = patterns[i * _max_steps + j];
+					if (sn.degree !== '') {
+						var d = _griddegrees.indexOf(sn.degree);
+						if (d > -1)
+							p.push(sn.degree); // we keep the degree !!!
+					} else
+						break;
+				}
 
-            if (p.length == 0) {
-                break;
-            }
+				if (p.length == 0) {
+					break;
+				}
+			}
+			
+			console.log("isChordNotes: "+isChordNotes);
 
             // 1.2) Retrieving loop mode
             var mode = idLoopingMode.itemAt(i).currentIndex
@@ -433,7 +452,8 @@ MuseScore {
             var pattern = {
                 "notes": p,
                 "loopAt": mode,
-                "name": idPattName.itemAt(i).text
+                "name": (_gridtype[idGridTypes.itemAt(i).currentIndex].type!="grid")?"Chord notes":idPattName.itemAt(i).text,
+				"isChordNotes": isChordNotes,
             };
             patts.push(pattern);
 
@@ -500,22 +520,47 @@ MuseScore {
                 // debugO("effective_chord", effective_chord, ["scale"]);
 
                 var steps = [];
-                for (var n = 0; n < pp.notes.length; n++) {
-                    var ip = parseInt(pp.notes[n]) - 1; // TODO: This is not clean: using a label "1" and trying to deduce the valid array index
+				// if (pp.notes.length==1 && pp.notes[0]==null) {
+				if (pp.isChordNotes) {
+					// Chord mode: take only the notes of the chord
+					steps=chord.chordnotes.map(function(e) { return parseInt(e.note); }).sort(function(a,b) { return a-b;});
+					
+						console.log("~~~~Dealing with the ChordNotes~~~~~"+pp.isChordNotes)
+					if (chord.bass!=null) {
+						console.log("~~~~Dealing with the bass~~~~~")
+						console.log("Steps before: "+steps);
+						var bass=chord.bass.key;
+						var idx=steps.indexOf(bass);
+						steps.pop(); // retirer le "12"
+						console.log("Steps without 12: "+steps);
+						steps=steps.concat(steps.splice(0,idx).map(function(e){ return e+12}));
+						console.log("Steps rotated: "+steps);
+						steps=steps.concat(12+bass);
+						console.log("Steps with bass+12: "+steps);
+					}
+					
+					if(pp.isChordNotes=="chorddown") steps=steps.reverse();
+					
+				} else {
+					// Traditional mode: pattern based
+					for (var n = 0; n < pp.notes.length; n++) {
+						var ip = parseInt(pp.notes[n]) - 1; // TODO: This is not clean: using a label "1" and trying to deduce the valid array index
 
-                    console.log(ip + "--" + (ip % 7) + "--" + Math.floor(ip / 7) + "--" + (Math.floor(ip / 7) * 12) + "**" + scale[ip % 7] + "**" + (scale[ip % 7] + (Math.floor(ip / 7) * 12)));
+						console.log(ip + "--" + (ip % 7) + "--" + Math.floor(ip / 7) + "--" + (Math.floor(ip / 7) * 12) + "**" + scale[ip % 7] + "**" + (scale[ip % 7] + (Math.floor(ip / 7) * 12)));
 
-                    var inScale = (scale[ip % 7]) + (Math.floor(ip / 7) * 12);
+						var inScale = (scale[ip % 7]) + (Math.floor(ip / 7) * 12);
 
-                    console.log(n + ": " + pp.notes[n] + " --> " + ip + " --> " + inScale);
-                    steps.push(inScale);
-                }
+						console.log(n + ": " + pp.notes[n] + " --> " + ip + " --> " + inScale);
+						steps.push(inScale);
+					}
+				}
 
                 var pattern = {
                     "notes": steps,
                     "loopAt": pp.loopAt,
                     "chord": effective_chord,
-                    "name": pp.name
+                    "name": pp.name,
+					"isChordNotes": pp.isChordNotes
                 };
 
                 var local = extendPattern(pattern);
@@ -560,7 +605,8 @@ MuseScore {
                         "chord": effective_chord,
                         "mode": effective_chord.mode,
                         "notes": notes,
-                        "representation": local.representation
+                        "representation": local.representation,
+						"isChordNotes": local.isChordNotes
                     });
 
                 }
@@ -925,7 +971,7 @@ MuseScore {
                 }
 
                 if (adaptativeMeasure) {
-                    beatsByMeasure = signatureForPattern(pages[i][j].notes.length);
+                    beatsByMeasure = (pages[i][j].isChordNotes)?pages[i][j].notes.length:signatureForPattern(pages[i][j].notes.length);
                 } else {
                     beatsByMeasure = 4;
                 }
@@ -1507,7 +1553,7 @@ MuseScore {
             }
 
             // ..one must reassign explicitely the whole object in the combobox to trigger the binding's update
-            idStepNotes.itemAt(ip).children[modeIndex()].item.step = sn;
+            idStepNotes.itemAt(ip).children[modeIndex()].step = sn;
 
         }
 
@@ -1619,6 +1665,8 @@ MuseScore {
                 var forPhrase = {
                     "root": c.pitch,
                     "type": c.name,
+					"chordnotes": c.chordnotes,
+					"bass": c.bass,
                     "sharp": isSharp,
                     "name": name,
                     "end": end,
@@ -2217,14 +2265,97 @@ MuseScore {
                     text: "Pattern " + (index + 1) + ":"
                 }
             }
+			
+			
 
+                Label {// v2.3.0
+                    Layout.row: 0
+                    Layout.column: 1 
+                    Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
+                    Layout.rightMargin: 1
+                    Layout.leftMargin: 1
+                    Layout.bottomMargin: 5
+                    text: "C.N."
+					visible: modeIndex()!=0
+
+                }
+
+            Repeater { // 2.3.0
+                id: idGridTypes
+                model: _max_patterns
+
+				
+				                ComboBox {
+                    //Layout.fillWidth : true
+					id: lstGridType
+                    Layout.row: index + 1
+                    Layout.column: 1
+                    Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
+                    Layout.rightMargin: 0
+                    Layout.leftMargin: 0
+					visible: modeIndex()!=0
+
+                    model: _gridtype
+
+                    Layout.preferredHeight: 30
+                    Layout.preferredWidth: 30 + indicator.width
+
+                    delegate: ItemDelegate { // requiert QuickControls 2.2
+                        contentItem: Image {
+                            height: 25
+                            width: 25
+                            source: "./workoutbuilder/" + modelData.image
+                            fillMode: Image.Pad
+                            verticalAlignment: Text.AlignVCenter
+                            horizontalAlignment: Text.Left
+                            ToolTip.text: modelData.label
+                            ToolTip.delay: tooltipShow
+                            ToolTip.timeout: tooltipHide
+                            ToolTip.visible: hovered
+                        }
+                        highlighted: lstGridType.highlightedIndex === index
+
+                    }
+
+                    contentItem: Image {
+                        height: 25
+                        width: 25
+                        fillMode: Image.Pad
+                        source: "./workoutbuilder/" + _gridtype[lstGridType.currentIndex].image
+                        // source: "./workoutbuilder/" + modelData.image
+
+                        ToolTip.text: _gridtype[lstGridType.currentIndex].label
+                        // ToolTip.text: modelData.label
+                        ToolTip.delay: tooltipShow
+                        ToolTip.timeout: tooltipHide
+                        ToolTip.visible: hovered
+
+                    }
+
+                    onCurrentIndexChanged: {
+						var value=_gridtype[lstGridType.currentIndex].type;
+						console.log("row: "+index+": "+value);
+						
+						for(var i=0;i<_max_steps;i++) {
+							idStepNotes.itemAt(index*12+i).children[1].enabled= (value=="grid")
+						}
+                    }
+					
+					
+
+                }
+
+				
+            }
+			
+				
             Repeater {
                 id: idNoteLabels
                 model: _max_steps
 
                 Label {
                     Layout.row: 0
-                    Layout.column: index + 1
+                    Layout.column: index + 2 // v2.3.0
                     Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
                     Layout.rightMargin: 2
                     Layout.leftMargin: 2
@@ -2236,14 +2367,16 @@ MuseScore {
                 id: idStepNotes
                 model: getPatterns(resetP)
 
+
                 StackLayout {
                     width: parent.width
                     currentIndex: modeIndex()
 
                     property int stepIndex: index % _max_steps
                     property int patternIndex: Math.floor(index / _max_steps)
+
                     Layout.row: 1 + patternIndex
-                    Layout.column: 1 + stepIndex
+                    Layout.column: 2 + stepIndex // v2.3.0
 
                     Loader {
                         id: loaderNotes
@@ -2256,29 +2389,44 @@ MuseScore {
                         sourceComponent: stepComponent
                     }
 
-                    Loader {
-                        id: loaderGridNotes
-                        Binding {
-                            target: loaderGridNotes.item
-                            property: "step"
-                            value: patterns[patternIndex * _max_steps + stepIndex]
-                        }
+					ComboBox {
+						id: lstGStep
+						property var step: patterns[patternIndex * _max_steps + stepIndex]
+						Layout.alignment: Qt.AlignLeft | Qt.QtAlignBottom
+						editable: false
+						// enabled: !idGridTypes.itemAt(patternIndex).checked
+						// property var __cb: idGridTypes.itemAt(patternIndex)
+						// enabled: !__cb.checked
+						model: _ddGridNotes
+						Layout.preferredHeight: 30
+						implicitWidth: 75
+						currentIndex: find(step.degree, Qt.MatchExactly)
+						onCurrentIndexChanged: {
+							step.degree = model[currentIndex];
+							workoutName = undefined; // resetting the name of the workout. One has to save it again to regain the name
+							// console.log(index+" - "+patternIndex);
+							// console.log(idGridTypes.itemAt(patternIndex).checked);
+						}
+						Component.onCompleted: {
+							// THIS IS NOT WORKING
+							// console.log('setting "enabled" binding of '+index+' to '+patternIndex);
+							// enabled= !idGridTypes.itemAt(patternIndex).checked;
 
-                        sourceComponent: gridStepComponent
-                    }
+						}
+						
+					}
 
-                }
-            }
-            Label {
-                Layout.row: 0
-                Layout.column: _max_steps + 2
-                Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
-                Layout.rightMargin: 2
-                Layout.leftMargin: 2
-                Layout.bottomMargin: 5
-                text: "Repeat"
-            }
-
+				}
+        }
+        Label {
+            Layout.row: 0
+            Layout.column: _max_steps + 3 // v2.3.0
+            Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
+            Layout.rightMargin: 2
+            Layout.leftMargin: 2
+            Layout.bottomMargin: 5
+            text: "Repeat"
+        }
             Repeater {
                 id: idLoopingMode
                 model: _max_patterns
@@ -2291,7 +2439,7 @@ MuseScore {
                     //clip: true
                     //focus: true
                     Layout.row: index + 1
-                    Layout.column: _max_steps + 2
+                    Layout.column: _max_steps + 3  // v2.3.0
                     Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
                     Layout.rightMargin: 2
                     Layout.preferredHeight: 30
@@ -2336,7 +2484,7 @@ MuseScore {
 
             Label {
                 Layout.row: 0
-                Layout.column: _max_steps + 3
+                Layout.column: _max_steps + 4  // v2.3.0
                 Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
                 Layout.rightMargin: 2
                 Layout.leftMargin: 2
@@ -2353,7 +2501,7 @@ MuseScore {
                     model: _ddChordTypes
                     editable: true
                     Layout.row: index + 1
-                    Layout.column: _max_steps + 3
+                    Layout.column: _max_steps + 4  // v2.3.0
                     Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
                     Layout.rightMargin: 2
                     Layout.leftMargin: 2
@@ -2390,7 +2538,7 @@ MuseScore {
                 Rectangle {
 
                     Layout.row: index + 1
-                    Layout.column: _max_steps + 4
+                    Layout.column: _max_steps + 5  // v2.3.0
                     Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
                     Layout.rightMargin: 0
                     Layout.leftMargin: 0
@@ -2908,26 +3056,6 @@ MuseScore {
         }
     }
 
-    Component {
-        id: gridStepComponent
-
-        ComboBox {
-            id: lstGStep
-            property var step: {
-                "degree": ''
-            }
-            Layout.alignment: Qt.AlignLeft | Qt.QtAlignBottom
-            editable: false
-            model: _ddGridNotes
-            Layout.preferredHeight: 30
-            implicitWidth: 75
-            currentIndex: find(step.degree, Qt.MatchExactly)
-            onCurrentIndexChanged: {
-                step.degree = model[currentIndex];
-                workoutName = undefined; // resetting the name of the workout. One has to save it again to regain the name
-            }
-        }
-    }
 
     Window {
         id: aboutWindow
@@ -3145,8 +3273,8 @@ MuseScore {
                             color: "lightsteelblue"
                             //width: parent.width
                             anchors { // throws some errors, but is working fine
-                                left: parent.left
-                                right: parent.right
+                                left: (parent)?parent.left:undefined
+                                right: (parent)?parent.right:undefined
                             }
                         }
                     }
