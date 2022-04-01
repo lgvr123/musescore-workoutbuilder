@@ -143,15 +143,15 @@ MuseScore {
     property var _gridtype: [{
             "type": "grid",
             "label": "Grid",
-            "image": "none.png",
+            "image": "grid.png",
         }, {
             "type": "chordup",
             "label": "Notes of the chord ascending",
-            "image": "up.png",
+            "image": "chordup.png",
         }, {
             "type": "chorddown",
             "label": "Notes of the chord descending",
-            "image": "down.png",
+            "image": "chorddown.png",
         }]
 
     property var _loops: [{
