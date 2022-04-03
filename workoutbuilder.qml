@@ -2266,8 +2266,8 @@ MuseScore {
         GridLayout { // un small element within the fullWidth/fullHeight where we paint the repeater
             //anchors.verticalCenter : parent.verticalCenter
             id: idNoteGrid
-            rows: _max_patterns/*mpatterns.max_patterns*/ + 1
-            columns: _max_steps/*mpatterns.max_steps*/ + 6
+            rows: _max_patterns + 1
+            // columns: _max_steps/*mpatterns.max_steps*/ + 6
             columnSpacing: 0
             rowSpacing: 0
 
@@ -2515,9 +2515,10 @@ MuseScore {
 
                     //clip: true
                     //focus: true
-                    Layout.row: {console.log(index); index + 1}
-                    // Layout.column: _max_steps/*mpatterns.max_steps*/ + 3  // v2.3.0
-                    Layout.column: 6  // v2.3.0
+					property var _row: index + 1
+					property var _column: steps.count + 3
+                    Layout.row: _row
+                    Layout.column: _column 
                     Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
                     Layout.rightMargin: 2
                     Layout.preferredHeight: 30
@@ -2527,7 +2528,6 @@ MuseScore {
                         contentItem: Image {
                             height: 25
                             width: 25
-                            // source: "./workoutbuilder/" + model[index].image
                             source: "./workoutbuilder/" + modelData[imageRole]
                             fillMode: Image.Pad
                             verticalAlignment: Text.AlignVCenter
@@ -2597,8 +2597,10 @@ MuseScore {
 					}*/
 
                     // editable: true
-                    Layout.row: index + 1
-                    Layout.column: _max_steps/*mpatterns.max_steps*/ + 4  // v2.3.0
+					property var _row: index + 1
+					property var _column: steps.count + 4
+                    Layout.row: _row
+                    Layout.column: _column 
                     Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
                     Layout.rightMargin: 2
                     Layout.leftMargin: 2
@@ -2630,12 +2632,14 @@ MuseScore {
 
             Repeater {
                 id: idTools
-                model: [] //mpatterns
+                model: mpatterns
 
                 Rectangle {
 
-                    Layout.row: {console.log(index); index + 1}
-                    Layout.column: _max_steps/*mpatterns.max_steps*/ + 5  // v2.3.0
+					property var _row: index + 1
+					property var _column: steps.count + 5
+                    Layout.row: _row
+                    Layout.column: _column 
                     Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
                     Layout.rightMargin: 0
                     Layout.leftMargin: 0
@@ -2718,8 +2722,10 @@ MuseScore {
                     id: txtPN
                     text: pattName
                     visible: true // DEBUG was false
-                    Layout.row: index + 1
-                    Layout.column: _max_steps/*mpatterns.max_steps*/ + 6
+					property var _row: index + 1
+					property var _column: steps.count + 6
+                    Layout.row: _row
+                    Layout.column: _column 
                 }
             }
 
