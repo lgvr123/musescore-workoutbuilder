@@ -96,7 +96,7 @@ MuseScore {
     readonly property var _GRID_MODE: "grid"
 
     property int _max_patterns: 3 //10
-    property int _max_steps: 4 //12
+    property int _max_steps: 12 //12
 	
     property int _max_roots: 12
     property var _degrees: ['1', 'b2', '2', 'm3', 'M3', '4', 'b5', '5', 'm6', 'M6', 'm7', 'M7',
@@ -380,15 +380,15 @@ MuseScore {
 				for (var s = 0; s < _max_steps; s++) {
 					steps.push({
                         "note": '', // scale mode
-                        "degree": '', // grid mode
+                        "degree": '',// grid mode 
 					});
 				}
 				mpatterns.append({
 					"useChordNotes": 'grid',
-					"repeatMode": '',
+					"repeatMode": '', 
 					"steps": steps, // will be converted to ListElement
-					"chordType" : '',
-					"pattName":'a name',
+					"chordType" : '', 
+					"pattName":'', 
 				});
 			}
 		}
@@ -1520,17 +1520,18 @@ MuseScore {
             scaleMode = (modeIndex() == 0);
 
         var steps = [];
-        for (var i = 0; i < _max_steps/*mpatterns.max_steps*/; i++) {
+		var current=mpatterns.get(index);
+        for (var i = 0; i < current.steps.count; i++) {
             var d = -1;
             if (scaleMode) {
-                var note = patterns[index * _max_steps/*mpatterns.max_steps*/ + i].note;
+                var note = current.steps.get(i).note;
                 if (note !== '') {
-                    var d = _degrees.indexOf(note);
+                    d = _degrees.indexOf(note);
                 }
             } else {
-                var degree = patterns[index * _max_steps/*mpatterns.max_steps*/ + i].degree;
+                var degree = current.steps.get(i).degree;
                 if (degree !== '') {
-                    var d = _griddegrees.indexOf(degree);
+                    d = _griddegrees.indexOf(degree);
                 }
             }
 
@@ -1540,12 +1541,10 @@ MuseScore {
                 break;
         }
 
-        var mode = idLoopingMode.itemAt(index).currentIndex;
-        mode = _loops[mode].id;
-
-        var scale = (scaleMode) ? idChordType.itemAt(index).editText : undefined;
-
-        var name = idPattName.itemAt(index).text;
+        // var name = idPattName.itemAt(index).text;
+        var mode = current.repeatMode;
+		var scale = current.chordType; // TODO: tester si on récupère bien le editText
+        var name = current.pattName;
 
         var p = new patternClass(steps, mode, scale, name, (scaleMode ? _SCALE_MODE : _GRID_MODE));
 
@@ -1566,10 +1565,9 @@ MuseScore {
             return;
         }
 
-        for (var i = 0; i < _max_steps/*mpatterns.max_steps*/; i++) {
-            var ip = index * _max_steps/*mpatterns.max_steps*/ + i;
-            // setting  only the 'note' field the doesn't work because the binding is not that intelligent...
-            var sn = patterns[ip];
+		var current=mpatterns.get(index);
+        for (var i = 0; i < current.steps.count; i++) {
+            var sn = current.steps.get(i);
             if (scaleMode) {
                 var note = (pattern !== undefined && (i < pattern.steps.length)) ? _degrees[pattern.steps[i]] : '';
                 sn.note = note;
@@ -1578,8 +1576,7 @@ MuseScore {
                 sn.degree = degree;
             }
 
-            // ..one must reassign explicitely the whole object in the combobox to trigger the binding's update
-            idStepNotes.itemAt(ip).children[modeIndex()].step = sn;
+			console.log("Now note/degree at "+i+"/"+index+"= "+sn.note+"/"+sn.degree);
 
         }
 
@@ -1587,24 +1584,17 @@ MuseScore {
         if ((pattern !== undefined) && (pattern.scale !== undefined)) {
             scale = pattern.scale;
         }
-        idChordType.itemAt(index).editText = scale;
+		current.chordType=scale;
 
-        var modeidx = 0;
+		var mode="--";
         if ((pattern !== undefined) && (pattern.loopMode !== undefined)) {
-            console.log("pasting mode " + pattern.loopMode);
-            for (var i = 0; i < _loops.length; i++) {
-                if (_loops[i].id === pattern.loopMode) {
-                    modeidx = i;
-                    break;
-                }
-            }
-        }
-
-        console.log("pasting mode index " + modeidx);
-        idLoopingMode.itemAt(index).currentIndex = modeidx;
+			mode=pattern.loopMode;
+		}
+		current.repeatMode=mode;
 
         var name = (pattern && pattern.name) ? pattern.name : "";
-        idPattName.itemAt(index).text = name;
+        // idPattName.itemAt(index).text = name;
+         current.pattName= name;
 
         console.log("clearing the workout saved name");
         workoutName = undefined; // resetting the name of the workout. One has to save it again to regain the name
@@ -2308,31 +2298,44 @@ MuseScore {
 
             Repeater { // 2.3.0
                 id: idGridTypes
-                model: [] //mpatterns
+                model: mpatterns
 
 				
 				ComboBox {
                     //Layout.fillWidth : true
 					id: lstGridType
-                    Layout.row: index + 1
-                    Layout.column: 1
-                    Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
-                    Layout.rightMargin: 0
-                    Layout.leftMargin: 0
-					visible: modeIndex()!=0
 
                     model: _gridtype
+					
+					textRole: "label" 
+					property var imageRole: "image"
+					property var valueRole: "type"
+
 
 					onActivated: {
 					    // repeatMode = currentValue;
-					    useChordNotes = model[currentIndex].type;
+					    useChordNotes = model[currentIndex][valueRole];
 					    console.log(useChordNotes);
 					}
 
 					Binding on currentIndex {
-					    // TODO
-					    value: lstGridType.model.indexOf(useChordNotes)
+					    value: {
+							var ci=_gridtype.map(function(e) { return e[valueRole] }).indexOf(useChordNotes);
+							ci;
+						}
 					}
+					
+					visible: modeIndex()!=0
+
+					property var _row: index + 1
+					property var _column: 1
+                    Layout.row: _row
+                    Layout.column: _column 
+
+                    Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
+                    Layout.rightMargin: 0
+                    Layout.leftMargin: 0
+
                     Layout.preferredHeight: 30
                     Layout.preferredWidth: 30 + indicator.width
 
@@ -2340,11 +2343,10 @@ MuseScore {
                         contentItem: Image {
                             height: 25
                             width: 25
-                            source: "./workoutbuilder/" + modelData.image
+                            source: "./workoutbuilder/" + modelData[imageRole]
                             fillMode: Image.Pad
                             verticalAlignment: Text.AlignVCenter
-                            horizontalAlignment: Text.Left
-                            ToolTip.text: modelData.label
+                            ToolTip.text: modelData[textRole]
                             ToolTip.delay: tooltipShow
                             ToolTip.timeout: tooltipHide
                             ToolTip.visible: hovered
@@ -2357,11 +2359,10 @@ MuseScore {
                         height: 25
                         width: 25
                         fillMode: Image.Pad
-                        source: "./workoutbuilder/" + model[lstGridType.currentIndex].image
-                        // source: "./workoutbuilder/" + modelData.image
+                        // source: lstLoop.displayText?"./workoutbuilder/" +lstLoop.displayText:null
+                        source: "./workoutbuilder/" +model[lstGridType.currentIndex][imageRole]
 
-                        ToolTip.text: model[lstGridType.currentIndex].label
-                        // ToolTip.text: modelData.label
+                        ToolTip.text: lstGridType.displayText
                         ToolTip.delay: tooltipShow
                         ToolTip.timeout: tooltipHide
                         ToolTip.visible: hovered
@@ -2387,7 +2388,7 @@ MuseScore {
 				
             Repeater {
                 id: idNoteLabels
-                model: _max_steps/*mpatterns.max_steps*/
+                model: _max_steps
 
                 Label {
                     Layout.row: 0
@@ -2402,7 +2403,7 @@ MuseScore {
             Repeater {
                 id: idStepNotes
                 // model: getPatterns(resetP)
-                model: [] //mpatterns // TODO: test
+                model: mpatterns // TODO: test
 				
                 Repeater {
 
@@ -2420,41 +2421,49 @@ MuseScore {
 
 						// property int stepIndex: index % _max_steps/*mpatterns.max_steps*/
 						// property int patternIndex: Math.floor(index / _max_steps/*mpatterns.max_steps*/)
-
-						Layout.row: 1 + patternIndex
-						Layout.column: 2 + stepIndex // v2.3.0
-
-						Loader {
-							id: loaderNotes
-							Binding {
-								target: loaderNotes.item
-								property: "step"
-								// value: patterns[patternIndex * _max_steps/*mpatterns.max_steps*/ + stepIndex]
-								value: steps.get(stepIndex)
-							}
-
-							sourceComponent: stepComponent
-						}
+						
+						property var _row: patternIndex + 1
+						property var _column: 2 + stepIndex
+						Layout.row: _row
+						Layout.column: _column 
 
 						ComboBox {
-							id: lstGStep
-							// property var step: patterns[patternIndex * _max_steps/*mpatterns.max_steps*/ + stepIndex]
-
-							model: _ddGridNotes
-
-							// property var step: steps.get(stepIndex)
-
-							enabled: useChordNotes!=="grid"
-
+							id: lstStep
+							model: _ddNotes
+							
 							onActivated: {
-								degree = model[currentIndex];
+								console.log("note at "+stepIndex+" of "+patternIndex+": "+note);
+								note = model[currentIndex];
 								workoutName = undefined; // resetting the name of the 
-								console.log(degree);
+								console.log("==> now step: "+note);
 							}
 							
 							Binding on currentIndex {
-								// Replace this to something that works with whatever type lstGStep.model might be
-								// TODO 
+								value: lstStep.model.indexOf(note)
+							}
+
+							Layout.alignment: Qt.AlignLeft | Qt.QtAlignBottom
+							editable: false
+							Layout.preferredHeight: 30
+							implicitWidth: 30
+						}
+
+
+						ComboBox {
+							id: lstGStep
+
+							model: _ddGridNotes
+
+							enabled: useChordNotes==="grid"
+
+							onActivated: {
+								console.log("degree at "+stepIndex+" of "+patternIndex+": "+degree);
+								degree = model[currentIndex];
+								workoutName = undefined; // resetting the name of the 
+								console.log("==> now degree: "+degree);
+							}
+							
+							Binding on currentIndex {
 								value: lstGStep.model.indexOf(degree)
 							}
 
@@ -2462,16 +2471,7 @@ MuseScore {
 							editable: false
 							Layout.alignment: Qt.AlignLeft | Qt.QtAlignBottom
 							Layout.preferredHeight: 30
-							implicitWidth: 75
-							currentIndex: find(step.degree, Qt.MatchExactly)
-	/*						onCurrentIndexChanged: {
-								step.degree = model[currentIndex];
-								workoutName = undefined; // resetting the name of the workout. One has to save it again to regain the name
-								// console.log(index+" - "+patternIndex);
-								// console.log(idGridTypes.itemAt(patternIndex).checked);
-							}*/
-
-							
+							implicitWidth: 30
 						}
 					}
 
@@ -2503,15 +2503,16 @@ MuseScore {
 					
 					onActivated: {
                         // repeatMode = currentValue;
-                        repeatMode = model[currentIndex][valueRole];
+                        repeatMode = model[currentIndex][valueRole];;
                         console.log(repeatMode);
                     }
 
-                    /*Binding on currentIndex {
-                        // Replace this to something that works with whatever type lstGStep.model might be
-						// TODO
-                        value: lstGStep.model.indexOf(repeatMode)
-                    }*/
+                    Binding on currentIndex {
+					    value: {
+							var ci=model.map(function(e) { return e[valueRole] }).indexOf(repeatMode);
+							ci;
+						}
+                    }
 
                     //clip: true
                     //focus: true
@@ -2554,11 +2555,6 @@ MuseScore {
 
                     }
 
-/*                    onCurrentIndexChanged: {
-                        console.log("clearing the workout saved name");
-                        workoutName = undefined; // resetting the name of the workout. One has to save it again to regain the name
-                    }*/
-
                 }
             }
 
@@ -2574,29 +2570,26 @@ MuseScore {
 
             Repeater {
                 id: idChordType
-                model: [] //mpatterns
+                model: mpatterns
 				
-                // ComboBox {
-                Label {
+                ComboBox {
                     id: lstChordType
-                    // model: _ddChordTypes
-					text: "ChordType "+index
+                    model: _ddChordTypes
 
 					// TODO à remettre
-					/*onActivated: {
+					onActivated: {
 						// repeatMode = currentValue;
 						chordType = model[currentIndex];
 						console.log(chordType);
                         console.log("clearing the workout saved name");
                         workoutName = undefined; // resetting the name of the workout. One has to save it again to regain the name
-					}*/
+					}
 
-                    /*Binding on currentIndex {
-                        // Replace this to something that works with whatever type lstGStep.model might be
-                        value: lstGStep.model.indexOf(repeatMode)
-					}*/
+                    Binding on currentIndex {
+                        value: lstChordType.model.indexOf(chordType)
+					}
 
-                    // editable: true
+                    editable: true
 					property var _row: index + 1
 					property var _column: steps.count + 4
                     Layout.row: _row
@@ -2623,10 +2616,6 @@ MuseScore {
                         }
                     ]
 
-                    /*onCurrentIndexChanged: {
-                        console.log("clearing the workout saved name");
-                        workoutName = undefined; // resetting the name of the workout. One has to save it again to regain the name
-                    }*/
                 }
             }
 
@@ -2700,9 +2689,7 @@ MuseScore {
 							// TODO
                             imageSource: "edittext.svg"
                             ToolTip.text: "Set pattern's name" +
-                            // ((idPattName.itemAt(index).text != "") ? ("\n\"" + idPattName.itemAt(index).text + "\"") : "\n--default--")
                             ((pattName != "") ? ("\n\"" + pattName + "\"") : "\n--default--")
-                            // highlighted: (idPattName.itemAt(index).text != "")
                             highlighted: (pattName != "")
                             onClicked: {
                                 patternNameInputDialog.index = index;
@@ -3144,28 +3131,6 @@ MuseScore {
         }
     }
 
-    Component {
-        id: stepComponent
-
-        ComboBox {
-            id: lstStep
-            property var step: {
-                "note": ''
-            }
-            Layout.alignment: Qt.AlignLeft | Qt.QtAlignBottom
-            editable: false
-            model: _ddNotes
-            Layout.preferredHeight: 30
-            implicitWidth: 75
-            currentIndex: find(step.note, Qt.MatchExactly)
-            onCurrentIndexChanged: {
-                step.note = model[currentIndex];
-                workoutName = undefined; // resetting the name of the workout. One has to save it again to regain the name
-            }
-        }
-    }
-
-
     Window {
         id: aboutWindow
         title: "About..."
@@ -3589,7 +3554,7 @@ MuseScore {
 
         onVisibleChanged: {
             if (visible) {
-                txtInputPatternName.text = ((index === -1)) ? "??" : idPattName.itemAt(index).text;
+                txtInputPatternName.text = ((index === -1)) ? "??" : mpatterns.get(index).pattName;
             }
         }
 
@@ -3599,7 +3564,7 @@ MuseScore {
             var name = txtInputPatternName.text.trim();
             console.log("==> " + name);
             patternNameInputDialog.close();
-            idPattName.itemAt(index).text = name;
+			mpatterns.get(index).pattName=name;
         }
         onRejected: patternNameInputDialog.close();
 
