@@ -7,12 +7,9 @@ import QtQuick.Controls.Styles 1.4
 import QtQuick.Layouts 1.3
 import FileIO 3.0
 
-import "zparkingb/notehelper.js" as NoteHelper
-import "zparkingb/chordanalyser.js" as ChordHelper
-import "zparkingb/selectionhelper.js" as SelHelper
-/*try {
-import "xyz.js" as SoloAnalyzer
-}*/
+import "workoutbuilder/notehelper.js" as NoteHelper
+import "workoutbuilder/chordanalyser.js" as ChordHelper
+import "workoutbuilder/selectionhelper.js" as SelHelper
 import "workoutbuilder"
 
 /**********************
@@ -30,7 +27,9 @@ import "workoutbuilder"
 /*  - 2.2.0: Textual description of grids
 /*  - 2.2.1 (ongoing): Allow "|" et "(###)" in the textual description of grids
 /*  - 2.2.2 Bug in chordanalyzer.js
-/*  - 2.3.0 ...
+/*  - 2.3.0 New ChordUp and ChordDown options in grid mode
+/*  - 2.3.0 Refactoring of patterns to ListModel
+/*  - 2.3.0 Moved *.js libraries to own folder
 /**********************************************/
 MuseScore {
     menuPath: "Plugins." + pluginName
@@ -67,7 +66,7 @@ MuseScore {
         if ((typeof(SelHelper.checktVersion) !== 'function') || !SelHelper.checktVersion(selHelperVersion) ||
             (typeof(NoteHelper.checktVersion) !== 'function') || !NoteHelper.checktVersion(noteHelperVersion) ||
             (typeof(ChordHelper.checkVersion) !== 'function') || !ChordHelper.checkVersion(chordHelperVersion)) {
-            console.log("Invalid zparkingb/selectionhelper.js, zparkingb/notehelper.js or zparkingb/chordanalyser.js versions. Expecting "
+            console.log("Invalid selectionhelper.js, notehelper.js or chordanalyser.js versions. Expecting "
                  + selHelperVersion + " and " + noteHelperVersion + " and " + chordHelperVersion + ".");
             invalidLibraryDialog.open();
             return;
@@ -95,8 +94,8 @@ MuseScore {
     readonly property var _SCALE_MODE: "scale"
     readonly property var _GRID_MODE: "grid"
 
-    property int _max_patterns: 3 //10
-    property int _max_steps: 12 //12
+    property int _max_patterns: 10
+    property int _max_steps: 12 
 	
     property int _max_roots: 12
     property var _degrees: ['1', 'b2', '2', 'm3', 'M3', '4', 'b5', '5', 'm6', 'M6', 'm7', 'M7',
@@ -141,17 +140,17 @@ MuseScore {
         },
     ]
 
-    property var _gridtype: [{
+    property var _gridTypes: [{
             "type": "grid",
             "label": "Grid",
             "image": "grid.png",
         }, {
             "type": "chordup",
-            "label": "Notes of the chord ascending",
+            "label": "Notes of chord - ascending",
             "image": "chordup.png",
         }, {
             "type": "chorddown",
-            "label": "Notes of the chord descending",
+            "label": "Notes of chord - descending",
             "image": "chorddown.png",
         }]
 
@@ -354,24 +353,6 @@ MuseScore {
         }
     }
 
-	// TODO: 2del
-    property var xxxxpatterns: { {
-
-            var sn = [];
-
-            for (var i = 0; i < _max_patterns; i++) {
-                for (var j = 0; j < _max_steps; j++) {
-                    var _sn = {
-                        "note": '', // scale mode
-                        "degree": '', // grid mode
-                    };
-                    sn.push(_sn);
-                }
-            }
-            return sn;
-        }
-    }
-	
 	ListModel {
 		id: mpatterns
 
@@ -385,8 +366,8 @@ MuseScore {
 					});
 				}
 				mpatterns.append({
-					"useChordNotes": 'grid',
-					"repeatMode": '--', 
+					"gridType": 'grid',
+					"loopMode": '--', 
 					"steps": steps, // will be converted to ListElement
 					"chordType" : '', 
 					"pattName":'', 
@@ -436,6 +417,7 @@ MuseScore {
         printWorkout_pushToScore(pages);
 
     }
+	
     function printWorkout_forGrid() {
         // 1) Collecting the roots
         var chords = getPhrase().chords;
@@ -443,56 +425,12 @@ MuseScore {
         var patts = [];
 
         // 2) Collect the patterns and their definition
-        /*for (var i = 0; i < _max_patterns; i++) {
-            // 1.1) Collecting the basesteps
-            var p = null;
-			var isChordNotes=false;
-			console.log("Grid type for "+i+": "+_gridtype[idGridTypes.itemAt(i).currentIndex].type);
-			if (_gridtype[idGridTypes.itemAt(i).currentIndex].type!="grid") {
-				isChordNotes=_gridtype[idGridTypes.itemAt(i).currentIndex].type;
-			} else {
-				p = [];
-				for (var j = 0; j < _max_steps; j++) {
-					var sn = patterns[i * _max_steps + j];
-					if (sn.degree !== '') {
-						var d = _griddegrees.indexOf(sn.degree);
-						if (d > -1)
-							p.push(sn.degree); // we keep the degree !!!
-					} else
-						break;
-				}
-
-				if (p.length == 0) {
-					break;
-				}
-			}
-			
-			console.log("isChordNotes: "+isChordNotes);
-
-            // 1.2) Retrieving loop mode
-            var mode = idLoopingMode.itemAt(i).currentIndex
-                mode = _loops[mode];
-            console.log("looping mode : " + mode.label);
-
-            // Retrieving Chord type
-            // Build final pattern
-            var pattern = {
-                "notes": p,
-                "loopAt": mode,
-                "name": (_gridtype[idGridTypes.itemAt(i).currentIndex].type!="grid")?"Chord notes":idPattName.itemAt(i).text,
-				"isChordNotes": isChordNotes,
-            };
-            patts.push(pattern);
-
-        }*/
         for (var i = 0; i < _max_patterns; i++) {
             // 1.1) Collecting the basesteps
 			var raw=mpatterns.get(i);
-			// if (raw.isEmpty(_GRID_MODE)) continue;
 
             var p = null;
-			var isChordNotes=(raw.useChordNotes!=='grid')?raw.useChordNotes:false;
-			if (!isChordNotes) {
+			if (raw.gridType==='grid') {
 				p = [];
 				for (var j = 0; j < _max_steps; j++) {
 					var sn = raw.steps.get(j);
@@ -509,10 +447,8 @@ MuseScore {
 				}
 			}
 			
-			console.log("isChordNotes: "+isChordNotes);
-
             // 1.2) Retrieving loop mode
-            var mode = raw.repeatMode;
+            var mode = raw.loopMode;
 			mode = _loops.filter(function(e) {return e.id===mode})[0];
             console.log("looping mode : " + mode.label);
 
@@ -521,8 +457,8 @@ MuseScore {
             var pattern = {
                 "notes": p,
                 "loopAt": mode,
-                "name": (isChordNotes)?"Chord notes":raw.pattName,
-				"isChordNotes": isChordNotes,
+                "name": (raw.gridType!=="grid")?"Chord notes":raw.pattName,
+				"gridType": raw.gridType,
             };
             patts.push(pattern);
 
@@ -590,11 +526,11 @@ MuseScore {
 
                 var steps = [];
 				// if (pp.notes.length==1 && pp.notes[0]==null) {
-				if (pp.isChordNotes) {
+				if (pp.gridType!=="grid") {
 					// Chord mode: take only the notes of the chord
 					steps=chord.chordnotes.map(function(e) { return parseInt(e.note); }).sort(function(a,b) { return a-b;});
 					
-						console.log("~~~~Dealing with the ChordNotes~~~~~"+pp.isChordNotes)
+						console.log("~~~~Dealing with the ChordNotes~~~~~"+pp.gridType)
 					if (chord.bass!=null) {
 						console.log("~~~~Dealing with the bass~~~~~")
 						console.log("Steps before: "+steps);
@@ -608,7 +544,7 @@ MuseScore {
 						console.log("Steps with bass+12: "+steps);
 					}
 					
-					if(pp.isChordNotes=="chorddown") steps=steps.reverse();
+					if(pp.gridType=="chorddown") steps=steps.reverse();
 					
 				} else {
 					// Traditional mode: pattern based
@@ -629,7 +565,7 @@ MuseScore {
                     "loopAt": pp.loopAt,
                     "chord": effective_chord,
                     "name": pp.name,
-					"isChordNotes": pp.isChordNotes
+					"gridType": pp.gridType
                 };
 
                 var local = extendPattern(pattern);
@@ -675,7 +611,7 @@ MuseScore {
                         "mode": effective_chord.mode,
                         "notes": notes,
                         "representation": local.representation,
-						"isChordNotes": local.isChordNotes
+						"gridType": local.gridType
                     });
 
                 }
@@ -767,7 +703,7 @@ MuseScore {
             }
 
             // 1.2) Retrieving loop mode
-            var mode = raw.repeatMode;
+            var mode = raw.loopMode;
 			mode = _loops.filter(function(e) {return e.id===mode})[0];
             console.log("looping mode : " + mode.label);
 
@@ -1098,7 +1034,7 @@ MuseScore {
                 }
 
                 if (adaptativeMeasure) {
-                    beatsByMeasure = (pages[i][j].isChordNotes)?pages[i][j].notes.length:signatureForPattern(pages[i][j].notes.length);
+                    beatsByMeasure = (pages[i][j].gridType!=="grid")?pages[i][j].notes.length:signatureForPattern(pages[i][j].notes.length);
                 } else {
                     beatsByMeasure = 4;
                 }
@@ -1642,12 +1578,7 @@ MuseScore {
                 break;
         }
 
-        // var name = idPattName.itemAt(index).text;
-        var mode = current.repeatMode;
-		var scale = current.chordType; // TODO: tester si on récupère bien le editText
-        var name = current.pattName;
-
-        var p = new patternClass(steps, mode, scale, name, (scaleMode ? _SCALE_MODE : _GRID_MODE));
+        var p = new patternClass(steps, current.loopMode, current.chordType, current.pattName, (scaleMode ? _SCALE_MODE : _GRID_MODE), current.gridType);
 
         console.log(p.label);
 
@@ -1678,21 +1609,10 @@ MuseScore {
             }
         }
 
-        var scale = '';
-        if ((pattern !== undefined) && (pattern.scale !== undefined)) {
-            scale = pattern.scale;
-        }
-		current.chordType=scale;
-
-		var mode="--";
-        if ((pattern !== undefined) && (pattern.loopMode !== undefined)) {
-			mode=pattern.loopMode;
-		}
-		current.repeatMode=mode;
-
-        var name = (pattern && pattern.name) ? pattern.name : "";
-        // idPattName.itemAt(index).text = name;
-         current.pattName= name;
+		current.chordType=((pattern !== undefined) && (pattern.scale !== undefined))?pattern.scale:'';
+		current.loopMode=((pattern !== undefined) && (pattern.loopMode !== undefined))?pattern.loopMode:"--";
+        current.pattName= ((pattern!== undefined) && (pattern.name!== undefined)) ? pattern.name : "";;
+		current.gridType=((pattern!== undefined) && (pattern.gridType!== undefined))?pattern.gridType:"grid";
 
         // console.log("clearing the workout saved name");
         workoutName = undefined; // resetting the name of the workout. One has to save it again to regain the name
@@ -1745,7 +1665,6 @@ MuseScore {
     function getPhrase(label) {
 
         var phraseText = txtPhrase.text;
-        // var phraseArray = phraseText.replaceAll(/\|\s*<?!;|$>/g,'|;').split(";").map(function (e) {
         var phraseArray = phraseText.replace(endRegexp, '|;').split(";").map(function (e) {
             e = e.trim();
             return e;
@@ -2082,7 +2001,7 @@ MuseScore {
         var pp = [];
         for (var i = 0; i < _max_patterns; i++) {
             var p = getPattern(i);
-            if (p.steps.length == 0)
+            if (p.steps.length == 0 && p.gridType === 'grid')
                 break;
             pp.push(p);
         }
@@ -2403,7 +2322,7 @@ MuseScore {
                     //Layout.fillWidth : true
 					id: lstGridType
 
-                    model: _gridtype
+                    model: _gridTypes
 					
 					textRole: "label" 
 					property var imageRole: "image"
@@ -2411,14 +2330,14 @@ MuseScore {
 
 
 					onActivated: {
-					    // repeatMode = currentValue;
-					    useChordNotes = model[currentIndex][valueRole];
-					    console.log(useChordNotes);
+					    // loopMode = currentValue;
+					    gridType = model[currentIndex][valueRole];
+					    console.log(gridType);
 					}
 
 					Binding on currentIndex {
 					    value: {
-							var ci=_gridtype.map(function(e) { return e[valueRole] }).indexOf(useChordNotes);
+							var ci=_gridTypes.map(function(e) { return e[valueRole] }).indexOf(gridType);
 							ci;
 						}
 					}
@@ -2457,7 +2376,6 @@ MuseScore {
                         height: 25
                         width: 25
                         fillMode: Image.Pad
-                        // source: lstLoop.displayText?"./workoutbuilder/" +lstLoop.displayText:null
                         source: "./workoutbuilder/" +model[lstGridType.currentIndex][imageRole]
 
                         ToolTip.text: lstGridType.displayText
@@ -2466,17 +2384,6 @@ MuseScore {
                         ToolTip.visible: hovered
 
                     }
-
-                    /*onCurrentIndexChanged: {
-						var value=_gridtype[lstGridType.currentIndex].type;
-						console.log("row: "+index+": "+value);
-						
-						for(var i=0;i<_max_steps;i++) {
-							idStepNotes.itemAt(index*12+i).children[1].enabled= (value=="grid")
-						}
-                    }*/
-					
-					
 
                 }
 
@@ -2500,8 +2407,7 @@ MuseScore {
             }
             Repeater {
                 id: idStepNotes
-                // model: getPatterns(resetP)
-                model: mpatterns // TODO: test
+                model: mpatterns
 				
                 Repeater {
 
@@ -2550,7 +2456,7 @@ MuseScore {
 
 							model: _ddGridNotes
 
-							enabled: useChordNotes==="grid"
+							enabled: gridType==="grid"
 
 							onActivated: {
 								console.log("degree at "+stepIndex+" of "+patternIndex+": "+degree);
@@ -2598,14 +2504,14 @@ MuseScore {
 					property var valueRole: "id"
 					
 					onActivated: {
-                        // repeatMode = currentValue;
-                        repeatMode = model[currentIndex][valueRole];;
-                        console.log(repeatMode);
+                        // loopMode = currentValue;
+                        loopMode = model[currentIndex][valueRole];;
+                        console.log(loopMode);
                     }
 
                     Binding on currentIndex {
 					    value: {
-							var ci=model.map(function(e) { return e[valueRole] }).indexOf(repeatMode);
+							var ci=model.map(function(e) { return e[valueRole] }).indexOf(loopMode);
 							ci;
 						}
                     }
@@ -2747,9 +2653,6 @@ MuseScore {
                         columnSpacing: 2
                         rowSpacing: 0
 
-                        Label {
-                            text: index
-                        }
                         ImageButton {
                             id: btnClear
                             imageSource: "cancel.svg"
@@ -2788,7 +2691,6 @@ MuseScore {
                         }
                         ImageButton {
                             id: btnSetName
-							// TODO
                             imageSource: "edittext.svg"
                             ToolTip.text: "Set pattern's name" +
                             ((pattName != "") ? ("\n\"" + pattName + "\"") : "\n--default--")
@@ -2803,20 +2705,20 @@ MuseScore {
                 }
             }
 
-            Repeater {
-                id: idPattName
-                model: mpatterns
+            // Repeater {
+                // id: idPattName
+                // model: mpatterns
 
-                Text {
-                    id: txtPN
-                    text: pattName
-                    visible: true // DEBUG was false
-					property var _row: index + 1
-					property var _column: steps.count + 6
-                    Layout.row: _row
-                    Layout.column: _column 
-                }
-            }
+                // Text {
+                    // id: txtPN
+                    // text: pattName
+                    // visible: true // DEBUG was false
+					// property var _row: index + 1
+					// property var _column: steps.count + 6
+                    // Layout.row: _row
+                    // Layout.column: _column 
+                // }
+            // }
 
         }
 
@@ -3736,7 +3638,7 @@ MuseScore {
         icon: StandardIcon.Critical
         standardButtons: StandardButton.Ok
         title: 'Invalid libraries'
-        text: "Invalid 'zparkingb/notehelper.js' or 'zparkingb/chordanalyser.js' versions.\nExpecting " + noteHelperVersion + " and " + chordHelperVersion + ".\n" + pluginName + " will stop here."
+        text: "Invalid 'notehelper.js' or 'chordanalyser.js' versions.\nExpecting " + noteHelperVersion + " and " + chordHelperVersion + ".\n" + pluginName + " will stop here."
         onAccepted: {
             Qt.quit()
         }
@@ -3831,12 +3733,15 @@ MuseScore {
 
     }
 
-    function patternClass(steps, loopMode, scale, name, type) {
+    function patternClass(steps, loopMode, scale, name, type, gridType) {
         this.steps = (steps !== undefined) ? steps : [];
         this.loopMode = loopMode;
         this.scale = scale;
         this.type = (type === undefined || (type !== _SCALE_MODE && type !== _GRID_MODE)) ? _SCALE_MODE : type;
         this.name = (name && (name != null)) ? name : "";
+		this.gridType = (gridType === "undefined")?"grid":gridType;
+		
+		debugO("new pattern class",this);
 
         this.toJSON = function (key) {
             return {
@@ -3844,7 +3749,8 @@ MuseScore {
                 loopMode: this.loopMode,
                 scale: this.scale,
                 name: this.name,
-                type: this.type
+                type: this.type,
+                gridType: this.gridType
             };
 
         };
@@ -3852,7 +3758,10 @@ MuseScore {
         // transient properties
         // label
         var label = "";
-        if (steps.length == 0)
+		if (type===_GRID_MODE && gridType!='grid') {
+			var l=_gridTypes.find(function(e) { return e.type=== gridType});
+			label +=(l!==undefined)?l.label:"---";
+		} else if (steps.length == 0)
             label += "---";
         else
             for (var i = 0; ((i < steps.length) && (steps[i] !== undefined)); i++) {
@@ -3910,7 +3819,7 @@ MuseScore {
      * Creation of a pattern from a pattern object containing the *enumerable* fields (ie. the non transient fields)
      */
     function patternClassRaw(raw) {
-        patternClass.call(this, raw.steps, raw.loopMode, raw.scale, raw.name, raw.type);
+        patternClass.call(this, raw.steps, raw.loopMode, raw.scale, raw.name, raw.type, raw.gridType);
     }
 
     function workoutClass(name, patterns, roots, bypattern, invert) {
