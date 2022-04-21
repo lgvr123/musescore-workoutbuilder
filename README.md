@@ -1,22 +1,25 @@
 # Scale Workout Builder plugin for MuseScore 3.x
 *Scale Workout Builder plugin for MuseScore 3.x* is a plugin for MuseScore 3.0 for the creation of exercises and workouts scores for practising your playing skills and knowledge of scales, improvisation patterns, ...
 
-## New features in 1.2.0
-* A name can be specify for every pattern.
+## New features in 2.2.0
+New Grid workout type: you specify :
+* a grid such as "Cm6;Fmi9;D07;G7#5#9;Cm6"
+* patterns to play  : such as "1-3-5-7", "1-5-3", ...
+and it generates a score.
 
 ## Features
+* Choose workout type between *Scale mode* or *Grid mode*
 * Define freely up-to 8 patterns of up-to 12 steps each
 * Loop them across the diatonic scale, or by triads
-* Repeat the patterns over different roots
-* Export to a MuseScore score
+* Repeat the patterns over different roots (*Scale mode*)
+* Export as a MuseScore score
 
-## Installation
-* Go to the **[Releases panel](https://github.com/lgvr123/musescore-workoutbuilder/releases)** panel and download the latest release sources file 
-* Install using the instructions in the MuseScore 3.x Handbook : Copy the QML file and the folders to the local MuseScore Plugin directory.
-* Open MuseScore and navigate to 'Plugins' -> 'Plugin Manager' to enable the plugin. Tick the box against 'Workout Builder' and apply with 'OK'.
+## Download and Install ##
+Download the [last stable version](https://github.com/lgvr123/musescore-workoutbuilder/releases).
+For installation see [Plugins](https://musescore.org/en/handbook/3/plugins).
 
 ## User manual
-Refer to the [PDF instruction file](user_manual.pdf).
+Refer to the [PDF instruction file](user_manual.pdf). (NOT UPDATED FOR v2.2.0)
 
 ## Credits
 Some icons made by [freepik](https://www.flaticon.com/authors/freepik) from [www.flaticon.com](https://www.flaticon.com/)
