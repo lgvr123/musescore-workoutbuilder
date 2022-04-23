@@ -176,7 +176,7 @@ MuseScore {
         }, {
             "type": 1,
             "label": "Reverse cycle pattern",
-            "short": "Reserve Cycled",
+            "short": "Reverse Cycled",
             "image": "loopat-1.png",
             "shift": -1,
             "id": "P-"
