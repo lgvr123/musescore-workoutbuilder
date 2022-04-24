@@ -3772,9 +3772,9 @@ MuseScore {
         this.steps = (steps !== undefined) ? steps : [];
         this.loopMode = loopMode;
         this.scale = scale;
-        this.type = (type === undefined || (type !== _SCALE_MODE && type !== _GRID_MODE)) ? _SCALE_MODE : type;
+        this.type = (typeof grid === 'undefined' === undefined || (type !== _SCALE_MODE && type !== _GRID_MODE)) ? _SCALE_MODE : type;
         this.name = (name && (name != null)) ? name : "";
-		this.gridType = (gridType === "undefined")?"grid":gridType;
+		this.gridType = (typeof gridType === 'undefined')?"grid":gridType;
 		
 		debugO("new pattern class",this);
 
@@ -3793,19 +3793,20 @@ MuseScore {
         // transient properties
         // label
         var label = "";
-		if (type===_GRID_MODE && gridType!='grid') {
-			var l=_gridTypes.find(function(e) { return e.type=== gridType});
-			label +=(l!==undefined)?l.label:"---";
-		} else if (steps.length == 0)
+		console.log("toString for "+this.type+"/"+this.gridType);
+		if (this.type===_GRID_MODE && this.gridType!='grid') {
+			var l=_gridTypes.find(function(e) { return e.type=== this.gridType});
+			label +=(typeof l !== 'undefined')?l.label:"---";
+		} else if (this.steps.length == 0)
             label += "---";
         else
-            for (var i = 0; ((i < steps.length) && (steps[i] !== undefined)); i++) {
+            for (var i = 0; ((i < this.steps.length) && (this.steps[i] !== undefined)); i++) {
                 if (i > 0)
                     label += "-";
                 if (this.type === _SCALE_MODE) {
-                    label += _degrees[steps[i]];
+                    label += _degrees[this.steps[i]];
                 } else {
-                    label += _griddegrees[steps[i]];
+                    label += _griddegrees[this.steps[i]];
                 }
             }
 
