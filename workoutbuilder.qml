@@ -6,6 +6,7 @@ import QtQuick.Dialogs 1.2
 import QtQuick.Controls.Styles 1.4
 import QtQuick.Layouts 1.3
 import FileIO 3.0
+import Qt.labs.settings 1.0
 
 import "workoutbuilder/notehelper.js" as NoteHelper
 import "workoutbuilder/chordanalyser.js" as ChordHelper
@@ -30,6 +31,8 @@ import "workoutbuilder"
 /*  - 2.3.0 New ChordUp and ChordDown options in grid mode
 /*  - 2.3.0 Refactoring of patterns to ListModel
 /*  - 2.3.0 Moved *.js libraries to own folder
+/*  - 2.3.0 Store settings (checkboxes, instrument)
+/*  - 2.3.0 Add new "Bass" instrument (should a require a F-clef, but the clef is not available from the API)
 /**********************************************/
 MuseScore {
     menuPath: "Plugins." + pluginName
@@ -90,6 +93,17 @@ MuseScore {
         loadLibrary();
 
     }
+	
+	Settings {
+        id: settings
+        category: "WorkoutBuilder"
+		property alias invertOdds: chkInvert.checked
+		property alias orderByPattern: chkByPattern.checked
+		property alias adaptativeMeasure: chkAdaptativeMeasure.checked
+		property alias strictLayout: chkStrictLayout.checked
+		property alias instrument: lstTransposition.currentIndex
+    }
+
 
     readonly property var _SCALE_MODE: "scale"
     readonly property var _GRID_MODE: "grid"
@@ -109,34 +123,47 @@ MuseScore {
             "label": "C Instruments (default)",
             "instrument": "flute",
             "cpitch": 60,
+			"clef": "C"
         }, {
             "label": "B♭ instruments",
             "instrument": "soprano-saxophone",
             "cpitch": 48,
+			"clef": "C"
         }, {
             "label": "E♭ instruments",
             "instrument": "eb-clarinet",
             "cpitch": 60,
+			"clef": "C"
         }, {
             "label": "D instruments",
             "instrument": "d-trumpet",
             "cpitch": 60,
+			"clef": "C"
         }, {
             "label": "E instruments",
             "instrument": "e-trumpet",
             "cpitch": 60,
+			"clef": "C"
         }, {
             "label": "F instruments",
             "instrument": "horn",
             "cpitch": 48,
+			"clef": "C"
         }, {
             "label": "G instruments",
             "instrument": "alto-flute",
             "cpitch": 48,
+			"clef": "C"
         }, {
             "label": "A instruments",
             "instrument": "a-cornet",
             "cpitch": 48,
+			"clef": "C"
+        }, {
+            "label": "Bass instruments",
+            "instrument": "double-bass",
+            "cpitch": 36,
+			"clef": "F"
         },
     ]
 
@@ -987,6 +1014,14 @@ MuseScore {
 
         cursor.rewind(0);
         var cur_time = cursor.segment.tick;
+		
+		// Adding a clef
+		// TODO: finalize
+		// var clef = newElement(Element.CLEF);
+		// debugO("Clef",clef);
+		// //clef.xxx=yyy;
+		// cursor.add(clef);
+
 
         var counter = 0;
         var preferredTpcs = NoteHelper.tpcs;
