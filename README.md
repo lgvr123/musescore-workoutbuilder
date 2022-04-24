@@ -1,14 +1,15 @@
 # Scale Workout Builder plugin for MuseScore 3.x
 *Scale Workout Builder plugin for MuseScore 3.x* is a plugin for MuseScore 3.0 for the creation of exercises and workouts scores for practising your playing skills and knowledge of scales, improvisation patterns, ...
 
-## New features in 2.2.0
-New Grid workout type: you specify :
-* a grid such as "Cm6;Fmi9;D07;G7#5#9;Cm6"
-* patterns to play  : such as "1-3-5-7", "1-5-3", ...
-and it generates a score.
+## New features in 2.3.0
+* In Grid mode, build patterns in the notes defined by the current chord (e.g. loop among C,Eb,G,A,Bb for a "Cm6" chord)
+* New "Bass instrument" (*)
+* Store the last used settings
 
+(*) Due to limitations in the MuseScore API, the plugin is not able to add the F-clef. The user must add it manually. However, the patterns are transposed accordingly to a F-clef. 
 ## Features
 * Choose workout type between *Scale mode* or *Grid mode*
+* Select the instrument transposition (Concert Pitch, Bb, Bass, ...)
 * Define freely up-to 8 patterns of up-to 12 steps each
 * Loop them across the diatonic scale, or by triads
 * Repeat the patterns over different roots (*Scale mode*)
