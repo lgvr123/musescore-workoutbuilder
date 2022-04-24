@@ -6,15 +6,16 @@ import QtQuick.Dialogs 1.2
 import QtQuick.Controls.Styles 1.4
 import QtQuick.Layouts 1.3
 import FileIO 3.0
+import Qt.labs.settings 1.0
 
-import "zparkingb/notehelper.js" as NoteHelper
-import "zparkingb/chordanalyser.js" as ChordHelper
-import "zparkingb/selectionhelper.js" as SelHelper
+import "workoutbuilder/notehelper.js" as NoteHelper
+import "workoutbuilder/chordanalyser.js" as ChordHelper
+import "workoutbuilder/selectionhelper.js" as SelHelper
 import "workoutbuilder"
 
 /**********************
 /* Parking B - MuseScore - Scale Workout builder plugin
-/* v2.2.0
+/* v2.3.0
 /* ChangeLog:
 /* 	- 0.0.0: Initial release
 /*  - 1.0.0: Tools and library of patterns and workouts
@@ -25,11 +26,18 @@ import "workoutbuilder"
 /*  - 2.1.0: Custom chords in Grid workout
 /*  - 2.1.1: Better workout name management
 /*  - 2.2.0: Textual description of grids
+/*  - 2.2.1 (ongoing): Allow "|" et "(###)" in the textual description of grids
+/*  - 2.2.2 Bug in chordanalyzer.js
+/*  - 2.3.0 New ChordUp and ChordDown options in grid mode
+/*  - 2.3.0 Refactoring of patterns to ListModel
+/*  - 2.3.0 Moved *.js libraries to own folder
+/*  - 2.3.0 Store settings (checkboxes, instrument)
+/*  - 2.3.0 Add new "Bass" instrument (should a require a F-clef, but the clef is not available from the API)
 /**********************************************/
 MuseScore {
     menuPath: "Plugins." + pluginName
     description: "This plugin builds chordscale workouts based on patterns defined by the user."
-    version: "2.2.0"
+    version: "2.3.0"
 
     pluginType: "dialog"
     requiresScore: false
@@ -40,7 +48,7 @@ MuseScore {
 
     readonly property var pluginName: "Scale Workout Builder"
     readonly property var noteHelperVersion: "1.0.3"
-    readonly property var chordHelperVersion: "1.0.0"
+    readonly property var chordHelperVersion: "1.2.8"
     readonly property var selHelperVersion: "1.2.0"
 
     readonly property var librarypath: { {
@@ -49,6 +57,10 @@ MuseScore {
             return f;
         }
     }
+
+    readonly property var keyRegexp: /^(\((b*?|#*?)\))?\s*(.*?)(\|?)$/m
+    readonly property var endRegexp: /\|\s*;?/g
+
     onRun: {
 
         console.log("==========================================================");
@@ -57,7 +69,7 @@ MuseScore {
         if ((typeof(SelHelper.checktVersion) !== 'function') || !SelHelper.checktVersion(selHelperVersion) ||
             (typeof(NoteHelper.checktVersion) !== 'function') || !NoteHelper.checktVersion(noteHelperVersion) ||
             (typeof(ChordHelper.checkVersion) !== 'function') || !ChordHelper.checkVersion(chordHelperVersion)) {
-            console.log("Invalid zparkingb/selectionhelper.js, zparkingb/notehelper.js or zparkingb/chordanalyser.js versions. Expecting "
+            console.log("Invalid selectionhelper.js, notehelper.js or chordanalyser.js versions. Expecting "
                  + selHelperVersion + " and " + noteHelperVersion + " and " + chordHelperVersion + ".");
             invalidLibraryDialog.open();
             return;
@@ -75,22 +87,30 @@ MuseScore {
         }
 
         // Processing
-        //console.log(Qt.resolvedUrl("MuseJazz.mss"));
         console.log(librarypath);
         console.log(libraryFile.source);
 
         loadLibrary();
 
-        //		console.log(FileIO.homePath() + "/MuseJazz.mss");
-        //		console.log(rootPath() + "/MuseJazz.mss");
-
     }
+	
+	Settings {
+        id: settings
+        category: "WorkoutBuilder"
+		property alias invertOdds: chkInvert.checked
+		property alias orderByPattern: chkByPattern.checked
+		property alias adaptativeMeasure: chkAdaptativeMeasure.checked
+		property alias strictLayout: chkStrictLayout.checked
+		property alias instrument: lstTransposition.currentIndex
+    }
+
 
     readonly property var _SCALE_MODE: "scale"
     readonly property var _GRID_MODE: "grid"
 
     property int _max_patterns: 10
-    property int _max_steps: 12
+    property int _max_steps: 12 
+	
     property int _max_roots: 12
     property var _degrees: ['1', 'b2', '2', 'm3', 'M3', '4', 'b5', '5', 'm6', 'M6', 'm7', 'M7',
         '(8)', 'b9', '9', '#9', 'b11', '11', '#11', '(12)', 'b13', '13', '#13', '(14)']
@@ -103,36 +123,63 @@ MuseScore {
             "label": "C Instruments (default)",
             "instrument": "flute",
             "cpitch": 60,
+			"clef": "C"
         }, {
             "label": "B♭ instruments",
             "instrument": "soprano-saxophone",
             "cpitch": 48,
+			"clef": "C"
         }, {
             "label": "E♭ instruments",
             "instrument": "eb-clarinet",
             "cpitch": 60,
+			"clef": "C"
         }, {
             "label": "D instruments",
             "instrument": "d-trumpet",
             "cpitch": 60,
+			"clef": "C"
         }, {
             "label": "E instruments",
             "instrument": "e-trumpet",
             "cpitch": 60,
+			"clef": "C"
         }, {
             "label": "F instruments",
             "instrument": "horn",
             "cpitch": 48,
+			"clef": "C"
         }, {
             "label": "G instruments",
             "instrument": "alto-flute",
             "cpitch": 48,
+			"clef": "C"
         }, {
             "label": "A instruments",
             "instrument": "a-cornet",
             "cpitch": 48,
+			"clef": "C"
+        }, {
+            "label": "Bass instruments",
+            "instrument": "double-bass",
+            "cpitch": 36,
+			"clef": "F"
         },
     ]
+
+    property var _gridTypes: [{
+            "type": "grid",
+            "label": "Grid",
+            "image": "grid.png",
+        }, {
+            "type": "chordup",
+            "label": "Notes of chord - ascending",
+            "image": "chordup.png",
+        }, {
+            "type": "chorddown",
+            "label": "Notes of chord - descending",
+            "image": "chorddown.png",
+        }]
 
     property var _loops: [{
             "type": 0,
@@ -156,7 +203,7 @@ MuseScore {
         }, {
             "type": 1,
             "label": "Reverse cycle pattern",
-            "short": "Reserve Cycled",
+            "short": "Reverse Cycled",
             "image": "loopat-1.png",
             "shift": -1,
             "id": "P-"
@@ -333,30 +380,34 @@ MuseScore {
         }
     }
 
-    property var patterns: { {
+	ListModel {
+		id: mpatterns
 
-            var sn = [];
-
-            for (var i = 0; i < _max_patterns; i++) {
-                for (var j = 0; j < _max_steps; j++) {
-                    var _sn = {
+		Component.onCompleted: {
+			for (var p = 0; p < _max_patterns; p++) {
+				var steps = [];
+				for (var s = 0; s < _max_steps; s++) {
+					steps.push({
                         "note": '', // scale mode
-                        "degree": '', // grid mode
-                    };
-                    sn.push(_sn);
-                }
-            }
-            return sn;
-        }
-    }
+                        "degree": '',// grid mode 
+					});
+				}
+				mpatterns.append({
+					"gridType": 'grid',
+					"loopMode": '--', 
+					"steps": steps, // will be converted to ListElement
+					"chordType" : '', 
+					"pattName":'', 
+				});
+			}
+		}
+
+	}
+
 
     property var library: []
     property var workouts: []
-    property var phrases: [new phraseClass(""), new phraseClass("Hello", [{
-                    "root": 2,
-                    "type": "7"
-                }
-            ])]
+    property var phrases: []
 
     readonly property int tooltipShow: 500
     readonly property int tooltipHide: 5000
@@ -393,6 +444,7 @@ MuseScore {
         printWorkout_pushToScore(pages);
 
     }
+	
     function printWorkout_forGrid() {
         // 1) Collecting the roots
         var chords = getPhrase().chords;
@@ -402,24 +454,29 @@ MuseScore {
         // 2) Collect the patterns and their definition
         for (var i = 0; i < _max_patterns; i++) {
             // 1.1) Collecting the basesteps
-            var p = [];
-            for (var j = 0; j < _max_steps; j++) {
-                var sn = patterns[i * _max_steps + j];
-                if (sn.degree !== '') {
-                    var d = _griddegrees.indexOf(sn.degree);
-                    if (d > -1)
-                        p.push(sn.degree); // we keep the degree !!!
-                } else
-                    break;
-            }
+			var raw=mpatterns.get(i);
 
-            if (p.length == 0) {
-                break;
-            }
+            var p = null;
+			if (raw.gridType==='grid') {
+				p = [];
+				for (var j = 0; j < _max_steps; j++) {
+					var sn = raw.steps.get(j);
+					if (sn.degree !== '') {
+						var d = _griddegrees.indexOf(sn.degree);
+						if (d > -1)
+							p.push(sn.degree); // we keep the degree !!!
+					} else
+						break;
+				}
 
+				if (p.length == 0) {
+					break;
+				}
+			}
+			
             // 1.2) Retrieving loop mode
-            var mode = idLoopingMode.itemAt(i).currentIndex
-                mode = _loops[mode];
+            var mode = raw.loopMode;
+			mode = _loops.filter(function(e) {return e.id===mode})[0];
             console.log("looping mode : " + mode.label);
 
             // Retrieving Chord type
@@ -427,7 +484,8 @@ MuseScore {
             var pattern = {
                 "notes": p,
                 "loopAt": mode,
-                "name": idPattName.itemAt(i).text
+                "name": (raw.gridType!=="grid")?"Chord notes":raw.pattName,
+				"gridType": raw.gridType,
             };
             patts.push(pattern);
 
@@ -473,36 +531,68 @@ MuseScore {
                     var s = ChordHelper.scaleFromText(chordtype);
                     effective_chord = {
                         "symb": chordtype,
-                        "scale": s.scale,
+                        // "scale": s.scale,
+                        "scale": s.keys,  // ChordHelper.scaleFromText exports "keys", not "scale"
                         "mode": s.mode
                     };
                     scale = s.keys;
 
                 }
+
+                // pushing other properties from the chord to the chord to be used
                 if (chord.sharp !== undefined)
                     effective_chord.sharp = chord.sharp;
                 if (chord.name !== undefined)
                     effective_chord.name = chord.name;
+                if (chord.end !== undefined)
+                    effective_chord.end = chord.end;
+                if (chord.key !== undefined)
+                    effective_chord.key = chord.key;
 
                 // debugO("effective_chord", effective_chord, ["scale"]);
 
                 var steps = [];
-                for (var n = 0; n < pp.notes.length; n++) {
-                    var ip = parseInt(pp.notes[n]) - 1; // TODO: This is not clean: using a label "1" and trying to deduce the valid array index
+				// if (pp.notes.length==1 && pp.notes[0]==null) {
+				if (pp.gridType!=="grid") {
+					// Chord mode: take only the notes of the chord
+					steps=chord.chordnotes.map(function(e) { return parseInt(e.note); }).sort(function(a,b) { return a-b;});
+					
+						console.log("~~~~Dealing with the ChordNotes~~~~~"+pp.gridType)
+					if (chord.bass!=null) {
+						console.log("~~~~Dealing with the bass~~~~~")
+						console.log("Steps before: "+steps);
+						var bass=chord.bass.key;
+						var idx=steps.indexOf(bass);
+						steps.pop(); // retirer le "12"
+						console.log("Steps without 12: "+steps);
+						steps=steps.concat(steps.splice(0,idx).map(function(e){ return e+12}));
+						console.log("Steps rotated: "+steps);
+						steps=steps.concat(12+bass);
+						console.log("Steps with bass+12: "+steps);
+					}
+					
+					if(pp.gridType=="chorddown") steps=steps.reverse();
+					
+				} else {
+					// Traditional mode: pattern based
+					for (var n = 0; n < pp.notes.length; n++) {
+						var ip = parseInt(pp.notes[n]) - 1; // TODO: This is not clean: using a label "1" and trying to deduce the valid array index
 
-                    console.log(ip + "--" + (ip % 7) + "--" + Math.floor(ip / 7) + "--" + (Math.floor(ip / 7) * 12) + "**" + scale[ip % 7] + "**" + (scale[ip % 7] + (Math.floor(ip / 7) * 12)));
+						console.log(ip + "--" + (ip % 7) + "--" + Math.floor(ip / 7) + "--" + (Math.floor(ip / 7) * 12) + "**" + scale[ip % 7] + "**" + (scale[ip % 7] + (Math.floor(ip / 7) * 12)));
 
-                    var inScale = (scale[ip % 7]) + (Math.floor(ip / 7) * 12);
+						var inScale = (scale[ip % 7]) + (Math.floor(ip / 7) * 12);
 
-                    console.log(n + ": " + pp.notes[n] + " --> " + ip + " --> " + inScale);
-                    steps.push(inScale);
-                }
+						console.log(n + ": " + pp.notes[n] + " --> " + ip + " --> " + inScale);
+						steps.push(inScale);
+					}
+				}
 
                 var pattern = {
                     "notes": steps,
                     "loopAt": pp.loopAt,
                     "chord": effective_chord,
-                    "name": pp.name
+                    "name": pp.name,
+					"gridType": pp.gridType
                 };
 
                 var local = extendPattern(pattern);
@@ -547,7 +637,8 @@ MuseScore {
                         "chord": effective_chord,
                         "mode": effective_chord.mode,
                         "notes": notes,
-                        "representation": local.representation
+                        "representation": local.representation,
+						"gridType": local.gridType
                     });
 
                 }
@@ -563,7 +654,7 @@ MuseScore {
         var patts = [];
 
         // 1) Collect the patterns and their definition
-        for (var i = 0; i < _max_patterns; i++) {
+        /*for (var i = 0; i < _max_patterns; i++) {
             // 1.1) Collecting the basesteps
             var p = [];
             for (var j = 0; j < _max_steps; j++) {
@@ -613,6 +704,64 @@ MuseScore {
                 "loopAt": mode,
                 "chord": cSymb,
                 "name": idPattName.itemAt(i).text
+            };
+            patts.push(pattern);
+
+        }*/
+        // 1) Collect the patterns and their definition
+        for (var i = 0; i < _max_patterns; i++) {
+			var raw=mpatterns.get(i);
+			// if (raw.isEmpty(_SCALE_MODE)) continue;
+			
+            // 1.1) Collecting the basesteps
+            var p = [];
+            for (var j = 0; j < _max_steps; j++) {
+                var sn = raw.steps.get(j);
+                if (sn.note !== '') {
+                    var d = _degrees.indexOf(sn.note);
+                    if (d > -1)
+                        p.push(d);
+                } else
+                    break;
+            }
+
+            if (p.length == 0) {
+                break;
+            }
+
+            // 1.2) Retrieving loop mode
+            var mode = raw.loopMode;
+			mode = _loops.filter(function(e) {return e.id===mode})[0];
+            console.log("looping mode : " + mode.label);
+
+            // Retrieving Chord type
+            var cText = raw.chordType // editable
+            if (cText === '') {
+                var m3 = (p.indexOf(3) > -1); // if we have the "m3" the we are in minor mode.
+                if (p.indexOf(10) > -1) { //m7
+                    cText = m3 ? "m7" : "7";
+                } else if (p.indexOf(11) > -1) { //M7
+                    cText = m3 ? "m7" : "M7";
+                } else {
+                    cText = m3 ? "m" : "M";
+                }
+
+            }
+            var cSymb = _chordTypes[cText];
+            if (cSymb === undefined) {
+                cSymb = {}+cText.includes("-") ? _chordTypes['m'] : _chordTypes['M']; //clone it // For user-specific chord type, we take a Major scale, or the Min scale of we found a "-"
+                cSymb.symb = cText;
+
+            }
+
+            console.log("Pattern " + i + ": " + cText + " > " + cSymb.symb);
+
+            // Build final pattern
+            var pattern = {
+                "notes": p,
+                "loopAt": mode,
+                "chord": cSymb,
+                "name": raw.pattName,
             };
             patts.push(pattern);
 
@@ -800,9 +949,11 @@ MuseScore {
             }
         } else {
             // grid mode
-            var names = txtPhrase.text.split(";")
+            var names = txtPhrase.text.replace(endRegexp, '|;').split(";")
                 .map(function (c) {
-                return (c ? c.trim() : undefined);
+					var name=(c ? c.match(keyRegexp)[3] : ""); // --> ["(bbb)Abadd9|" ,"(bbb)" ,"bbb" ,"Abadd9" ,"|"]
+					name=name.replace('^7','△7').replace('t7','△7').replace('0','ø');
+					return name;
             })
                 .filter(function (c) {
                 return (c && c.trim() !== "")
@@ -863,6 +1014,14 @@ MuseScore {
 
         cursor.rewind(0);
         var cur_time = cursor.segment.tick;
+		
+		// Adding a clef
+		// TODO: finalize
+		// var clef = newElement(Element.CLEF);
+		// debugO("Clef",clef);
+		// //clef.xxx=yyy;
+		// cursor.add(clef);
+
 
         var counter = 0;
         var preferredTpcs = NoteHelper.tpcs;
@@ -910,7 +1069,7 @@ MuseScore {
                 }
 
                 if (adaptativeMeasure) {
-                    beatsByMeasure = signatureForPattern(pages[i][j].notes.length);
+                    beatsByMeasure = (pages[i][j].gridType!=="grid")?pages[i][j].notes.length:signatureForPattern(pages[i][j].notes.length);
                 } else {
                     beatsByMeasure = 4;
                 }
@@ -954,6 +1113,14 @@ MuseScore {
 
                     note = NoteHelper.restToNote(note, target);
 
+                    // Adding a key signature
+                    // TODO: finalize
+                    /*if (chord.key && (k == 0)) {
+                        var keysig = newElement(Element.KEYSIG);
+                        //keysig.layoutBreakType = 1; //line break
+                        cursor.add(keysig);
+                    }*/
+
                     // Adding the chord's name
                     if (prevChord.symb !== chord.symb || prevChord.name !== chord.name || prevRoot !== root) {
                         var csymb = newElement(Element.HARMONY);
@@ -989,6 +1156,14 @@ MuseScore {
                         //cursor.rewindToTick(cur_time); // be sure to move to the next rest, as now defined
                         //cursor.next();
                         prevBeatsByM = beatsByMeasure;
+                    }
+
+                    // Adding a Line break if required by a "|"
+                    if (chord.end && (k == (pages[i][j].notes.length - 1))) {
+
+                        var lbreak = newElement(Element.LAYOUT_BREAK);
+                        lbreak.layoutBreakType = 1; //line break
+                        cursor.add(lbreak);
                     }
 
                     //debugNote(delta, note);
@@ -1417,17 +1592,18 @@ MuseScore {
             scaleMode = (modeIndex() == 0);
 
         var steps = [];
-        for (var i = 0; i < _max_steps; i++) {
+		var current=mpatterns.get(index);
+        for (var i = 0; i < current.steps.count; i++) {
             var d = -1;
             if (scaleMode) {
-                var note = patterns[index * _max_steps + i].note;
+                var note = current.steps.get(i).note;
                 if (note !== '') {
-                    var d = _degrees.indexOf(note);
+                    d = _degrees.indexOf(note);
                 }
             } else {
-                var degree = patterns[index * _max_steps + i].degree;
+                var degree = current.steps.get(i).degree;
                 if (degree !== '') {
-                    var d = _griddegrees.indexOf(degree);
+                    d = _griddegrees.indexOf(degree);
                 }
             }
 
@@ -1437,14 +1613,7 @@ MuseScore {
                 break;
         }
 
-        var mode = idLoopingMode.itemAt(index).currentIndex;
-        mode = _loops[mode].id;
-
-        var scale = (scaleMode) ? idChordType.itemAt(index).editText : undefined;
-
-        var name = idPattName.itemAt(index).text;
-
-        var p = new patternClass(steps, mode, scale, name, (scaleMode ? _SCALE_MODE : _GRID_MODE));
+        var p = new patternClass(steps, current.loopMode, current.chordType, current.pattName, (scaleMode ? _SCALE_MODE : _GRID_MODE), current.gridType);
 
         console.log(p.label);
 
@@ -1456,17 +1625,16 @@ MuseScore {
         if (scaleMode === undefined)
             scaleMode = (modeIndex() == 0);
 
-        console.log("Setting pattern " + index + ", mode: " + (scaleMode ? _SCALE_MODE : _GRID_MODE));
+        // console.log("Setting pattern " + index + ", mode: " + (scaleMode ? _SCALE_MODE : _GRID_MODE));
 
         if (pattern !== undefined && pattern.type !== (scaleMode ? _SCALE_MODE : _GRID_MODE)) {
             console.log("!! Cannot setPattern due to non-matching pattern. Expected " + (scaleMode ? _SCALE_MODE : _GRID_MODE) + ", while pattern is: " + pattern.type);
             return;
         }
 
-        for (var i = 0; i < _max_steps; i++) {
-            var ip = index * _max_steps + i;
-            // setting  only the 'note' field the doesn't work because the binding is not that intelligent...
-            var sn = patterns[ip];
+		var current=mpatterns.get(index);
+        for (var i = 0; i < current.steps.count; i++) {
+            var sn = current.steps.get(i);
             if (scaleMode) {
                 var note = (pattern !== undefined && (i < pattern.steps.length)) ? _degrees[pattern.steps[i]] : '';
                 sn.note = note;
@@ -1474,36 +1642,14 @@ MuseScore {
                 var degree = (pattern !== undefined && (i < pattern.steps.length)) ? _griddegrees[pattern.steps[i]] : '';
                 sn.degree = degree;
             }
-
-            // ..one must reassign explicitely the whole object in the combobox to trigger the binding's update
-            idStepNotes.itemAt(ip).children[modeIndex()].item.step = sn;
-
         }
 
-        var scale = '';
-        if ((pattern !== undefined) && (pattern.scale !== undefined)) {
-            scale = pattern.scale;
-        }
-        idChordType.itemAt(index).editText = scale;
+		current.chordType=((pattern !== undefined) && (pattern.scale !== undefined))?pattern.scale:'';
+		current.loopMode=((pattern !== undefined) && (pattern.loopMode !== undefined))?pattern.loopMode:"--";
+        current.pattName= ((pattern!== undefined) && (pattern.name!== undefined)) ? pattern.name : "";;
+		current.gridType=((pattern!== undefined) && (pattern.gridType!== undefined))?pattern.gridType:"grid";
 
-        var modeidx = 0;
-        if ((pattern !== undefined) && (pattern.loopMode !== undefined)) {
-            console.log("pasting mode " + pattern.loopMode);
-            for (var i = 0; i < _loops.length; i++) {
-                if (_loops[i].id === pattern.loopMode) {
-                    modeidx = i;
-                    break;
-                }
-            }
-        }
-
-        console.log("pasting mode index " + modeidx);
-        idLoopingMode.itemAt(index).currentIndex = modeidx;
-
-        var name = (pattern && pattern.name) ? pattern.name : "";
-        idPattName.itemAt(index).text = name;
-
-        console.log("clearing the workout saved name");
+        // console.log("clearing the workout saved name");
         workoutName = undefined; // resetting the name of the workout. One has to save it again to regain the name
 
 
@@ -1554,15 +1700,30 @@ MuseScore {
     function getPhrase(label) {
 
         var phraseText = txtPhrase.text;
-        var phraseArray = phraseText.split(";").map(function (e) {
+        var phraseArray = phraseText.replace(endRegexp, '|;').split(";").map(function (e) {
             e = e.trim();
             return e;
         });
+		
+		var defaultSharp=undefined;
 
         var roots = phraseArray.map(function (ptxt) {
-            var c = ChordHelper.chordFromText(ptxt);
+
+            var match = ptxt.match(keyRegexp); // --> ["(bbb)Abadd9|" ,"(bbb)" ,"bbb" ,"Abadd9" ,"|"]
+            var end = match[4] === "|";
+            var name = match[3];
+            var key = match[2];
+            if (key && key.includes("#")) {
+                defaultSharp = true;
+            } else if (key && key.includes("b")) {
+                defaultSharp = false;
+            } else if (key && (key.trim()==="")) { // vide 
+                defaultSharp = undefined;
+            } // else: je ne fais rien. Je garde la définition précédente
+
+            var c = ChordHelper.chordFromText(name);
             if (c != null) {
-                var isSharp = undefined; // si accidental==NONE on garde `undefined`
+                var isSharp = defaultSharp; // si l'accord n'a pas d'accidental on utilise la key signature
                 if (c.accidental.startsWith("SHARP")) {
                     isSharp = true;
                 }
@@ -1572,8 +1733,12 @@ MuseScore {
                 var forPhrase = {
                     "root": c.pitch,
                     "type": c.name,
+					"chordnotes": c.chordnotes,
+					"bass": c.bass,
                     "sharp": isSharp,
-                    "name": ptxt
+                    "name": name,
+                    "end": end,
+                    "key": key,
                 };
                 debugO("Using chord : > ", forPhrase, ["scale"]);
                 return forPhrase;
@@ -1600,13 +1765,13 @@ MuseScore {
         var rr = phrase.chords;
         //debugO("setPhrase: chords", rr);
         var astext = rr.map(function (c) {
-            if (c.name !== undefined && c.name.trim() !== "") {
-                return c.name;
-            } else {
-                return rootToName(c.root, true, c.type); // no easy way to know if we should use sharps or flats
-            }
+            var key = (c.key !== undefined) ? ("(" + c.key + ")") : "";
+            var end = (c.end) ? "|" : ";";
+            var name = (c.name !== undefined && c.name.trim() !== "") ? c.name : rootToName(c.root, true, c.type); // no easy way to know if we should use sharps or flats
+            return key + name + end;
 
-        }).join(";");
+        }).join("");
+        astext = astext.slice(0, astext.length - 1);
 
         console.log("Phrase as text: " + astext);
 
@@ -1711,8 +1876,8 @@ MuseScore {
         var score = curScore;
 
         if (score == null) {
-			console.log("no score");
-			cannotFetchPhraseFromSelectionDialog.message="No current score";
+            console.log("no score");
+            cannotFetchPhraseFromSelectionDialog.message = "No current score";
             cannotFetchPhraseFromSelectionDialog.open();
             return;
         }
@@ -1732,15 +1897,15 @@ MuseScore {
         }
 
         if (!chords || (chords.length == 0)) {
-			console.log("no selection");
-			cannotFetchPhraseFromSelectionDialog.message="No selection.";
+            console.log("no selection");
+            cannotFetchPhraseFromSelectionDialog.message = "No selection.";
             cannotFetchPhraseFromSelectionDialog.open();
             return;
         }
 
         // Notes and Rests
         var prevSeg = null;
-        var curChord = null;
+        var prevChord = null;
         var grid = [];
         for (var i = 0; i < chords.length; i++) {
             var el = chords[i];
@@ -1762,7 +1927,6 @@ MuseScore {
                             // keeping 1st Chord
                             var c = ChordHelper.chordFromText(ann.text);
                             if (c != null) {
-                                curChord = c;
                                 var isSharp = undefined; // si accidental==NONE on garde `undefined`
                                 if (c.accidental.startsWith("SHARP")) {
                                     isSharp = true;
@@ -1776,8 +1940,13 @@ MuseScore {
                                     "sharp": isSharp,
                                     "name": ann.text
                                 };
-                                grid.push(forPhrase);
+
                                 debugO("Using chord : > ", forPhrase, ["scale"]);
+                                if ((prevChord===null) || (prevChord.root !== forPhrase.root) || (prevChord.type !== forPhrase.type)) {
+                                    prevChord = forPhrase;
+									console.log("ADD IT");
+                                    grid.push(forPhrase);
+                                }
                                 break;
                             }
                         }
@@ -1788,8 +1957,8 @@ MuseScore {
         }
 
         if (grid.length == 0) {
-			console.log("no chords");
-			cannotFetchPhraseFromSelectionDialog.message="No chords text found in the selection";
+            console.log("no chords");
+            cannotFetchPhraseFromSelectionDialog.message = "No chords text found in the selection";
             cannotFetchPhraseFromSelectionDialog.open();
             return;
         }
@@ -1811,7 +1980,7 @@ MuseScore {
         if (workout !== undefined)
             log += ", mode: " + workout.type;
         console.log("Appying workout " + log);
-        debugO("Workout", workout);
+        // debugO("Workout", workout);
 
         // patterns
         var m = (workout !== undefined) ? Math.min(_max_patterns, workout.patterns.length) : 0;
@@ -1867,7 +2036,7 @@ MuseScore {
         var pp = [];
         for (var i = 0; i < _max_patterns; i++) {
             var p = getPattern(i);
-            if (p.steps.length == 0)
+            if (p.steps.length == 0 && p.gridType === 'grid')
                 break;
             pp.push(p);
         }
@@ -2140,7 +2309,7 @@ MuseScore {
             //anchors.verticalCenter : parent.verticalCenter
             id: idNoteGrid
             rows: _max_patterns + 1
-            columns: _max_steps + 2
+            // columns: _max_steps + 6
             columnSpacing: 0
             rowSpacing: 0
 
@@ -2164,14 +2333,106 @@ MuseScore {
                     text: "Pattern " + (index + 1) + ":"
                 }
             }
+			
+			
 
+			Label {// v2.3.0
+				Layout.row: 0
+				Layout.column: 1 
+				Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
+				Layout.rightMargin: 1
+				Layout.leftMargin: 1
+				Layout.bottomMargin: 5
+				text: "C.N."
+				visible: modeIndex()!=0
+
+			}
+
+            Repeater { // 2.3.0
+                id: idGridTypes
+                model: mpatterns
+
+				
+				ComboBox {
+                    //Layout.fillWidth : true
+					id: lstGridType
+
+                    model: _gridTypes
+					
+					textRole: "label" 
+					property var imageRole: "image"
+					property var valueRole: "type"
+
+
+					onActivated: {
+					    // loopMode = currentValue;
+					    gridType = model[currentIndex][valueRole];
+					    console.log(gridType);
+					}
+
+					Binding on currentIndex {
+					    value: {
+							var ci=_gridTypes.map(function(e) { return e[valueRole] }).indexOf(gridType);
+							ci;
+						}
+					}
+					
+					visible: modeIndex()!=0
+
+					property var _row: index + 1
+					property var _column: 1
+                    Layout.row: _row
+                    Layout.column: _column 
+
+                    Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
+                    Layout.rightMargin: 0
+                    Layout.leftMargin: 0
+
+                    Layout.preferredHeight: 30
+                    Layout.preferredWidth: 30 + indicator.width
+
+                    delegate: ItemDelegate { // requiert QuickControls 2.2
+                        contentItem: Image {
+                            height: 25
+                            width: 25
+                            source: "./workoutbuilder/" + modelData[imageRole]
+                            fillMode: Image.Pad
+                            verticalAlignment: Text.AlignVCenter
+                            ToolTip.text: modelData[textRole]
+                            ToolTip.delay: tooltipShow
+                            ToolTip.timeout: tooltipHide
+                            ToolTip.visible: hovered
+                        }
+                        highlighted: lstGridType.highlightedIndex === index
+
+                    }
+
+                    contentItem: Image {
+                        height: 25
+                        width: 25
+                        fillMode: Image.Pad
+                        source: "./workoutbuilder/" +model[lstGridType.currentIndex][imageRole]
+
+                        ToolTip.text: lstGridType.displayText
+                        ToolTip.delay: tooltipShow
+                        ToolTip.timeout: tooltipHide
+                        ToolTip.visible: hovered
+
+                    }
+
+                }
+
+				
+            }
+			
+				
             Repeater {
                 id: idNoteLabels
                 model: _max_steps
 
                 Label {
                     Layout.row: 0
-                    Layout.column: index + 1
+                    Layout.column: index + 2 // v2.3.0
                     Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
                     Layout.rightMargin: 2
                     Layout.leftMargin: 2
@@ -2181,64 +2442,121 @@ MuseScore {
             }
             Repeater {
                 id: idStepNotes
-                model: getPatterns(resetP)
+                model: mpatterns
+				
+                Repeater {
 
-                StackLayout {
-                    width: parent.width
-                    currentIndex: modeIndex()
+                    id: idSingleStep
+                    property var patternIndex: index
 
-                    property int stepIndex: index % _max_steps
-                    property int patternIndex: Math.floor(index / _max_steps)
-                    Layout.row: 1 + patternIndex
-                    Layout.column: 1 + stepIndex
+                    model: steps
+					
+					StackLayout {
+						width: parent.width
 
-                    Loader {
-                        id: loaderNotes
-                        Binding {
-                            target: loaderNotes.item
-                            property: "step"
-                            value: patterns[patternIndex * _max_steps + stepIndex]
-                        }
+						currentIndex: modeIndex()
 
-                        sourceComponent: stepComponent
-                    }
+						property var stepIndex: index
 
-                    Loader {
-                        id: loaderGridNotes
-                        Binding {
-                            target: loaderGridNotes.item
-                            property: "step"
-                            value: patterns[patternIndex * _max_steps + stepIndex]
-                        }
+						// property int stepIndex: index % _max_steps
+						// property int patternIndex: Math.floor(index / _max_steps)
+						
+						property var _row: patternIndex + 1
+						property var _column: 2 + stepIndex
+						Layout.row: _row
+						Layout.column: _column 
 
-                        sourceComponent: gridStepComponent
-                    }
+						ComboBox {
+							id: lstStep
+							model: _ddNotes
+							
+							onActivated: {
+								note = model[currentIndex];
+								workoutName = undefined; // resetting the name of the 
+							}
+							
+							Binding on currentIndex {
+								value: lstStep.model.indexOf(note)
+							}
 
-                }
-            }
-            Label {
-                Layout.row: 0
-                Layout.column: _max_steps + 2
-                Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
-                Layout.rightMargin: 2
-                Layout.leftMargin: 2
-                Layout.bottomMargin: 5
-                text: "Repeat"
-            }
+							Layout.alignment: Qt.AlignLeft | Qt.QtAlignBottom
+							editable: false
+							Layout.preferredHeight: 30
+							implicitWidth: 30
+						}
+
+
+						ComboBox {
+							id: lstGStep
+
+							model: _ddGridNotes
+
+							enabled: gridType==="grid"
+
+							onActivated: {
+								console.log("degree at "+stepIndex+" of "+patternIndex+": "+degree);
+								degree = model[currentIndex];
+								workoutName = undefined; // resetting the name of the 
+								console.log("==> now degree: "+degree);
+							}
+							
+							Binding on currentIndex {
+								value: lstGStep.model.indexOf(degree)
+							}
+
+
+							editable: false
+							Layout.alignment: Qt.AlignLeft | Qt.QtAlignBottom
+							Layout.preferredHeight: 30
+							implicitWidth: 30
+						}
+					}
+
+				}
+			}
+
+			Label {
+				Layout.row: 0
+				Layout.column: _max_steps + 3 // v2.3.0
+				Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
+				Layout.rightMargin: 2
+				Layout.leftMargin: 2
+				Layout.bottomMargin: 5
+				text: "Repeat"
+			}
 
             Repeater {
                 id: idLoopingMode
-                model: _max_patterns
+                model: mpatterns
 
                 ComboBox {
                     //Layout.fillWidth : true
                     id: lstLoop
                     model: _loops
+					
+					textRole: "label" 
+					property var imageRole: "image"
+					property var valueRole: "id"
+					
+					onActivated: {
+                        // loopMode = currentValue;
+                        loopMode = model[currentIndex][valueRole];;
+                        console.log(loopMode);
+                    }
+
+                    Binding on currentIndex {
+					    value: {
+							var ci=model.map(function(e) { return e[valueRole] }).indexOf(loopMode);
+							ci;
+						}
+                    }
 
                     //clip: true
                     //focus: true
-                    Layout.row: index + 1
-                    Layout.column: _max_steps + 2
+					property var _row: index + 1
+					property var _column: steps.count + 3
+                    Layout.row: _row
+                    Layout.column: _column 
                     Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
                     Layout.rightMargin: 2
                     Layout.preferredHeight: 30
@@ -2248,10 +2566,10 @@ MuseScore {
                         contentItem: Image {
                             height: 25
                             width: 25
-                            source: "./workoutbuilder/" + _loops[index].image
+                            source: "./workoutbuilder/" + modelData[imageRole]
                             fillMode: Image.Pad
                             verticalAlignment: Text.AlignVCenter
-                            ToolTip.text: _loops[index].label
+                            ToolTip.text: modelData[textRole]
                             ToolTip.delay: tooltipShow
                             ToolTip.timeout: tooltipHide
                             ToolTip.visible: hovered
@@ -2264,18 +2582,14 @@ MuseScore {
                         height: 25
                         width: 25
                         fillMode: Image.Pad
-                        source: "./workoutbuilder/" + _loops[lstLoop.currentIndex].image
+                        // source: lstLoop.displayText?"./workoutbuilder/" +lstLoop.displayText:null
+                        source: "./workoutbuilder/" +model[lstLoop.currentIndex][imageRole]
 
-                        ToolTip.text: _loops[lstLoop.currentIndex].label
+                        ToolTip.text: lstLoop.displayText
                         ToolTip.delay: tooltipShow
                         ToolTip.timeout: tooltipHide
                         ToolTip.visible: hovered
 
-                    }
-
-                    onCurrentIndexChanged: {
-                        console.log("clearing the workout saved name");
-                        workoutName = undefined; // resetting the name of the workout. One has to save it again to regain the name
                     }
 
                 }
@@ -2283,7 +2597,7 @@ MuseScore {
 
             Label {
                 Layout.row: 0
-                Layout.column: _max_steps + 3
+                Layout.column: _max_steps + 4  // v2.3.0
                 Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
                 Layout.rightMargin: 2
                 Layout.leftMargin: 2
@@ -2293,14 +2607,36 @@ MuseScore {
 
             Repeater {
                 id: idChordType
-                model: _max_patterns
-
+                model: mpatterns
+				
                 ComboBox {
-                    id: ccCT
+                    id: lstChordType
                     model: _ddChordTypes
+
+					onAccepted: {
+						chordType = editText;
+						console.log("manual chordType: "+chordType);
+                        workoutName = undefined; // resetting the name of the workout. One has to save it again to regain the name
+						
+					}
+					onActivated: {
+						chordType = model[currentIndex];
+						console.log("selected chordType: "+chordType);
+                        workoutName = undefined; // resetting the name of the workout. One has to save it again to regain the name
+					}
+
+                    Binding on currentIndex {
+                        value: lstChordType.model.indexOf(chordType)
+					}
+                    Binding on editText {
+                        value: chordType
+					}
+
                     editable: true
-                    Layout.row: index + 1
-                    Layout.column: _max_steps + 3
+					property var _row: index + 1
+					property var _column: steps.count + 4
+                    Layout.row: _row
+                    Layout.column: _column 
                     Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
                     Layout.rightMargin: 2
                     Layout.leftMargin: 2
@@ -2310,34 +2646,32 @@ MuseScore {
                         State {
                             when: modeIndex() == 0
                             PropertyChanges {
-                                target: ccCT;
+                                target: lstChordType;
                                 enabled: true
                             }
                         },
                         State {
                             when: modeIndex() != 0;
                             PropertyChanges {
-                                target: ccCT;
+                                target: lstChordType;
                                 enabled: false
                             }
                         }
                     ]
 
-                    onCurrentIndexChanged: {
-                        console.log("clearing the workout saved name");
-                        workoutName = undefined; // resetting the name of the workout. One has to save it again to regain the name
-                    }
                 }
             }
 
             Repeater {
                 id: idTools
-                model: _max_patterns
+                model: mpatterns
 
                 Rectangle {
 
-                    Layout.row: index + 1
-                    Layout.column: _max_steps + 4
+					property var _row: index + 1
+					property var _column: steps.count + 5
+                    Layout.row: _row
+                    Layout.column: _column 
                     Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
                     Layout.rightMargin: 0
                     Layout.leftMargin: 0
@@ -2394,8 +2728,8 @@ MuseScore {
                             id: btnSetName
                             imageSource: "edittext.svg"
                             ToolTip.text: "Set pattern's name" +
-                            ((idPattName.itemAt(index).text != "") ? ("\n\"" + idPattName.itemAt(index).text + "\"") : "\n--default--")
-                            highlighted: (idPattName.itemAt(index).text != "")
+                            ((pattName != "") ? ("\n\"" + pattName + "\"") : "\n--default--")
+                            highlighted: (pattName != "")
                             onClicked: {
                                 patternNameInputDialog.index = index;
                                 patternNameInputDialog.open();
@@ -2406,18 +2740,20 @@ MuseScore {
                 }
             }
 
-            Repeater {
-                id: idPattName
-                model: _max_patterns
+            // Repeater {
+                // id: idPattName
+                // model: mpatterns
 
-                Text {
-                    id: txtPN
-                    text: ""
-                    visible: false
-                    Layout.row: index + 1
-                    Layout.column: _max_steps + 5
-                }
-            }
+                // Text {
+                    // id: txtPN
+                    // text: pattName
+                    // visible: true // DEBUG was false
+					// property var _row: index + 1
+					// property var _column: steps.count + 6
+                    // Layout.row: _row
+                    // Layout.column: _column 
+                // }
+            // }
 
         }
 
@@ -2543,7 +2879,7 @@ MuseScore {
                 ImageButton {
                     imageSource: "upload.svg"
                     ToolTip.text: "Fetch phrase from current score"
-					// enabled: curScore!=null
+                    // enabled: curScore!=null
                     imageHeight: 25
                     imagePadding: (buttonBox.contentItem.height - imageHeight) / 2
                     onClicked: {
@@ -2562,7 +2898,7 @@ MuseScore {
             id: labRoots
             //Layout.column : 0
             //Layout.row : 3
-								height: 20
+            height: 20
 
             states: [
                 State {
@@ -2582,11 +2918,11 @@ MuseScore {
             ]
 
         }
-		
+
         StackLayout {
             currentIndex: modeIndex()
             // width: parent.width
-			Layout.fillHeight: false // true is the default for a StackLayout
+            Layout.fillHeight: false // true is the default for a StackLayout
             Flickable {
                 id: flickable
                 Layout.alignment: Qt.AlignLeft
@@ -2601,7 +2937,6 @@ MuseScore {
                     // rowSpacing: 10
                     Layout.alignment: Qt.AlignLeft
                     rows: 1
-					
 
                     Repeater {
 
@@ -2641,6 +2976,7 @@ MuseScore {
                 text: ""
                 Layout.fillWidth: true
                 placeholderText: "Enter a grid such as Cm7;F7;C7;Ab7;G7;C7"
+				selectByMouse: true
 
                 Layout.alignment: Qt.AlignLeft | Qt.QtAlignBottom
 
@@ -2648,7 +2984,7 @@ MuseScore {
 
 
         } // stacklayout
-		
+
         Label {
             //Layout.column : 0
             //Layout.row : 1
@@ -2830,48 +3166,6 @@ MuseScore {
                 }
                 onRejected: Qt.quit()
 
-            }
-        }
-    }
-
-    Component {
-        id: stepComponent
-
-        ComboBox {
-            id: lstStep
-            property var step: {
-                "note": ''
-            }
-            Layout.alignment: Qt.AlignLeft | Qt.QtAlignBottom
-            editable: false
-            model: _ddNotes
-            Layout.preferredHeight: 30
-            implicitWidth: 75
-            currentIndex: find(step.note, Qt.MatchExactly)
-            onCurrentIndexChanged: {
-                step.note = model[currentIndex];
-                workoutName = undefined; // resetting the name of the workout. One has to save it again to regain the name
-            }
-        }
-    }
-
-    Component {
-        id: gridStepComponent
-
-        ComboBox {
-            id: lstGStep
-            property var step: {
-                "degree": ''
-            }
-            Layout.alignment: Qt.AlignLeft | Qt.QtAlignBottom
-            editable: false
-            model: _ddGridNotes
-            Layout.preferredHeight: 30
-            implicitWidth: 75
-            currentIndex: find(step.degree, Qt.MatchExactly)
-            onCurrentIndexChanged: {
-                step.degree = model[currentIndex];
-                workoutName = undefined; // resetting the name of the workout. One has to save it again to regain the name
             }
         }
     }
@@ -3092,8 +3386,8 @@ MuseScore {
                             color: "lightsteelblue"
                             //width: parent.width
                             anchors { // throws some errors, but is working fine
-                                left: parent.left
-                                right: parent.right
+                                left: (parent)?parent.left:undefined
+                                right: (parent)?parent.right:undefined
                             }
                         }
                     }
@@ -3299,7 +3593,7 @@ MuseScore {
 
         onVisibleChanged: {
             if (visible) {
-                txtInputPatternName.text = ((index === -1)) ? "??" : idPattName.itemAt(index).text;
+                txtInputPatternName.text = ((index === -1)) ? "??" : mpatterns.get(index).pattName;
             }
         }
 
@@ -3309,7 +3603,7 @@ MuseScore {
             var name = txtInputPatternName.text.trim();
             console.log("==> " + name);
             patternNameInputDialog.close();
-            idPattName.itemAt(index).text = name;
+			mpatterns.get(index).pattName=name;
         }
         onRejected: patternNameInputDialog.close();
 
@@ -3379,7 +3673,7 @@ MuseScore {
         icon: StandardIcon.Critical
         standardButtons: StandardButton.Ok
         title: 'Invalid libraries'
-        text: "Invalid 'zparkingb/notehelper.js' or 'zparkingb/chordanalyser.js' versions.\nExpecting " + noteHelperVersion + " and " + chordHelperVersion + ".\n" + pluginName + " will stop here."
+        text: "Invalid 'notehelper.js' or 'chordanalyser.js' versions.\nExpecting " + noteHelperVersion + " and " + chordHelperVersion + ".\n" + pluginName + " will stop here."
         onAccepted: {
             Qt.quit()
         }
@@ -3389,10 +3683,10 @@ MuseScore {
         id: cannotFetchPhraseFromSelectionDialog
         icon: StandardIcon.Warning
         standardButtons: StandardButton.Ok
-		property var message: ""
+        property var message: ""
         title: 'Fetch phrase from score'
-        text: "Failed to fetch a phrase from the current score:\n"+message+
-		"\n\nNote: This action requires a score being openened and that a selection made, containing chord texts."
+        text: "Failed to fetch a phrase from the current score:\n" + message +
+        "\n\nNote: This action requires a score being openened and that a selection made, containing chord texts."
         onAccepted: {
             cannotFetchPhraseFromSelectionDialog.close()
         }
@@ -3474,12 +3768,15 @@ MuseScore {
 
     }
 
-    function patternClass(steps, loopMode, scale, name, type) {
+    function patternClass(steps, loopMode, scale, name, type, gridType) {
         this.steps = (steps !== undefined) ? steps : [];
         this.loopMode = loopMode;
         this.scale = scale;
         this.type = (type === undefined || (type !== _SCALE_MODE && type !== _GRID_MODE)) ? _SCALE_MODE : type;
         this.name = (name && (name != null)) ? name : "";
+		this.gridType = (gridType === "undefined")?"grid":gridType;
+		
+		debugO("new pattern class",this);
 
         this.toJSON = function (key) {
             return {
@@ -3487,7 +3784,8 @@ MuseScore {
                 loopMode: this.loopMode,
                 scale: this.scale,
                 name: this.name,
-                type: this.type
+                type: this.type,
+                gridType: this.gridType
             };
 
         };
@@ -3495,7 +3793,10 @@ MuseScore {
         // transient properties
         // label
         var label = "";
-        if (steps.length == 0)
+		if (type===_GRID_MODE && gridType!='grid') {
+			var l=_gridTypes.find(function(e) { return e.type=== gridType});
+			label +=(l!==undefined)?l.label:"---";
+		} else if (steps.length == 0)
             label += "---";
         else
             for (var i = 0; ((i < steps.length) && (steps[i] !== undefined)); i++) {
@@ -3553,7 +3854,7 @@ MuseScore {
      * Creation of a pattern from a pattern object containing the *enumerable* fields (ie. the non transient fields)
      */
     function patternClassRaw(raw) {
-        patternClass.call(this, raw.steps, raw.loopMode, raw.scale, raw.name, raw.type);
+        patternClass.call(this, raw.steps, raw.loopMode, raw.scale, raw.name, raw.type, raw.gridType);
     }
 
     function workoutClass(name, patterns, roots, bypattern, invert) {
@@ -3734,7 +4035,7 @@ MuseScore {
 
         // transient properties
         // label
-        if (this.name !== "") {
+        if (this.name && this.name !== "") {
             this.label = this.name;
         } else {
             var label = "";
@@ -3780,7 +4081,12 @@ MuseScore {
 
     function debugO(label, element, excludes) {
 
-        if (Array.isArray(element)) {
+        if (typeof element === 'undefined') {
+            console.log(label + ": undefined");
+        } else if (element === null) {
+            console.log(label + ": null");
+
+        } else if (Array.isArray(element)) {
             for (var i = 0; i < element.length; i++) {
                 debugO(label + "-" + i, element[i], excludes);
             }
@@ -3793,8 +4099,6 @@ MuseScore {
                     debugO(label + ": " + kys[i], element[kys[i]], excludes);
                 }
             }
-        } else if (typeof element === 'undefined') {
-            console.log(label + ": undefined");
         } else {
             console.log(label + ": " + element);
         }
