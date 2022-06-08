@@ -1,6 +1,6 @@
 /**********************
 /* Parking B - MuseScore - Chord analyser
-/* v1.3.0
+/* v1.3.1
 /* ChangeLog:
 /* 	- 1.0.0: Initial release
 /*  - 1.0.1: The 7th degree was sometime erased
@@ -15,7 +15,8 @@
 /*  - 1.2.7: Correction sur les accords majeurs non 7 (ex "C")
 /*  - 1.2.8: Export de la position relative de la basse
 /*  - 1.2.9: Better name for altered 5
-/*  - 1.3.0: Better handling of Aug, Sus2, Sus4 
+/*  - 1.3.0: Better handling of Aug, Sus2, Sus4
+/*  - 1.3.1: Better handling of (b5) chords
 
 /**********************************************/
 // -----------------------------------------------------------------------
@@ -45,7 +46,8 @@ function checkVersion(expected) {
 
 function chordFromText(source) {
 
-    var text = source.replace(/(\(|\))/g, '');
+    //var text = source.replace(/(\(|\))/g, '');
+    var text = source.replace(/(^\s*\(\s*|\s*\)\s*$)/g, ''); // on vire les "(" et ")" de début et fin
 
     var rootbass = text.split("/");
     text = rootbass[0];
@@ -122,19 +124,22 @@ function getRootAccidental(text) {
 
 function scaleFromText(text, bass) {
 
+    text = text.replace(/(\(|\))/g, ''); // on vire les parenthèses
+
+
     var n2 = null,
     n3 = null,
     n4 = null,
     n5 = null,
-	n6=null,
+    n6 = null,
     n7 = null,
     def2 = null,
     def3 = null,
     def4 = null,
     def6 = null,
     def7 = null,
-	n5role="5";
-	
+    n5role = "5";
+
     var keys = [0, 12];
     var chordnotes = [{
             "note": 0,
@@ -196,7 +201,7 @@ function scaleFromText(text, bass) {
         n5 = 6;
         def7 = 9; // changed 12/3/22. Was "n7="
         def6 = 7; // Je force une 6ème par défaut. Qui sera peut-être écrasée après.
-		n5role="b5";
+        n5role = "b5";
     }
 
     // Half-dim
@@ -208,7 +213,7 @@ function scaleFromText(text, bass) {
         n5 = 6;
         def7 = 10; // changed 12/3/22. Was "n7="
         def6 = 8; // Je force une 6ème par défaut. Qui sera peut-être écrasée après.
-		n5role="b5";
+        n5role = "b5";
     }
 
     // No indication => Major, with dominant 7
@@ -220,7 +225,7 @@ function scaleFromText(text, bass) {
         //outside = outside.concat([1, 3, 6, 8]);
     }
 
-	// Posibles additions
+    // Posibles additions
     // ..Aug..
     if (text.startsWith("aug") || text.startsWith("+")) {
         console.log("Starts with aug/+");
@@ -235,7 +240,7 @@ function scaleFromText(text, bass) {
         console.log("Starts with sus2");
         n2 = 2;
         n3 = null; // pas de tierce explicite
-		def3 = 4; //pourrait être 3 ou 4
+        def3 = 4; //pourrait être 3 ou 4
         //n5 = 7;
         //def6 = 9; // Je force une 6ème par défaut. Qui sera peut-être écrasée après.
     }
@@ -244,13 +249,11 @@ function scaleFromText(text, bass) {
     else if (text.startsWith("sus4")) {
         console.log("Starts with sus4");
         n4 = 5;
-		n3 = null; // pas de tierce explicite
+        n3 = null; // pas de tierce explicite
         def3 = 4; //pourrait être 3 ou 4
         //n5 = 7;
         //def6 = 9; // Je force une 6ème par défaut. Qui sera peut-être écrasée après.
     }
-
-
 
     // Compléments
     // ..7..
@@ -275,11 +278,11 @@ function scaleFromText(text, bass) {
     if (text.includes("b5")) {
         console.log("Has b5");
         n5 = 6;
-		n5role="b5";
+        n5role = "b5";
     } else if (text.includes("#5")) {
         console.log("Has #5");
         n5 = 8;
-		n5role="#5";
+        n5role = "#5";
     }
 
     if (n5 != null) {
@@ -309,7 +312,7 @@ function scaleFromText(text, bass) {
         _ptok(keys, n9, "9");
         pushToNotes(chordnotes, n9, "9");
 
-    } else if (((at = [1, 2, 3].indexOf(bass)) >= 0) && (bass!==n2)) {
+    } else if (((at = [1, 2, 3].indexOf(bass)) >= 0) && (bass !== n2)) {
         n9 = bass;
         _ptok(keys, bass, "bass as 2/9");
         pushToNotes(chordnotes, bass, ["b", "", "#"][at] + "9(B)");
@@ -353,7 +356,7 @@ function scaleFromText(text, bass) {
         n11 = 5;
         _ptok(keys, n11, "11");
         pushToNotes(chordnotes, n11, "11");
-    } else if (((at = [4, 5, 6].indexOf(bass)) >= 0) && (bass!=n4)){
+    } else if (((at = [4, 5, 6].indexOf(bass)) >= 0) && (bass != n4)) {
         n11 = bass;
         _ptok(keys, bass, "bass as 4/11");
         pushToNotes(chordnotes, bass, ["b", "", "#"][at] + "11");
@@ -374,7 +377,7 @@ function scaleFromText(text, bass) {
     // ..6/13..
     if (text.includes("6")) {
         console.log("Has 6");
-		n6=9;
+        n6 = 9;
         _ptok(keys, n6, "(n)6"); // "So in the case of min6 chords always always always make the 6th a major 6th."
         pushToNotes(chordnotes, n6, "6");
         def6 = null;
@@ -395,7 +398,7 @@ function scaleFromText(text, bass) {
         n13 = 9;
         _ptok(keys, n13, "13");
         pushToNotes(chordnotes, n13, "13");
-    } else if (((at = [8, 9, 10].indexOf(bass)) >= 0) && (bass!=n6)) {
+    } else if (((at = [8, 9, 10].indexOf(bass)) >= 0) && (bass != n6)) {
         n13 = bass;
         _ptok(keys, bass, "bass as 6/13");
         pushToNotes(chordnotes, bass, ["b", "", "#"][at] + "13");
@@ -427,8 +430,8 @@ function scaleFromText(text, bass) {
     allnotes = chordnotes.concat(allnotes);
     for (var n = 1; n < 12; n++) {
         if ((getNote(allnotes, n) === undefined) && (n !== bass)) {
-			var at;
-		    var dn = (n3 == null && (at=[3,4].indexOf(n))>=0) ? ["m3","M3"][at] : default_names[n];
+            var at;
+            var dn = (n3 == null && (at = [3, 4].indexOf(n)) >= 0) ? ["m3", "M3"][at] : default_names[n];
             pushToNotes(allnotes, n, dn);
         } else if (n === bass) {
             pushToNotes(allnotes, n, "bass");
@@ -495,17 +498,17 @@ function chordClass(tpc, name, scale, basstpc) {
     this.root = tpc.raw;
     this.accidental = tpc.accidental;
     this.scale = scale;
-	if (basstpc == null) {
-	    this.bass = null;
-	} else {
-	    this.bass = {
-	        "key": ((basstpc.pitch - tpc.pitch + 12) % 12),
-	        "pitch": basstpc.pitch,
-	        "accidental": basstpc.accidental,
-	        "root": basstpc.raw
-	    }
-	}
-	Object.defineProperty(this, "keys", {
+    if (basstpc == null) {
+        this.bass = null;
+    } else {
+        this.bass = {
+            "key": ((basstpc.pitch - tpc.pitch + 12) % 12),
+            "pitch": basstpc.pitch,
+            "accidental": basstpc.accidental,
+            "root": basstpc.raw
+        }
+    }
+    Object.defineProperty(this, "keys", {
         get: function () {
             return this.scale.keys;
         }
