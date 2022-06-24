@@ -345,7 +345,7 @@ MuseScore {
             "minor": false
         }, {
             "root": 'B',
-            "major": false,
+            "major": true,
             "minor": true
         }
     ]
