@@ -15,7 +15,7 @@ import "workoutbuilder"
 
 /**********************
 /* Parking B - MuseScore - Scale Workout builder plugin
-/* v2.3.0
+/* v2.4.0
 /* ChangeLog:
 /* 	- 0.0.0: Initial release
 /*  - 1.0.0: Tools and library of patterns and workouts
@@ -33,6 +33,7 @@ import "workoutbuilder"
 /*  - 2.3.0 Moved *.js libraries to own folder
 /*  - 2.3.0 Store settings (checkboxes, instrument)
 /*  - 2.3.0 Add new "Bass" instrument (should a require a F-clef, but the clef is not available from the API)
+/*  - 2.4.0 Add step durations
 /**********************************************/
 MuseScore {
     menuPath: "Plugins." + pluginName
@@ -379,6 +380,23 @@ MuseScore {
             return dd;
         }
     }
+	
+		property var durations : [
+		//mult is a tempo-multiplier compared to a crotchet      
+		{text: '\uECA2',               duration: 4     ,  fraction: fraction( 1, 1)  },
+		{text: '\uECA3 \uECB7',        duration: 3     ,  fraction: fraction( 3, 4)  },
+		{text: '\uECA3',               duration: 2     ,  fraction: fraction( 1, 2)  },
+		{text: '\uECA5 \uECB7 \uECB7', duration: 1.75  ,  fraction: fraction( 7,16)  },
+		{text: '\uECA5 \uECB7',        duration: 1.5   ,  fraction: fraction( 3, 8)  },
+		{text: '\uECA5',               duration: 1     ,  fraction: fraction( 1, 4)  },
+		{text: '\uECA7 \uECB7 \uECB7', duration: 0.875 ,  fraction: fraction( 7,32)  },
+		{text: '\uECA7 \uECB7',        duration: 0.75  ,  fraction: fraction( 3,16)  },
+		{text: '\uECA7',               duration: 0.5   ,  fraction: fraction( 1, 8)  },
+		{text: '\uECA9 \uECB7 \uECB7', duration: 0.4375,  fraction: fraction( 7,64)  },
+		{text: '\uECA9 \uECB7',        duration: 0.375 ,  fraction: fraction( 3,32)  },
+		{text: '\uECA9',               duration: 0.25  ,  fraction: fraction( 1,16)  },
+		]
+	
 
 	ListModel {
 		id: mpatterns
@@ -390,6 +408,7 @@ MuseScore {
 					steps.push({
                         "note": '', // scale mode
                         "degree": '',// grid mode 
+						"duration": 1, // all modes
 					});
 				}
 				mpatterns.append({
@@ -435,9 +454,10 @@ MuseScore {
             console.log("[" + i + "]" + pages[i]);
             //if (pages[i]===undefined) continue; // ne devrait plus arriver
             for (var j = 0; j < pages[i].length; j++) {
-                for (var k = 0; k < pages[i][j].notes.length; k++) {
-                    console.log(i + ") [" + pages[i][j].root + "/" + pages[i][j].mode + "/" + pages[i][j].chord.name + "] " + k + ": " + pages[i][j].notes[k]);
-                }
+				debugO("for print, pattern "+j+"/"+i, pages[i][j],["scale"]);
+                // for (var k = 0; k < pages[i][j].notes.length; k++) {
+                    // console.log(i + ") [" + pages[i][j].root + "/" + pages[i][j].mode + "/" + pages[i][j].chord.name + "] " + k + ": " + pages[i][j].notes[k]);
+                // }
             }
         }
 
@@ -582,7 +602,7 @@ MuseScore {
 
 						var inScale = (scale[ip % 7]) + (Math.floor(ip / 7) * 12);
 
-						console.log(n + ": " + pp.notes[n] + " --> " + ip + " --> " + inScale);
+						console.log(n + ": " + pp.notes[n].note + " --> " + ip + " --> " + inScale);
 						steps.push(inScale);
 					}
 				}
@@ -619,14 +639,20 @@ MuseScore {
                     if (!chkInvert.checked || ((r % 2) == 0)) {
                         console.log("-- => normal");
                         for (var j = 0; j < basesteps.length; j++) {
-                            console.log(">>> Looking at note " + j + ": " + basesteps[j]);
-                            notes.push(root + basesteps[j]);
+                            console.log(">>> Looking at note " + j + ": " + basesteps[j].note);
+                            //notes.push(root + basesteps[j]);
+								var _n=(basesteps[j].note!==null)?(root + basesteps[j].note):null;
+								// var _n=(basesteps[j].note!==null)?root + basesteps[j].note:0;
+                                notes.push({"note" : _n, "duration": basesteps[j].duration });
                         }
                     } else {
                         console.log("-- => reverse");
                         for (var j = basesteps.length - 1; j >= 0; j--) {
-                            console.log(">>> Looking at note " + j + ": " + basesteps[j]);
-                            notes.push(root + basesteps[j]);
+                            console.log(">>> Looking at note " + j + ": " + basesteps[j].note);
+                            // notes.push(root + basesteps[j]);
+								var _n=(basesteps[j].note!==null)?(root + basesteps[j].note):null;
+								// var _n=(basesteps[j].note!==null)?root + basesteps[j].note:0;
+                                notes.push({"note" : _n, "duration": basesteps[basesteps.length - 1 - j].duration });
                         }
                     }
 
@@ -654,82 +680,41 @@ MuseScore {
         var patts = [];
 
         // 1) Collect the patterns and their definition
-        /*for (var i = 0; i < _max_patterns; i++) {
-            // 1.1) Collecting the basesteps
-            var p = [];
-            for (var j = 0; j < _max_steps; j++) {
-                var sn = patterns[i * _max_steps + j];
-                //console.log("S "+i+"/"+j+": "+sn.note);
-                if (sn.note !== '') {
-                    var d = _degrees.indexOf(sn.note);
-                    if (d > -1)
-                        p.push(d);
-                } else
-                    break;
-            }
-
-            if (p.length == 0) {
-                break;
-            }
-
-            // 1.2) Retrieving loop mode
-            var mode = idLoopingMode.itemAt(i).currentIndex
-                mode = _loops[mode];
-            console.log("looping mode : " + mode.label);
-
-            // Retrieving Chord type
-            var cText = idChordType.itemAt(i).editText; // editable
-            if (cText === '') {
-                var m3 = (p.indexOf(3) > -1); // if we have the "m3" the we are in minor mode.
-                if (p.indexOf(10) > -1) { //m7
-                    cText = m3 ? "m7" : "7";
-                } else if (p.indexOf(11) > -1) { //M7
-                    cText = m3 ? "m7" : "M7";
-                } else {
-                    cText = m3 ? "m" : "M";
-                }
-
-            }
-            var cSymb = _chordTypes[cText];
-            if (cSymb === undefined) {
-                cSymb = cText.includes("-") ? _chordTypes['m'] : _chordTypes['M']; // For user-specific chord type, we take a Major scale, or the Min scale of we found a "-"
-                cSymb.symb = cText;
-            }
-
-            console.log("Pattern " + i + ": " + cText + " > " + cSymb);
-
-            // Build final pattern
-            var pattern = {
-                "notes": p,
-                "loopAt": mode,
-                "chord": cSymb,
-                "name": idPattName.itemAt(i).text
-            };
-            patts.push(pattern);
-
-        }*/
-        // 1) Collect the patterns and their definition
         for (var i = 0; i < _max_patterns; i++) {
 			var raw=mpatterns.get(i);
 			// if (raw.isEmpty(_SCALE_MODE)) continue;
 			
             // 1.1) Collecting the basesteps
             var p = [];
-            for (var j = 0; j < _max_steps; j++) {
+			// 2.4.0 adding in reverse order
+            for (var j = (_max_steps-1); j >=0 ; j--) {
                 var sn = raw.steps.get(j);
                 if (sn.note !== '') {
                     var d = _degrees.indexOf(sn.note);
                     if (d > -1)
-                        p.push(d);
+                        p.unshift({"note": d, "duration": sn.duration});
+                } else if (p.length===0) {
+					continue;
                 } else
-                    break;
+                    p.unshift({"note": null, "duration": sn.duration}); 
             }
+			
 
             if (p.length == 0) {
                 break;
             }
+			
+			// 1.2) Completing the pattern to have a round duration
+			var total=p.map(function(e) {return e.duration}).reduce(function(t,n) { return t+n; });
+			if (total<Math.ceil(total)) {
+				var inc=Math.ceil(total)-total;
+				console.log("adding a rest of "+inc);
+				p.push({"note": null, "duration": inc}); 
+			}
+			
+			debugO("after cleaning",p);
 
-            // 1.2) Retrieving loop mode
+            // 1.3) Retrieving loop mode
             var mode = raw.loopMode;
 			mode = _loops.filter(function(e) {return e.id===mode})[0];
             console.log("looping mode : " + mode.label);
@@ -737,10 +722,11 @@ MuseScore {
             // Retrieving Chord type
             var cText = raw.chordType // editable
             if (cText === '') {
-                var m3 = (p.indexOf(3) > -1); // if we have the "m3" the we are in minor mode.
-                if (p.indexOf(10) > -1) { //m7
+				var nn=p.map(function(e) { return e.note });
+                var m3 = (nn.indexOf(3) > -1); // if we have the "m3" the we are in minor mode.
+                if (nn.indexOf(10) > -1) { //m7
                     cText = m3 ? "m7" : "7";
-                } else if (p.indexOf(11) > -1) { //M7
+                } else if (nn.indexOf(11) > -1) { //M7
                     cText = m3 ? "m7" : "M7";
                 } else {
                     cText = m3 ? "m" : "M";
@@ -764,6 +750,8 @@ MuseScore {
                 "name": raw.pattName,
             };
             patts.push(pattern);
+			
+			debugO("ready",pattern.notes); // debug
 
         }
 
@@ -799,7 +787,7 @@ MuseScore {
             // We sort by patterns. By pattern, repeat over each root
             for (var p = 0; p < extpatts.length; p++) {
                 var pp = extpatts[p];
-                var mode = (pp.notes.indexOf(3) > -1) ? "minor" : "major"; // if we have the "m3" the we are in minor mode.
+                var mode = (pp.notes.map(function(e) { return e.note }).indexOf(3) > -1) ? "minor" : "major"; // if we have the "m3" the we are in minor mode.
                 //var page = p; //0; //(chkPageBreak.checked) ? p : 0;
                 if ((p == 0) || ((patts.length > 1) && (roots.length > 1))) {
                     console.log("page++");
@@ -822,12 +810,17 @@ MuseScore {
                         if (!chkInvert.checked || ((r % 2) == 0)) {
                             console.log("-- => normal");
                             for (var j = 0; j < basesteps.length; j++) {
-                                notes.push(root + basesteps[j]);
+								var _n=(basesteps[j].note!==null)?(root + basesteps[j].note):null;
+								// var _n=(basesteps[j].note!==null)?root + basesteps[j].note:0;
+                                notes.push({"note" : _n, "duration": basesteps[j].duration });
                             }
                         } else {
                             console.log("-- => reverse");
                             for (var j = basesteps.length - 1; j >= 0; j--) {
-                                notes.push(root + basesteps[j]);
+                                // notes.push(root + basesteps[j]);
+								var _n=(basesteps[j].note!==null)?(root + basesteps[j].note):null;
+								// var _n=(basesteps[j].note!==null)?root + basesteps[j].note:0;
+                                notes.push({"note" : _n, "duration": basesteps[basesteps.length - 1 - j].duration });
                             }
                         }
 
@@ -874,7 +867,7 @@ MuseScore {
                     console.log("By R, patterns: " + p + "/" + (patts.length - 1) + "; roots:" + r + "/" + (roots.length - 1) + " => " + page);
 
                     var pp = extpatts[p];
-                    var mode = (pp.notes.indexOf(3) > -1) ? "minor" : "major"; // if we have the "m3" the we are in minor mode.
+                    var mode = (pp.notes.map(function(e) { return e.note }).indexOf(3) > -1) ? "minor" : "major"; // if we have the "m3" the we are in minor mode.
 
 
                     // Looping through the "loopAt" subpatterns
@@ -887,7 +880,9 @@ MuseScore {
                         var notes = [];
 
                         for (var j = 0; j < basesteps.length; j++) {
-                            notes.push(root + basesteps[j]);
+								var _n=(basesteps[j].note!==null)?(root + basesteps[j].note):null;
+								// var _n=(basesteps[j].note!==null)?root + basesteps[j].note:0;
+                                notes.push({"note" : _n, "duration": basesteps[j].duration });
                         }
 
                         pages[page].push({
@@ -926,11 +921,15 @@ MuseScore {
 
     function printWorkout_pushToScore(pages) {
 
+
+
         var instru = _instruments[lstTransposition.currentIndex];
         console.log("Instrument is " + instru.label);
 
         // Push all this to the score
         var score = newScore("Workout", instru.instrument, 1);
+
+
 
         var title = (workoutName !== undefined) ? workoutName : "Scale workout";
         title += " - ";
@@ -994,6 +993,7 @@ MuseScore {
         var adaptativeMeasure = chkAdaptativeMeasure.checked && chkStrictLayout.checked;
         var beatsByMeasure;
 
+
         score.startCmd();
 
         var cursor = score.newCursor();
@@ -1003,13 +1003,20 @@ MuseScore {
 
         // first measure sign
         if (adaptativeMeasure) {
-            beatsByMeasure = signatureForPattern(pages[0][0].notes.length);
+            beatsByMeasure = signatureForPattern(pages[0][0].notes);
+			console.log("recomputing beatsByMeasure to "+beatsByMeasure);
+			console.log("--> "+typeof(beatsByMeasure));
+			
         } else {
             beatsByMeasure = 4;
+			console.log("forcing beatsByMeasure to "+beatsByMeasure);
         }
-        console.log("Adapting measure to " + beatsByMeasure + "/4");
+        console.log("Adapting measure to " + beatsByMeasure + "/4 (#1)");
         var ts = newElement(Element.TIMESIG);
         ts.timesig = fraction(beatsByMeasure, 4);
+
+        console.log("New time signature is " + ts.timesig.str);
+		
         cursor.add(ts);
 
         cursor.rewind(0);
@@ -1028,6 +1035,7 @@ MuseScore {
         var prevPage = -1;
         var prevBeatsByM = beatsByMeasure;
         var newLine = false;
+		
 
         for (var i = 0; i < pages.length; i++) {
 
@@ -1069,10 +1077,14 @@ MuseScore {
                 }
 
                 if (adaptativeMeasure) {
-                    beatsByMeasure = (pages[i][j].gridType!=="grid")?pages[i][j].notes.length:signatureForPattern(pages[i][j].notes.length);
+                    // beatsByMeasure = (pages[i][j].gridType!=="grid")?pages[i][j].notes.length:signatureForPattern(pages[i][j].notes.length);
+                    beatsByMeasure = (pages[i][j].gridType!==undefined && pages[i][j].gridType!=="grid")?pages[i][j].notes.length:signatureForPattern(pages[i][j].notes);
+			console.log("recomputing beatsByMeasure to "+beatsByMeasure+" (#2) / gridType: "+pages[i][j].gridType);
                 } else {
                     beatsByMeasure = 4;
+			console.log("forcing beatsByMeasure to "+beatsByMeasure+" (#2) / gridType: "+pages[i][j].gridType);
                 }
+					debugO("before print",pages[i][j].notes);
 
                 for (var k = 0; k < pages[i][j].notes.length; k++, counter++) {
                     if (counter > 0) {
@@ -1092,27 +1104,46 @@ MuseScore {
                         }
                     }
 
-                    cursor.setDuration(1, 4); // quarter
                     var note = cursor.element;
+					cur_time = cursor.segment.tick;
 
-                    var delta = pages[i][j].notes[k];
-                    var pitch = instru.cpitch + delta;
-                    var sharp_mode = true;
-                    var f = (chord.sharp !== undefined) ? chord.sharp : _chords[root][mode]; // si un mode est spécifié on l'utilise sinon on prend celui par défaut
-                    if (f !== undefined)
-                        sharp_mode = f;
+			
+                    var delta = pages[i][j].notes[k].note;
+                    var duration = pages[i][j].notes[k].duration;
+                    var fduration = durations.find(function(e) {return e.duration===duration;});
+					console.log("duration = "+duration+" => fduration = "+((fduration!==undefined)?fduration.fraction.str:"undefined"));
+					console.log(" --> adding as "+((delta!==null)?"note":"rest"));
+					fduration=(fduration!==undefined)?fduration.fraction:fraction(1,4);
+					
+					if (delta !== null) {
+					    // Note
 
-                    var target = {
-                        "pitch": pitch,
-                        "concertPitch": false,
-                        "sharp_mode": f
-                    };
+					    var pitch = instru.cpitch + delta;
+					    var sharp_mode = true;
+					    var f = (chord.sharp !== undefined) ? chord.sharp : _chords[root][mode]; // si un mode est spécifié on l'utilise sinon on prend celui par défaut
+					    if (f !== undefined)
+					        sharp_mode = f;
 
-                    //cur_time = note.parent.tick; // getting note's segment's tick
-                    cur_time = cursor.segment.tick;
+					    var target = {
+					        "pitch": pitch,
+					        "concertPitch": false,
+					        "sha;rp_mode": f
+					    };
 
-                    note = NoteHelper.restToNote(note, target);
+					    //cur_time = note.parent.tick; // getting note's segment's tick
 
+					    note = NoteHelper.restToNote(note, target,fduration);
+
+					} else {
+					    // Rest
+					    //2.4.0 change adapt rest to the right duration
+						console.log("...of "+fduration.str);
+						cursor.setDuration(fduration.numerator,fduration.denominator);
+						cursor.addRest();
+						cursor.rewindToTick(cur_time);
+						note=cursor.element
+					}
+					
                     // Adding a key signature
                     // TODO: finalize
                     /*if (chord.key && (k == 0)) {
@@ -1122,6 +1153,7 @@ MuseScore {
                     }*/
 
                     // Adding the chord's name
+
                     if (prevChord.symb !== chord.symb || prevChord.name !== chord.name || prevRoot !== root) {
                         var csymb = newElement(Element.HARMONY);
                         if (chord.name !== undefined) {
@@ -1149,7 +1181,7 @@ MuseScore {
 
                     // Adding the signature change if needed (must be done **after** a note has been added to the new measure.
                     if ((beatsByMeasure != prevBeatsByM) || newLine) {
-                        console.log("Adapting measure to " + beatsByMeasure + "/4");
+                        console.log("Adapting measure to " + beatsByMeasure + "/4  (#2)");
                         var ts = newElement(Element.TIMESIG);
                         ts.timesig = fraction(beatsByMeasure, 4);
                         cursor.add(ts);
@@ -1167,6 +1199,7 @@ MuseScore {
                     }
 
                     //debugNote(delta, note);
+					
 
                     prevRoot = root;
                     prevChord = chord;
@@ -1176,9 +1209,11 @@ MuseScore {
 
                 }
 
+				
                 // Fill with rests until end of measure
                 if (chkStrictLayout.checked) {
-                    var fill = pages[i][j].notes.length % beatsByMeasure;
+					var total=patternDuration(pages[i][j].notes);
+                    var fill = total % beatsByMeasure;
                     if (fill > 0) {
                         //fill = 4 - fill;
                         console.log("Going to fill from :" + fill);
@@ -1204,15 +1239,31 @@ MuseScore {
 
     }
 
+	/**
+	a pattern described as :
+			"notes": array of {"note": integer/null, "durarion": float }; "null" is for rest
+            "loopAt": mode,
+            "chord": { "symb": text, "scale": [0, 2, 4, 5, 7, 9, 11, 12], "mode": "major"|"minor" }
+            "name": text
+	*/		
+	
     function extendPattern(pattern) {
         var extpattern = pattern;
         var basesteps = pattern.notes;
         var scale = pattern.chord.scale;
         var loopAt = pattern.loopAt;
+		var lastrest=null;
+		
+		if (basesteps[basesteps.length-1].note===null) {
+			lastrest=basesteps.pop();
+		}
 
         extpattern.representation = (pattern.name && pattern.name !== "") ? pattern.name : patternToString(pattern.notes, pattern.loopAt);
 
         extpattern["subpatterns"] = [];
+		
+		debugO("before",basesteps);
+
 
         // first the original pattern
 
@@ -1222,17 +1273,20 @@ MuseScore {
         if ((loopAt.type == 1) && (Math.abs(loopAt.shift) < basesteps.length) && (loopAt.shift != 0)) {
             // 1) Regular loopAt mode, where we loop from the current pattern, restarting the pattern (and looping)
             // from the next step of it : A-B-C, B-C-A, C-A-B
-            console.log("Looping patterns : regular mode");
+            console.log("--Looping patterns : shift mode--");
+			
+			// reducing the basesteps to only the 1) the notes (and dropping the rests) 2) only the notes (not taking care of the durations)
+			var reduced=basesteps.filter(function(e) { return e.note!==null}).map(function(e) { return e.note});
 
             // octave up or down ? Is the pattern going up or going down ?
             var pattdir = 1;
-            if (basesteps[0] > basesteps[basesteps.length - 1])
+			var b0=reduced[0];
+			var bn=reduced[reduced.length - 1];
+            if (b0 > bn)
                 pattdir = -1; // first is higher than last, the pattern is going down
-            else if (basesteps[0] == basesteps[basesteps.length - 1])
+            else if (b0 == bn)
                 pattdir = 0; // first is equal to last, the pattern is staying flat
 
-
-            var notesteps = [].concat(basesteps); // clone basesteps to not alter the gloable pattern
 
 
             // We'll tweak the original pattern one to have flowing logically among the subpatterns
@@ -1244,23 +1298,23 @@ MuseScore {
             }*/
             if ((pattdir < 0)) {
                 // En mode decreasing, je monte toute la pattern d'une octave
-                for (var i = 0; i < basesteps.length; i++) {
-                    basesteps[i] = basesteps[i] + 12;
+                for (var i = 0; i < reduced.length; i++) {
+                    reduced[i] = reduced[i] + 12;
                 }
             }
 
             var e2e = false;
             var e2edir = 0;
-            var notesteps = [].concat(basesteps); // clone basesteps to not alter the gloable pattern
-            if ((Math.abs(basesteps[0] - basesteps[basesteps.length - 1]) == 12) || (basesteps[0] == basesteps[basesteps.length - 1])) {
+            var notesteps = [].concat(reduced); // clone basesteps to not alter the gloable pattern (shallow copy is ok here)
+            if ((Math.abs(b0 - bn) == 12) || (b0 == bn)) {
                 //
                 e2e = true;
-                e2edir = (basesteps[basesteps.length - 1] - basesteps[0]) / 12; // -1: C4->C3, 0: C4->C4, 1: C4->C5
+                e2edir = (bn - b0) / 12; // -1: C4->C3, 0: C4->C4, 1: C4->C5
                 notesteps.pop(); // Remove the last step
             }
 
             var debug = 0;
-            var from = (loopAt.shift > 0) ? 0 : (basesteps.length - 1); // delta in index of the pattern for the regular loopAt mode
+            var from = (loopAt.shift > 0) ? 0 : (reduced.length - 1); // delta in index of the pattern for the regular loopAt mode
             while (debug < 999) {
                 debug++;
 
@@ -1268,45 +1322,82 @@ MuseScore {
                 console.log("Regular Looping at " + from);
 
                 // Have we reached the end ?
-                if ((loopAt.shift > 0) && (from > 0) && ((from % basesteps.length) == 0))
+                if ((loopAt.shift > 0) && (from > 0) && ((from % reduced.length) == 0))
                     break;
                 else if ((loopAt.shift < 0) && (from < 0))
                     break;
 
-                var p = [];
+                var shifted = [];
                 for (var j = 0; j < notesteps.length; j++) {
                     var idx = (from + j) % notesteps.length
                     var octave = Math.floor((from + j) / notesteps.length);
                     // octave up or down ? Is the pattern going up or going down ?
                     octave *= pattdir;
 
-                    console.log(">should play " + notesteps[idx] + " but I'm playing " + (notesteps[idx] + octave * 12) + " (" + octave + ")");
-                    p.push(notesteps[idx] + octave * 12);
+                    var _n = notesteps[idx] + octave * 12;
+                    console.log(">should play " + notesteps[idx] + " but I'm playing " + _n + " (" + octave + ")");
+                    shifted.push(_n);
                 }
                 if (e2e) {
                     // We re-add the first note
-                    p.push(p[0] + 12 * e2edir);
+                    var _n = shifted[0] + 12 * e2edir;
+                    shifted.push(_n);
                 }
 
+                // reinserting the rests and the durations
+                var p = [];
+                for (var j = 0; j < basesteps.length; j++) {
+                    var _b = basesteps[j];
+                    if (_b.note === null) {
+                        shifted.splice(j, 0, null);
+                    }
+                    p.push({
+                        note: shifted[j],
+                        duration: basesteps[j].duration
+                    });
+                }
+
+				// if there was a rest at the end reinserting it
+                if (lastrest) {
+                    p.push(lastrest);
+                }
                 extpattern["subpatterns"].push(p);
 
                 from += loopAt.shift;
 
-            }
+                }
         } else if (loopAt.type == 2) {
             // 2) REverse loopAt mode, we simply reverse the pattern
-            console.log("Looping patterns : reverse mode ");
+            console.log("-- Looping patterns : reverse mode --");
 
+			if (lastrest) {
+            extpattern["subpatterns"].push([].concat(basesteps).concat(lastrest));
+			} else 
             extpattern["subpatterns"].push(basesteps);
 
-            var reversed = [].concat(basesteps); // clone the basesteps
+            // var reversed = [].concat(basesteps); // clone the basesteps
+			var reversed=JSON.parse(JSON.stringify(basesteps)); // clone the steps with a deep copy !! ( [].concat(xxx) is a *shallow* copy)
             reversed.reverse();
-            extpattern["subpatterns"].push(reversed);
+			
+			// and we reset the right durations
+			for(var j=0;j<basesteps.length;j++) {
+				reversed[j].duration=basesteps[j].duration;
+			}
 
+			if (lastrest) {
+				reversed.push(lastrest);
+			}
+			
+			debugO("basesteps",basesteps); // debug
+			debugO("reversed",reversed); // debug
+
+
+            extpattern["subpatterns"].push(reversed);
+			
         } else if (loopAt.type == -1) {
             // 3) Scale loopAt mode, we decline the pattern along the scale (up/down, by degree/Triad)
+            console.log("Looping patterns : scale mode (" + shift + ") --");
             var shift = loopAt.shift; //Math.abs(loopAt) * (-1);
-            console.log("Looping patterns : scale mode (" + shift + ")");
             // We clear all the patterns because will be restarting from the last step
             extpattern["subpatterns"] = [];
 
@@ -1331,6 +1422,10 @@ MuseScore {
                     counter++;
                     console.log("Looping patterns : scale mode at " + dia[i]);
                     var shifted = shiftPattern(basesteps, scale, dia[i]);
+					if (lastrest) {
+						shifted.push(lastrest);
+					}
+					
                     extpattern["subpatterns"].push(shifted);
                     if (counter > 99) // security
                         break;
@@ -1342,6 +1437,9 @@ MuseScore {
                     counter++;
                     console.log("Looping patterns : scale mode at " + dia[i]);
                     var shifted = shiftPattern(basesteps, scale, dia[i]);
+					if (lastrest) {
+						shifted.push(lastrest);
+					}
                     extpattern["subpatterns"].push(shifted);
                     if (counter > 99) // security
                         break;
@@ -1349,7 +1447,10 @@ MuseScore {
             }
 
         } else {
-            console.log("Looping patterns : no loop requested");
+            console.log("-- Looping patterns : no loop requested --");
+			if (lastrest) {
+				basesteps.push(lastrest);
+			}
             extpattern["subpatterns"].push(basesteps);
 
         }
@@ -1364,10 +1465,11 @@ MuseScore {
         for (var ip = 0; ip < pattern.length; ip++) {
             // for every step of the pattern we look for its diatonic equivalent.
             // And a delta. For a b5, while in major scale, we will retrieve a degree of "4" + a delta of 1 semitone
-            var p = pattern[ip];
+            var d = undefined;
+            var p = pattern[ip].note;
+			if(p!==null) {
             var o = Math.floor(p / 12);
             p = p % 12;
-            var d = undefined;
             for (var is = 0; is < scale.length; is++) {
                 s = scale[is];
                 if (s == p) {
@@ -1397,16 +1499,21 @@ MuseScore {
 
             }
 
+		} else {
+			d=null;
+		}
             pdia.push(d);
-            console.log("[shift " + step + "] 1)[" + ip + "]" + p + "->" + debugDia(d));
+			console.log("[shift " + step + "] 1)[" + ip + "]" + p + "->" + debugDia(d));
         }
 
         // 2) shift the diatonic pattern by the amount of steps
         for (var ip = 0; ip < pdia.length; ip++) {
             var d = pdia[ip];
+			if (d!==null) {
             d.degree += step;
             d.octave += Math.floor(d.degree / 7); // degrees are ranging from 0->6, 7 is 0 at the nexy octave //scale.length);
             d.degree = d.degree % 7; //scale.length;
+			}
             pdia[ip] = d;
             console.log("[shift " + step + "] 2)[" + ip + "]->" + debugDia(d));
         }
@@ -1415,6 +1522,8 @@ MuseScore {
         var pshift = [];
         for (var ip = 0; ip < pdia.length; ip++) {
             var d = pdia[ip];
+			var s=null;
+			if(d!==null) {
             if (d.degree >= scale.length) {
                 // We are beyond the scale, let's propose some value
                 d.semi += (d.degree - scale.length + 1) * 1; // 1 semi-tone by missing degree
@@ -1422,21 +1531,46 @@ MuseScore {
                 if ((scale[d.degree] + d.semi) >= 12)
                     d.semi = 11;
             }
-            var s = scale[d.degree] + 12 * d.octave + d.semi;
+            s = scale[d.degree] + 12 * d.octave + d.semi;
+			} else {
+				s=null;
+			}
             pshift.push(s);
             console.log("[shift " + step + "] 3)[" + ip + "]" + debugDia(d) + "->" + s);
         }
-
+		
+		// 4) Reset the right durations
+        for (var ip = 0; ip < pattern.length; ip++) {
+			pshift[ip]={
+				"note": pshift[ip],
+				"duration": pattern[ip].duration
+			};
+		}
+		
         return pshift;
 
     }
 
-    function signatureForPattern(count) {
-        if ((count % 4) == 0)
+	function patternDuration(notes) {
+		var count=0;
+		for(var i=0; i<notes.length;i++) {
+			count+=notes[i].duration;
+			console.log("--- "+i+") "+notes[i].duration + " ==> total = "+count);
+		}
+		console.log("total pattern duration "+count);
+		return count;
+	}
+
+    function signatureForPattern(notes) {
+		var count=patternDuration(notes);
+		
+		count=Math.ceil(count);
+		
+        if ((count % 4) === 0)
             return 4;
-        else if ((count % 3) == 0)
+        else if ((count % 3) === 0)
             return 3;
-        else if ((count % 5) == 0)
+        else if ((count % 5) === 0)
             return 5;
         else
             return count;
@@ -1445,9 +1579,10 @@ MuseScore {
     function patternToString(pattern, loopAt) {
         var str = "";
         for (var i = 0; i < pattern.length; i++) {
-            if (i > 0)
+			if (pattern[i].note===null) continue;
+            if (str.length > 0)
                 str += "/";
-            var d = _degrees[pattern[i]];
+            var d = _degrees[pattern[i].note];
             if (d !== undefined) {
                 d = d.replace("(", "");
                 d = d.replace(")", "");
@@ -1467,7 +1602,8 @@ MuseScore {
     }
 
     function debugDia(d) {
-        return "{degree:" + d.degree + ",semi:" + d.semi + ",octave:" + d.octave + "}";
+		if (d!==null)         return "{degree:" + d.degree + ",semi:" + d.semi + ",octave:" + d.octave + "}";
+		else return "{degree: null (=rest)}";
     }
 
     function filterTpcs(root, mode) {
@@ -1539,7 +1675,7 @@ MuseScore {
      * !! If the measure is the last one of the score, adding a new measure after will override this change.
      */
     function addDoubleLineBar(measure, score) {
-        // The ending line bar for ameasure added by the API is viewable only after the measure addition is enclosed in its own startCmd/endCmd
+        // The ending line bar for a measure added by the API is viewable only after the measure addition is enclosed in its own startCmd/endCmd
         if (score === undefined)
             score = curScore;
         score.endCmd();
@@ -2430,14 +2566,65 @@ MuseScore {
                 id: idNoteLabels
                 model: _max_steps
 
-                Label {
+                RowLayout {
                     Layout.row: 0
                     Layout.column: index + 2 // v2.3.0
                     Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
                     Layout.rightMargin: 2
                     Layout.leftMargin: 2
                     Layout.bottomMargin: 5
-                    text: (index + 1)
+					
+					property var stepIndex: index
+
+                    Label {
+                        text: (index + 1)
+                    }
+                    ComboBox {
+                        id: lstStepDuration
+                        model: durations
+
+                        textRole: "text"
+                        property var valueRole: "duration"
+						property var duration: 1
+
+                        onActivated: {
+                            // loopMode = currentValue;
+                            duration = model[currentIndex][valueRole];
+                            console.log(duration);
+							
+							for (var i = 0; i < _max_patterns; i++) {
+								var raw=mpatterns.get(i);
+								
+								// console.log("Setting duration of step/pattern "+index+"/"+i+" to "+duration);
+								
+								raw.steps.get(stepIndex).duration=duration;
+							}
+							
+                        }
+
+                        Binding on currentIndex {
+                            value: durations.map(function (e) {
+                                return e[lstStepDuration.valueRole]
+                            }).indexOf(lstStepDuration.duration);
+                        }
+
+                        implicitHeight: 30
+                        implicitWidth: 60
+
+                        font.family: 'MScore Text'
+                        font.pointSize: 8
+
+                        delegate: ItemDelegate {
+                            contentItem: Text {
+                                text: modelData[lstStepDuration.textRole]
+                                verticalAlignment: Text.AlignVCenter
+                                font: lstStepDuration.font
+                            }
+                            highlighted: durations.highlightedIndex === index
+
+                        }
+
+                    }
                 }
             }
             Repeater {
@@ -2451,67 +2638,112 @@ MuseScore {
 
                     model: steps
 					
-					StackLayout {
-						width: parent.width
+					Row {
+						// StackLayout {
+					
+							width: parent.width
+							property var stepIndex: index
+							property var _row: patternIndex + 1
+							property var _column: 2 + stepIndex
+							Layout.row: _row
+							Layout.column: _column 
+							Layout.preferredHeight: 30
+							Layout.preferredWidth: 50
+							
+							spacing: 2
 
-						currentIndex: modeIndex()
+						StackLayout {
 
-						property var stepIndex: index
+							currentIndex: modeIndex()
+							width: 60
+							// implicitWidth: 60
 
-						// property int stepIndex: index % _max_steps
-						// property int patternIndex: Math.floor(index / _max_steps)
+
+							// property int stepIndex: index % _max_steps
+							// property int patternIndex: Math.floor(index / _max_steps)
+							
+
+							ComboBox {
+								id: lstStep
+								model: _ddNotes
+								
+								onActivated: {
+									note = model[currentIndex];
+									workoutName = undefined; // resetting the name of the 
+								}
+								
+								Binding on currentIndex {
+									value: lstStep.model.indexOf(note)
+								}
+
+								Layout.alignment: Qt.AlignLeft | Qt.QtAlignBottom
+								editable: false
+								implicitWidth: 30
+							}
+
+
+							ComboBox {
+								id: lstGStep
+
+								model: _ddGridNotes
+
+								enabled: gridType==="grid"
+
+								onActivated: {
+									console.log("degree at "+stepIndex+" of "+patternIndex+": "+degree);
+									degree = model[currentIndex];
+									workoutName = undefined; // resetting the name of the 
+									console.log("==> now degree: "+degree);
+								}
+								
+								Binding on currentIndex {
+									value: lstGStep.model.indexOf(degree)
+								}
+
+
+								editable: false
+								Layout.alignment: Qt.AlignLeft | Qt.QtAlignBottom
+								implicitWidth: 30
+							}
+						}
 						
-						property var _row: patternIndex + 1
-						property var _column: 2 + stepIndex
-						Layout.row: _row
-						Layout.column: _column 
+					    /*ComboBox {
+					        id: lstNoteDuration
+					        model: durations
 
-						ComboBox {
-							id: lstStep
-							model: _ddNotes
-							
-							onActivated: {
-								note = model[currentIndex];
-								workoutName = undefined; // resetting the name of the 
-							}
-							
-							Binding on currentIndex {
-								value: lstStep.model.indexOf(note)
-							}
+					        textRole: "text"
+					        property var valueRole: "duration"
 
-							Layout.alignment: Qt.AlignLeft | Qt.QtAlignBottom
-							editable: false
-							Layout.preferredHeight: 30
-							implicitWidth: 30
-						}
+					        onActivated: {
+					            // loopMode = currentValue;
+					            duration = model[currentIndex][valueRole];
+					            console.log(duration);
+					        }
 
+					        Binding on currentIndex {
+					            value: durations.map(function (e) {
+					                return e[lstNoteDuration.valueRole]
+					            }).indexOf(duration);
+					        }
 
-						ComboBox {
-							id: lstGStep
+					        implicitHeight: 30
+					        implicitWidth: 60
 
-							model: _ddGridNotes
+					        font.family: 'MScore Text'
+					        font.pointSize: 8
 
-							enabled: gridType==="grid"
+					        delegate: ItemDelegate {
+					            contentItem: Text {
+					                text: modelData[lstNoteDuration.textRole]
+					                verticalAlignment: Text.AlignVCenter
+					                font: lstNoteDuration.font
+					            }
+					            highlighted: durations.highlightedIndex === index
 
-							onActivated: {
-								console.log("degree at "+stepIndex+" of "+patternIndex+": "+degree);
-								degree = model[currentIndex];
-								workoutName = undefined; // resetting the name of the 
-								console.log("==> now degree: "+degree);
-							}
-							
-							Binding on currentIndex {
-								value: lstGStep.model.indexOf(degree)
-							}
+					        }
 
-
-							editable: false
-							Layout.alignment: Qt.AlignLeft | Qt.QtAlignBottom
-							Layout.preferredHeight: 30
-							implicitWidth: 30
-						}
+					    }*/
 					}
-
 				}
 			}
 
@@ -3776,7 +4008,7 @@ MuseScore {
         this.name = (name && (name != null)) ? name : "";
 		this.gridType = (typeof gridType === 'undefined')?"grid":gridType;
 		
-		debugO("new pattern class",this);
+		// debugO("new pattern class",this);
 
         this.toJSON = function (key) {
             return {
@@ -3793,7 +4025,7 @@ MuseScore {
         // transient properties
         // label
         var label = "";
-		console.log("toString for "+this.type+"/"+this.gridType);
+		// console.log("toString for "+this.type+"/"+this.gridType);
 		if (this.type===_GRID_MODE && this.gridType!='grid') {
 			var l=_gridTypes.find(function(e) { return e.type=== this.gridType});
 			label +=(typeof l !== 'undefined')?l.label:"---";
