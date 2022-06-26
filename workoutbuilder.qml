@@ -636,25 +636,15 @@ MuseScore {
 
                     var notes = [];
 
-                    if (!chkInvert.checked || ((r % 2) == 0)) {
-                        console.log("-- => normal");
-                        for (var j = 0; j < basesteps.length; j++) {
-                            console.log(">>> Looking at note " + j + ": " + basesteps[j].note);
-                            //notes.push(root + basesteps[j]);
-								var _n=(basesteps[j].note!==null)?(root + basesteps[j].note):null;
-								// var _n=(basesteps[j].note!==null)?root + basesteps[j].note:0;
-                                notes.push({"note" : _n, "duration": basesteps[j].duration });
+					var p=(!chkInvert.checked || ((r % 2) == 0))?basesteps:reversePattern(basesteps);
+                        for (var j = 0; j < p.length; j++) {
+                            console.log(">>> Looking at note " + j + ": " + p[j].note);
+                            //notes.push(root + p[j]);
+								var _n=(p[j].note!==null)?(root + p[j].note):null;
+								// var _n=(p[j].note!==null)?root + p[j].note:0;
+                                notes.push({"note" : _n, "duration": p[j].duration });
                         }
-                    } else {
-                        console.log("-- => reverse");
-                        for (var j = basesteps.length - 1; j >= 0; j--) {
-                            console.log(">>> Looking at note " + j + ": " + basesteps[j].note);
-                            // notes.push(root + basesteps[j]);
-								var _n=(basesteps[j].note!==null)?(root + basesteps[j].note):null;
-								// var _n=(basesteps[j].note!==null)?root + basesteps[j].note:0;
-                                notes.push({"note" : _n, "duration": basesteps[basesteps.length - 1 - j].duration });
-                        }
-                    }
+
 
                     debugO("pushing to pages (effective_chord): ", effective_chord, ["scale"]);
 
@@ -706,7 +696,7 @@ MuseScore {
 			
 			// 1.2) Completing the pattern to have a round duration
 			var total=p.map(function(e) {return e.duration}).reduce(function(t,n) { return t+n; });
-			if (total<Math.ceil(total)) {
+			if ((chkAdaptativeMeasure.checked && chkStrictLayout.checked) && total<Math.ceil(total)) {
 				var inc=Math.ceil(total)-total;
 				console.log("adding a rest of "+inc);
 				p.push({"note": null, "duration": inc}); 
@@ -731,6 +721,8 @@ MuseScore {
                 } else {
                     cText = m3 ? "m" : "M";
                 }
+				
+				console.log("No Chord Text => will use "+cText+" (because notes are: "+JSON.stringify(nn));
 
             }
             var cSymb = _chordTypes[cText];
@@ -807,22 +799,15 @@ MuseScore {
 
                         var notes = [];
 
-                        if (!chkInvert.checked || ((r % 2) == 0)) {
-                            console.log("-- => normal");
-                            for (var j = 0; j < basesteps.length; j++) {
-								var _n=(basesteps[j].note!==null)?(root + basesteps[j].note):null;
-								// var _n=(basesteps[j].note!==null)?root + basesteps[j].note:0;
-                                notes.push({"note" : _n, "duration": basesteps[j].duration });
-                            }
-                        } else {
-                            console.log("-- => reverse");
-                            for (var j = basesteps.length - 1; j >= 0; j--) {
-                                // notes.push(root + basesteps[j]);
-								var _n=(basesteps[j].note!==null)?(root + basesteps[j].note):null;
-								// var _n=(basesteps[j].note!==null)?root + basesteps[j].note:0;
-                                notes.push({"note" : _n, "duration": basesteps[basesteps.length - 1 - j].duration });
-                            }
-                        }
+						var p=(!chkInvert.checked || ((r % 2) == 0))?basesteps:reversePattern(basesteps);
+							for (var j = 0; j < p.length; j++) {
+								console.log(">>> Looking at note " + j + ": " + p[j].note);
+								//notes.push(root + p[j]);
+									var _n=(p[j].note!==null)?(root + p[j].note):null;
+									// var _n=(p[j].note!==null)?root + p[j].note:0;
+									notes.push({"note" : _n, "duration": p[j].duration });
+							}
+
 
                         pages[page].push({
                             "root": root,
@@ -1127,7 +1112,7 @@ MuseScore {
 					    var target = {
 					        "pitch": pitch,
 					        "concertPitch": false,
-					        "sha;rp_mode": f
+					        "sharp_mode": f
 					    };
 
 					    //cur_time = note.parent.tick; // getting note's segment's tick
@@ -1375,14 +1360,7 @@ MuseScore {
 			} else 
             extpattern["subpatterns"].push(basesteps);
 
-            // var reversed = [].concat(basesteps); // clone the basesteps
-			var reversed=JSON.parse(JSON.stringify(basesteps)); // clone the steps with a deep copy !! ( [].concat(xxx) is a *shallow* copy)
-            reversed.reverse();
-			
-			// and we reset the right durations
-			for(var j=0;j<basesteps.length;j++) {
-				reversed[j].duration=basesteps[j].duration;
-			}
+			var reversed=reversePattern(basesteps);
 
 			if (lastrest) {
 				reversed.push(lastrest);
@@ -1458,6 +1436,33 @@ MuseScore {
         return extpattern;
 
     }
+	
+	function reversePattern(pattern) {
+	    var reduced = pattern.filter(function (e) {
+	        return e.note !== null
+	    }).map(function (e) {
+	        return e.note
+	    });
+
+	    reduced = reduced.reverse();
+
+	    var p = [];
+
+	    // reinserting the rests and the durations
+	    var p = [];
+	    for (var j = 0; j < pattern.length; j++) {
+	        var _b = pattern[j];
+	        if (_b.note === null) {
+	            reduced.splice(j, 0, null);
+	        }
+	        p.push({
+	            note: reduced[j],
+	            duration: pattern[j].duration
+	        });
+	    }
+	    return p;
+
+	}
 
     function shiftPattern(pattern, scale, step) {
         var pdia = [];
@@ -2609,10 +2614,10 @@ MuseScore {
                         }
 
                         implicitHeight: 30
-                        implicitWidth: 60
+                        implicitWidth: 70
 
                         font.family: 'MScore Text'
-                        font.pointSize: 8
+                        font.pointSize: 9
 
                         delegate: ItemDelegate {
                             contentItem: Text {
@@ -2638,8 +2643,8 @@ MuseScore {
 
                     model: steps
 					
-					Row {
-						// StackLayout {
+					// Row {
+						StackLayout {
 					
 							width: parent.width
 							property var stepIndex: index
@@ -2650,12 +2655,12 @@ MuseScore {
 							Layout.preferredHeight: 30
 							Layout.preferredWidth: 50
 							
-							spacing: 2
+							// spacing: 2  // specific to "Row"
 
-						StackLayout {
+						// StackLayout {
+							// width: 60
 
 							currentIndex: modeIndex()
-							width: 60
 							// implicitWidth: 60
 
 
@@ -2743,7 +2748,7 @@ MuseScore {
 					        }
 
 					    }*/
-					}
+					// }
 				}
 			}
 
