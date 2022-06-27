@@ -371,6 +371,7 @@ MuseScore {
 			var dd=_degrees.map(function (e) { return {text: e, step: e}});
 			// dd.unshift({text: '<html><span style="font-family:\'MScore Text\'; font-size: 20px; text-align: center; vertical-align: middle">\uE4E5</span></html>', step: 'R'});
 			dd.unshift({text: '(R)', step: 'R'});
+			// dd.unshift({text: String.fromCharCode(7694), step: 'R'});
 			dd.unshift({text: '', step: ''});
             return dd;
         }
@@ -388,14 +389,14 @@ MuseScore {
 		{text: '\uECA2',               duration: 4     ,  fraction: fraction( 1, 1)  },
 		{text: '\uECA3 \uECB7',        duration: 3     ,  fraction: fraction( 3, 4)  },
 		{text: '\uECA3',               duration: 2     ,  fraction: fraction( 1, 2)  },
-		{text: '\uECA5 \uECB7 \uECB7', duration: 1.75  ,  fraction: fraction( 7,16)  },
+		// {text: '\uECA5 \uECB7 \uECB7', duration: 1.75  ,  fraction: fraction( 7,16)  },
 		{text: '\uECA5 \uECB7',        duration: 1.5   ,  fraction: fraction( 3, 8)  },
 		{text: '\uECA5',               duration: 1     ,  fraction: fraction( 1, 4)  },
-		{text: '\uECA7 \uECB7 \uECB7', duration: 0.875 ,  fraction: fraction( 7,32)  },
+		// {text: '\uECA7 \uECB7 \uECB7', duration: 0.875 ,  fraction: fraction( 7,32)  },
 		{text: '\uECA7 \uECB7',        duration: 0.75  ,  fraction: fraction( 3,16)  },
 		{text: '\uECA7',               duration: 0.5   ,  fraction: fraction( 1, 8)  },
-		{text: '\uECA9 \uECB7 \uECB7', duration: 0.4375,  fraction: fraction( 7,64)  },
-		{text: '\uECA9 \uECB7',        duration: 0.375 ,  fraction: fraction( 3,32)  },
+		// {text: '\uECA9 \uECB7 \uECB7', duration: 0.4375,  fraction: fraction( 7,64)  },
+		// {text: '\uECA9 \uECB7',        duration: 0.375 ,  fraction: fraction( 3,32)  },
 		{text: '\uECA9',               duration: 0.25  ,  fraction: fraction( 1,16)  },
 		]
 	
@@ -814,14 +815,15 @@ MuseScore {
 
                         var notes = [];
 
-						var p=(!chkInvert.checked || ((r % 2) == 0))?basesteps:reversePattern(basesteps);
-							for (var j = 0; j < p.length; j++) {
-								console.log(">>> Looking at note " + j + ": " + p[j].note);
-								//notes.push(root + p[j]);
-									var _n=(p[j].note!==null)?(root + p[j].note):null;
-									// var _n=(p[j].note!==null)?root + p[j].note:0;
-									notes.push({"note" : _n, "duration": p[j].duration });
-							}
+						var _base=(!chkInvert.checked || ((r % 2) == 0))?basesteps:reversePattern(basesteps);
+
+						for (var j = 0; j < _base.length; j++) {
+							console.log(">>> Looking at note " + j + ": " + _base[j].note);
+							//notes.push(root + _base[j]);
+								var _n=(_base[j].note!==null)?(root + _base[j].note):null;
+								// var _n=(_base[j].note!==null)?root + _base[j].note:0;
+								notes.push({"note" : _n, "duration": _base[j].duration });
+						}
 
 
                         pages[page].push({
@@ -2625,8 +2627,8 @@ MuseScore {
                     Layout.rightMargin: 2
                     Layout.leftMargin: 2
                     Layout.bottomMargin: 5
-					
-					property var stepIndex: index
+
+                    property var stepIndex: index
 
                     Label {
                         text: (index + 1)
@@ -2637,21 +2639,21 @@ MuseScore {
 
                         textRole: "text"
                         property var valueRole: "duration"
-						property var duration: 1
+                        property var duration: 1
 
                         onActivated: {
                             // loopMode = currentValue;
                             duration = model[currentIndex][valueRole];
                             console.log(duration);
-							
-							for (var i = 0; i < _max_patterns; i++) {
-								var raw=mpatterns.get(i);
-								
-								// console.log("Setting duration of step/pattern "+index+"/"+i+" to "+duration);
-								
-								raw.steps.get(stepIndex).duration=duration;
-							}
-							
+
+                            for (var i = 0; i < _max_patterns; i++) {
+                                var raw = mpatterns.get(i);
+
+                                // console.log("Setting duration of step/pattern "+index+"/"+i+" to "+duration);
+
+                                raw.steps.get(stepIndex).duration = duration;
+                            }
+
                         }
 
                         Binding on currentIndex {
@@ -2661,10 +2663,10 @@ MuseScore {
                         }
 
                         implicitHeight: 30
-                        implicitWidth: 60
+                        implicitWidth: 50
 
                         font.family: 'MScore Text'
-                        font.pointSize: 9
+                        font.pointSize: 10
 
                         delegate: ItemDelegate {
                             contentItem: Text {
@@ -2675,20 +2677,51 @@ MuseScore {
                             highlighted: durations.highlightedIndex === index
 
                         }
+                        indicator: Canvas {
+                            id: canvas
+                            x: lstStepDuration.width - width - lstStepDuration.rightPadding
+                            y: lstStepDuration.topPadding + (lstStepDuration.availableHeight - height) / 2
+                            width: 8
+                            height: width * 1.5
 
+                            contextType: "2d"
+
+                            Connections {
+                                target: lstStepDuration
+                                function onPressedChanged() {
+                                    canvas.requestPaint();
+                                }
+                            }
+
+                            onPaint: {
+                                context.reset();
+                                context.lineWidth = 1.5;
+                                context.strokeStyle = "black";
+                                context.beginPath();
+                                context.moveTo(0, height / 2 - 1);
+                                context.lineTo(width / 2, 0);
+                                context.lineTo(width, height / 2 - 1);
+                                context.stroke();
+                                context.beginPath();
+                                context.moveTo(0, height / 2 + 1);
+                                context.lineTo(width / 2, height);
+                                context.lineTo(width, height / 2 + 1);
+                                context.stroke();
+                            }
+                        }
                     }
                 }
-            }
-            Repeater {
-                id: idStepNotes
-                model: mpatterns
-				
+                }
                 Repeater {
+                    id: idStepNotes
+                    model: mpatterns
 
-                    id: idSingleStep
-                    property var patternIndex: index
+                    Repeater {
 
-                    model: steps
+                        id: idSingleStep
+                        property var patternIndex: index
+
+                        model: steps
 					
 					// Row {
 						StackLayout {
@@ -2735,6 +2768,8 @@ MuseScore {
 
 							    editable: false
 							    implicitWidth: 30
+								
+								// font.family: "FreeSerif"
 
 							    delegate: ItemDelegate {
 							        contentItem: Text {
@@ -2754,6 +2789,8 @@ MuseScore {
 									anchors.verticalCenter: parent.verticalCenter
 							        horizontalAlignment: Qt.AlignHCenter
 							    }
+								
+
 								
 							}
 							ComboBox {
