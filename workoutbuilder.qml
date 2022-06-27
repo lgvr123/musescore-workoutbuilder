@@ -368,8 +368,10 @@ MuseScore {
     }
 
     property var _ddNotes: { {
-            var dd = [''];
-            dd = dd.concat(_degrees);
+			var dd=_degrees.map(function (e) { return {text: e, step: e}});
+			// dd.unshift({text: '<html><span style="font-family:\'MScore Text\'; font-size: 20px; text-align: center; vertical-align: middle">\uE4E5</span></html>', step: 'R'});
+			dd.unshift({text: '(R)', step: 'R'});
+			dd.unshift({text: '', step: ''});
             return dd;
         }
     }
@@ -679,14 +681,18 @@ MuseScore {
 			// 2.4.0 adding in reverse order
             for (var j = (_max_steps-1); j >=0 ; j--) {
                 var sn = raw.steps.get(j);
-                if (sn.note !== '') {
+                if (sn.note === 'R') {
+                    p.unshift({"note": null, "duration": sn.duration}); 
+				}
+                else if (sn.note !== '') {
                     var d = _degrees.indexOf(sn.note);
                     if (d > -1)
                         p.unshift({"note": d, "duration": sn.duration});
                 } else if (p.length===0) {
 					continue;
-                } else
-                    p.unshift({"note": null, "duration": sn.duration}); 
+                } 
+				// else
+                    // p.unshift({"note": null, "duration": sn.duration}); 
             }
 			
 
@@ -695,14 +701,25 @@ MuseScore {
             }
 			
 			// 1.2) Completing the pattern to have a round duration
-			var total=p.map(function(e) {return e.duration}).reduce(function(t,n) { return t+n; });
-			if ((chkAdaptativeMeasure.checked && chkStrictLayout.checked) && total<Math.ceil(total)) {
-				var inc=Math.ceil(total)-total;
-				console.log("adding a rest of "+inc);
-				p.push({"note": null, "duration": inc}); 
-			}
-			
-			debugO("after cleaning",p);
+			if (chkAdaptativeMeasure.checked && chkStrictLayout.checked) {
+			    var total = p.map(function (e) {
+			        return e.duration
+			    }).reduce(function (t, n) {
+			        return t + n;
+			    });
+			    if (total < Math.ceil(total)) {
+			        var inc = Math.ceil(total) - total;
+			        console.log("adding a rest of " + inc);
+			        p.push({
+			            "note": null,
+			            "duration": inc
+			        });
+			    } else
+			        console.log("!! Measure is complete. Don't need to add some rests");
+			} else
+			    console.log("!! Don't need to check for measure completness");
+
+			debugO("after cleaning", p);
 
             // 1.3) Retrieving loop mode
             var mode = raw.loopMode;
@@ -721,8 +738,6 @@ MuseScore {
                 } else {
                     cText = m3 ? "m" : "M";
                 }
-				
-				console.log("No Chord Text => will use "+cText+" (because notes are: "+JSON.stringify(nn));
 
             }
             var cSymb = _chordTypes[cText];
@@ -1064,18 +1079,53 @@ MuseScore {
                 if (adaptativeMeasure) {
                     // beatsByMeasure = (pages[i][j].gridType!=="grid")?pages[i][j].notes.length:signatureForPattern(pages[i][j].notes.length);
                     beatsByMeasure = (pages[i][j].gridType!==undefined && pages[i][j].gridType!=="grid")?pages[i][j].notes.length:signatureForPattern(pages[i][j].notes);
-			console.log("recomputing beatsByMeasure to "+beatsByMeasure+" (#2) / gridType: "+pages[i][j].gridType);
+					console.log("recomputing beatsByMeasure to "+beatsByMeasure+" (#2) / gridType: "+pages[i][j].gridType);
                 } else {
                     beatsByMeasure = 4;
-			console.log("forcing beatsByMeasure to "+beatsByMeasure+" (#2) / gridType: "+pages[i][j].gridType);
+					console.log("forcing beatsByMeasure to "+beatsByMeasure+" (#2) / gridType: "+pages[i][j].gridType);
                 }
 					debugO("before print",pages[i][j].notes);
 
                 for (var k = 0; k < pages[i][j].notes.length; k++, counter++) {
-                    if (counter > 0) {
+
+                    var duration = pages[i][j].notes[k].duration;
+                    var fduration = durations.find(function(e) {return e.duration===duration;});
+					console.log("duration = "+duration+" => fduration = "+((fduration!==undefined)?fduration.fraction.str:"undefined"));
+					fduration=(fduration!==undefined)?fduration.fraction:fraction(1,4);
+
+					console.log("--["+k+"] NEXT 0");
+
+                    if (counter > 0) { // the first time (ie counter===0, we don't need to move to the next one)
                         cursor.rewindToTick(cur_time); // be sure to move to the next rest, as now defined
-                        var success = cursor.next();
+
+						
+						// looking for a next rest
+						var success = cursor.next();
+						while(success && (cursor.element.type!==Element.REST)) {
+							 console.log("--["+k+"] NEXT 1: next: "+cursor.element.userName()+" at "+cursor.segment.tick);
+							 success = cursor.next();
+						 }
+						
+
+						
+						if(success) {
+							// if we have found a next rest, we check if 
+							// - either this rest is enough for the duration of what we have to write
+							// - there is a measure following
+							// In the contrary, we add a new measure
+							console.log("--["+k+"] NEXT 2: last next: "+cursor.element.userName()+" at "+cursor.segment.tick);
+							var remaining=computeRemainingRest(cursor.measure, cursor.track); //, cursor.segment.tick);
+							var needed = durationTo64(fduration);
+							success=((cursor.measure.nextMeasure!==null) || (needed<=remaining));
+
+							console.log("?? could move to next segment, ==> checking if enough place or a next measure ("+(cursor.measure.nextMeasure?"next measure":"null")+" -- "+needed+"<>"+remaining+") => "+success);
+						} else {
+							console.log("--["+k+"] NEXT 2: last next: not found");
+						}
+						
                         if (!success) {
+							// If the measure is full or doesn't have enough place, we add a new measure
+							console.log("--["+k+"] NEXT 3: adding a new measure");
                             score.appendMeasures(1);
                             cursor.rewindToTick(cur_time);
 
@@ -1086,19 +1136,16 @@ MuseScore {
                             }
 
                             cursor.next();
-                        }
+							console.log("--["+k+"] NEXT 4: after new measure: "+cursor.element.userName()+" at "+cursor.segment.tick);
+						}
                     }
 
                     var note = cursor.element;
 					cur_time = cursor.segment.tick;
 
+					console.log("--["+k+"] NEXT 5: adding note/rest at "+cursor.segment.tick);
 			
                     var delta = pages[i][j].notes[k].note;
-                    var duration = pages[i][j].notes[k].duration;
-                    var fduration = durations.find(function(e) {return e.duration===duration;});
-					console.log("duration = "+duration+" => fduration = "+((fduration!==undefined)?fduration.fraction.str:"undefined"));
-					console.log(" --> adding as "+((delta!==null)?"note":"rest"));
-					fduration=(fduration!==undefined)?fduration.fraction:fraction(1,4);
 					
 					if (delta !== null) {
 					    // Note
@@ -2614,7 +2661,7 @@ MuseScore {
                         }
 
                         implicitHeight: 30
-                        implicitWidth: 70
+                        implicitWidth: 60
 
                         font.family: 'MScore Text'
                         font.pointSize: 9
@@ -2653,6 +2700,7 @@ MuseScore {
 							Layout.row: _row
 							Layout.column: _column 
 							Layout.preferredHeight: 30
+							// Layout.maximumHeight: 30
 							Layout.preferredWidth: 50
 							
 							// spacing: 2  // specific to "Row"
@@ -2661,34 +2709,55 @@ MuseScore {
 							// width: 60
 
 							currentIndex: modeIndex()
-							// implicitWidth: 60
-
-
-							// property int stepIndex: index % _max_steps
-							// property int patternIndex: Math.floor(index / _max_steps)
 							
-
 							ComboBox {
-								id: lstStep
-								model: _ddNotes
-								
-								onActivated: {
-									note = model[currentIndex];
-									workoutName = undefined; // resetting the name of the 
-								}
-								
-								Binding on currentIndex {
-									value: lstStep.model.indexOf(note)
-								}
+							    id: lstStep
+							    model: _ddNotes
 
-								Layout.alignment: Qt.AlignLeft | Qt.QtAlignBottom
-								editable: false
-								implicitWidth: 30
+							    textRole: "text"
+							    property var valueRole: "step"
+
+							    onActivated: {
+							        note = model[currentIndex][valueRole];
+							        console.log(note);
+							    }
+
+							    Binding on currentIndex {
+							        // value: model.map(function (e) {
+							            // return e[lstStep.valueRole]
+							        // }).indexOf(note);
+							        value: {
+										_ddNotes.map(function (e) {
+							            return e[lstStep.valueRole]
+							        }).indexOf(note);
+									}
+							    }
+
+							    editable: false
+							    implicitWidth: 30
+
+							    delegate: ItemDelegate {
+							        contentItem: Text {
+							            text: modelData[lstStep.textRole]
+							            // textFormat: Text.RichText
+										anchors.verticalCenter: parent.verticalCenter
+							            font: lstStep.font
+							        }
+							        highlighted: lstStep.highlightedIndex === index
+
+							    }
+
+							    contentItem: Text {
+							        text: lstStep.displayText
+							        // textFormat: Text.RichText
+									verticalAlignment: Text.AlignVCenter
+									anchors.verticalCenter: parent.verticalCenter
+							        horizontalAlignment: Qt.AlignHCenter
+							    }
+								
 							}
-
-
 							ComboBox {
-								id: lstGStep
+							    id: lstGStep
 
 								model: _ddGridNotes
 
@@ -4341,5 +4410,105 @@ MuseScore {
             console.log(label + ": " + element);
         }
     }
+	
+	
+	// -----------------------------
+	    /**
+     * Computes the duration of the rests at the end of the measure.
+     * If the track is empty (no chords, no rests) return an arbitrary value of -1
+     */
+    function computeRemainingRest(measure, track, abovetick) {
+        var last = measure.lastSegment;
+        var duration = 0;
+
+        console.log("Analyzing track " + (((track !== undefined) && (track != null)) ? track : "all") + ", above " + (abovetick ? abovetick : "-1"));
+
+        if ((track !== undefined) && (track != null)) {
+            duration = _computeRemainingRest(measure, track, abovetick);
+            return duration;
+
+        } else {
+            duration = 999;
+            // Analyze made on all tracks
+            for (var t = 0; t < curScore.ntracks; t++) {
+                console.log(">>>> " + t + "/" + curScore.ntracks + " <<<<");
+                var localavailable = _computeRemainingRest(measure, t, abovetick);
+                console.log("Available at track " + t + ": " + localavailable + " (" + duration + ")");
+                duration = Math.min(duration, localavailable);
+                if (duration == 0)
+                    break;
+            }
+            return duration;
+        }
+
+    }
+	
+	    /*
+     * Instead of counting the rests at the end of measure, we count what's inside the measure beyond the last rests.
+     * That way, we take into account the fact that changing the time signature of a measure doesn't fill it with rests, but leaves an empty space.
+     */
+    function _computeRemainingRest(measure, track, abovetick) {
+        var last = measure.lastSegment;
+        var duration = sigTo64(measure.timesigActual);
+
+        // setting the limit until which to look for rests
+        abovetick = (abovetick === undefined) ? -1 : abovetick;
+
+        console.log("_computeRemainingRest: " + (((track !== undefined) && (track != null)) ? track : "all") + ", above tick " + (abovetick ? abovetick : "-1"));
+
+        if ((track !== undefined) && (track != null)) {
+            // Analyze limited to one track
+            var inTail = true;
+            while ((last != null)) {
+                var element = _d(last, track);
+                // if ((element != null) && ((element.type == Element.CHORD) )) {
+                if ((element != null) && ((element.type == Element.CHORD) || (last.tick <= abovetick))) { // 16/3/22
+                    if (inTail)
+                        console.log("switching outside of available buffer");
+                    // As soon as we encounter a Chord, we leave the "rest-tail"
+                    inTail = false;
+                }
+                if ((element != null) && ((element.type == Element.REST) || (element.type == Element.CHORD)) && !inTail) {
+                    // When not longer in the "rest-tail" we decrease the remaing length by the element duration
+                    // var eldur=durationTo64(element.duration);
+                    // 1.3.0 take into account the effective dur of the element when within a tuplet
+                    var eldur = elementTo64Effective(element);
+                    duration -= eldur;
+                }
+                last = last.prevInMeasure;
+            }
+        }
+
+        duration = Math.round(duration);
+        return duration;
+    }
+	
+	    /**
+     * Effective duration of an element (so taking into account the tuplet it belongs to)
+     */
+    function elementTo64Effective(element) {
+        // if (!element.duration)
+        // return 0;
+        var dur = durationTo64(element.duration);
+        if (element.tuplet !== null) {
+            dur = dur * element.tuplet.normalNotes / element.tuplet.actualNotes;
+        }
+        return dur;
+    }
+    function durationTo64(duration) {
+        return 64 * duration.numerator / duration.denominator;
+    }
+	
+	    function sigTo64(sig) {
+        return 64 * sig.numerator / sig.denominator;
+    }
+
+	
+    function _d(last, track) {
+        var el = last.elementAt(track);
+        console.log(" At " + last.tick + "/" + track + ": " + ((el !== null) ? el.userName() : " / "));
+        return el;
+    }
+
 
 }
