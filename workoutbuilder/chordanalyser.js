@@ -1,6 +1,6 @@
 /**********************
 /* Parking B - MuseScore - Chord analyser
-/* v1.3.1
+/* v1.2.13
 /* ChangeLog:
 /* 	- 1.0.0: Initial release
 /*  - 1.0.1: The 7th degree was sometime erased
@@ -15,9 +15,10 @@
 /*  - 1.2.7: Correction sur les accords majeurs non 7 (ex "C")
 /*  - 1.2.8: Export de la position relative de la basse
 /*  - 1.2.9: Better name for altered 5
-/*  - 1.3.0: Better handling of Aug, Sus2, Sus4
-/*  - 1.3.1: Better handling of (b5) chords
-
+/*  - 1.2.10(1.3.0): Better handling of Aug, Sus2, Sus4
+/*  - 1.2.11(1.3.1): Better handling of (b5) chords
+/*  - 1.2.12(1.3.2): Better handling of some Maj7 chords
+/* 	- 1.2.13(1.3.3): key was doubled in case of bass
 /**********************************************/
 // -----------------------------------------------------------------------
 // --- Vesionning-----------------------------------------
@@ -25,7 +26,7 @@
 var default_names = ["1", "b9", "2", "#9", "b11", "4", "#11", "(5)", "m6", "M6", "m7", "M7"];
 
 function checkVersion(expected) {
-    var version = "1.2.8";
+    var version = "1.2.13";
 
     var aV = version.split('.').map(function (v) {
         return parseInt(v);
@@ -163,7 +164,7 @@ function scaleFromText(text, bass) {
     // Base
     // M, Ma, Maj, ma, maj
     if (text.startsWith("Maj7") || text.startsWith("Ma7") || text.startsWith("M7") || text.startsWith("maj7") || text.startsWith("ma7") ||
-        text.startsWith("t7") || text.startsWith("^7")) {
+        text.startsWith("t7") || text.startsWith("t") || text.startsWith("^7")|| text.startsWith("^")) {
         console.log("Starts with Maj7, t7, ...");
         n3 = 4;
         n5 = 7;
@@ -257,7 +258,7 @@ function scaleFromText(text, bass) {
 
     // Compléments
     // ..7..
-    if (n7 == null && (text.includes("maj7") || text.includes("ma7") || text.startsWith("t7") || text.startsWith("^7"))) {
+    if (n7 == null && (text.includes("maj7") || text.includes("ma7") || text.startsWith("t7") || text.startsWith("t") || text.startsWith("^7") || text.startsWith("^"))) {
         console.log("Has M7");
         n7 = 11;
     } else
@@ -268,10 +269,10 @@ function scaleFromText(text, bass) {
 
     // ..3..
     if (n3 != null) {
-        _ptok(keys, n3, "n3");
+        pushToKeys(keys, n3, "n3");
         pushToNotes(chordnotes, n3, "3");
     } else if (def3 != null) {
-        _ptok(keys, def3, "def3");
+        pushToKeys(keys, def3, "def3");
     }
 
     // ..5..
@@ -286,13 +287,13 @@ function scaleFromText(text, bass) {
     }
 
     if (n5 != null) {
-        _ptok(keys, n5, "n5");
+        pushToKeys(keys, n5, "n5");
         pushToNotes(chordnotes, n5, n5role);
     } else if (bass == 7) {
-        _ptok(keys, bass, "bass as 5");
+        pushToKeys(keys, bass, "bass as 5");
         pushToNotes(chordnotes, bass, "5");
     } else {
-        _ptok(keys, 7, "def5 (=7)");
+        pushToKeys(keys, 7, "def5 (=7)");
     }
 
     // ..2/9..
@@ -300,32 +301,32 @@ function scaleFromText(text, bass) {
     if (text.includes("b9")) {
         console.log("Has b9");
         n9 = 1;
-        _ptok(keys, n9, "b9");
+        pushToKeys(keys, n9, "b9");
         pushToNotes(chordnotes, n9, "b9");
     } else if (text.includes("#9")) {
         console.log("Has #9");
         n9 = 3;
-        _ptok(keys, n9, "#9");
+        pushToKeys(keys, n9, "#9");
         pushToNotes(chordnotes, n9, "#9");
     } else if (text.includes("9")) {
         n9 = 2;
-        _ptok(keys, n9, "9");
+        pushToKeys(keys, n9, "9");
         pushToNotes(chordnotes, n9, "9");
 
     } else if (((at = [1, 2, 3].indexOf(bass)) >= 0) && (bass !== n2)) {
         n9 = bass;
-        _ptok(keys, bass, "bass as 2/9");
+        pushToKeys(keys, bass, "bass as 2/9");
         pushToNotes(chordnotes, bass, ["b", "", "#"][at] + "9(B)");
     }
 
     if (n2 != null) {
-        _ptok(keys, n2, "n2");
+        pushToKeys(keys, n2, "n2");
         pushToNotes(chordnotes, n2, "2");
     } else if (n9 == null) {
         if (def2 == null) { // 15/3: alignement sur Supercollider
             def2 = 2;
         }
-        _ptok(keys, def2, "def2");
+        pushToKeys(keys, def2, "def2");
         if (getNote(chordnotes, def2) === undefined)
             allnotes.push({
                 "note": def2,
@@ -344,32 +345,32 @@ function scaleFromText(text, bass) {
     if (text.includes("b11")) {
         console.log("Has b11");
         n11 = 4;
-        _ptok(keys, n11, "b11");
+        pushToKeys(keys, n11, "b11");
         pushToNotes(chordnotes, n11, "b11");
     } else if (text.includes("#11")) {
         console.log("Has #11");
         n11 = 6;
-        _ptok(keys, n11, "#11");
+        pushToKeys(keys, n11, "#11");
         pushToNotes(chordnotes, n11, "#11");
     } else if (text.includes("11")) {
         console.log("Has 11");
         n11 = 5;
-        _ptok(keys, n11, "11");
+        pushToKeys(keys, n11, "11");
         pushToNotes(chordnotes, n11, "11");
     } else if (((at = [4, 5, 6].indexOf(bass)) >= 0) && (bass != n4)) {
         n11 = bass;
-        _ptok(keys, bass, "bass as 4/11");
+        pushToKeys(keys, bass, "bass as 4/11");
         pushToNotes(chordnotes, bass, ["b", "", "#"][at] + "11");
 
     }
 
     if (n4 != null) {
-        _ptok(keys, n4, "n4");
+        pushToKeys(keys, n4, "n4");
         pushToNotes(chordnotes, n4, "4");
     } else if (n11 == null) {
         if (def4 == null)
             def4 = 5;
-        _ptok(keys, def4, "def4");
+        pushToKeys(keys, def4, "def4");
         if (getNote(chordnotes, def4) === undefined)
             pushToNotes(allnotes, def4, "4");
     }
@@ -378,7 +379,7 @@ function scaleFromText(text, bass) {
     if (text.includes("6")) {
         console.log("Has 6");
         n6 = 9;
-        _ptok(keys, n6, "(n)6"); // "So in the case of min6 chords always always always make the 6th a major 6th."
+        pushToKeys(keys, n6, "(n)6"); // "So in the case of min6 chords always always always make the 6th a major 6th."
         pushToNotes(chordnotes, n6, "6");
         def6 = null;
     }
@@ -386,42 +387,42 @@ function scaleFromText(text, bass) {
     if (text.includes("b13")) {
         console.log("Has b13");
         n13 = 8;
-        _ptok(keys, n13, "b13");
+        pushToKeys(keys, n13, "b13");
         pushToNotes(chordnotes, n13, "b13");
     } else if (text.includes("#13")) {
         console.log("Has #13");
         n13 = 10;
-        _ptok(keys, n13, "#13");
+        pushToKeys(keys, n13, "#13");
         pushToNotes(chordnotes, n13, "#13");
     } else if (text.includes("13")) {
         console.log("Has 13");
         n13 = 9;
-        _ptok(keys, n13, "13");
+        pushToKeys(keys, n13, "13");
         pushToNotes(chordnotes, n13, "13");
     } else if (((at = [8, 9, 10].indexOf(bass)) >= 0) && (bass != n6)) {
         n13 = bass;
-        _ptok(keys, bass, "bass as 6/13");
+        pushToKeys(keys, bass, "bass as 6/13");
         pushToNotes(chordnotes, bass, ["b", "", "#"][at] + "13");
-    } else {
+    } else if (n6===null) {
         if (def6 == null)
             def6 = 9;
-        _ptok(keys, def6, "def6");
+        pushToKeys(keys, def6, "def6");
         if (getNote(chordnotes, def6) === undefined)
             pushToNotes(allnotes, def6, "6");
     }
 
     //..7..
     if (n7 != null) {
-        _ptok(keys, n7, "n7");
+        pushToKeys(keys, n7, "n7");
         pushToNotes(chordnotes, n7, "7");
     } else if ((at = [10, 11].indexOf(bass)) >= 0) {
         n7 = bass;
-        _ptok(keys, bass, "bass as 7");
+        pushToKeys(keys, bass, "bass as 7");
         pushToNotes(chordnotes, bass, ["m", "M"][at] + "7");
     } else {
         if (def7 == null)
             def7 = 11;
-        _ptok(keys, def7, "def7");
+        pushToKeys(keys, def7, "def7");
         if (getNote(chordnotes, def7) === undefined)
             pushToNotes(allnotes, def7, "7");
     }
@@ -457,8 +458,14 @@ function pushToNotes(collection, note, role) {
     });
 }
 
-function _ptok(keys, value, comment) {
+function pushToKeys(keys, value, comment) {
     // console.log("....pushing >>" + value + "<< (" + comment + ")");
+	
+	if(keys.indexOf(value)>=0) {
+        console.log("Not adding " +  value + "to keys because it is already present");
+        return;
+	}
+	
     keys.push(value);
 }
 

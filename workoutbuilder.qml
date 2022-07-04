@@ -370,16 +370,17 @@ MuseScore {
     property var _ddNotes: { {
 			var dd=_degrees.map(function (e) { return {text: e, step: e}});
 			// dd.unshift({text: '<html><span style="font-family:\'MScore Text\'; font-size: 20px; text-align: center; vertical-align: middle">\uE4E5</span></html>', step: 'R'});
-			dd.unshift({text: '(R)', step: 'R'});
 			// dd.unshift({text: String.fromCharCode(7694), step: 'R'});
+			dd.unshift({text: '(R)', step: 'R'});
 			dd.unshift({text: '', step: ''});
             return dd;
         }
     }
 
     property var _ddGridNotes: { {
-            var dd = [''];
-            dd = dd.concat(_griddegrees);
+			var dd=_griddegrees.map(function (e) { return {text: e, step: e}});
+			dd.unshift({text: '(R)', step: 'R'});
+			dd.unshift({text: '', step: ''});
             return dd;
         }
     }
@@ -482,22 +483,63 @@ MuseScore {
             var p = null;
 			if (raw.gridType==='grid') {
 				p = [];
-				for (var j = 0; j < _max_steps; j++) {
-					var sn = raw.steps.get(j);
-					if (sn.degree !== '') {
+				// for (var j = 0; j < _max_steps; j++) {
+					// var sn = raw.steps.get(j);
+					// if (sn.degree !== '') {
+						// var d = _griddegrees.indexOf(sn.degree);
+						// if (d > -1)
+							// p.push(sn.degree); // we keep the degree !!!
+					// } else
+						// break;
+				// }
+			// 2.4.0 adding in reverse order
+            for (var j = (_max_steps-1); j >=0 ; j--) {
+                var sn = raw.steps.get(j);
+                if (sn.degree === 'R') {
+                    p.unshift({"note": null, "duration": sn.duration}); 
+				}
+                else if (sn.degree !== '') {
 						var d = _griddegrees.indexOf(sn.degree);
 						if (d > -1)
-							p.push(sn.degree); // we keep the degree !!!
-					} else
-						break;
-				}
+                        p.unshift({"note": sn.degree, "duration": sn.duration}); // we keep the degree !!!
+                } else if (p.length===0) {
+					continue;
+                } 
+				// else
+                    // p.unshift({"note": null, "duration": sn.duration}); 
+            }
 
 				if (p.length == 0) {
 					break;
 				}
-			}
+				
+				
+				
 			
-            // 1.2) Retrieving loop mode
+			// 1.2) Completing the pattern to have a round duration
+			if (chkAdaptativeMeasure.checked && chkStrictLayout.checked) {
+			    var total = p.map(function (e) {
+			        return e.duration
+			    }).reduce(function (t, n) {
+			        return t + n;
+			    });
+			    if (total < Math.ceil(total)) {
+			        var inc = Math.ceil(total) - total;
+			        console.log("adding a rest of " + inc);
+			        p.push({
+			            "note": null,
+			            "duration": inc
+			        });
+			    } else
+			        console.log("!! Measure is complete. Don't need to add some rests");
+			} else
+			    console.log("!! Don't need to check for measure completness");
+
+
+			debugO("after cleaning", p);
+			}
+
+            // 1.3) Retrieving loop mode
             var mode = raw.loopMode;
 			mode = _loops.filter(function(e) {return e.id===mode})[0];
             console.log("looping mode : " + mode.label);
@@ -511,6 +553,7 @@ MuseScore {
 				"gridType": raw.gridType,
             };
             patts.push(pattern);
+			debugO("ready",pattern.notes); // debug
 
         }
 
@@ -578,35 +621,42 @@ MuseScore {
 				// if (pp.notes.length==1 && pp.notes[0]==null) {
 				if (pp.gridType!=="grid") {
 					// Chord mode: take only the notes of the chord
-					steps=chord.chordnotes.map(function(e) { return parseInt(e.note); }).sort(function(a,b) { return a-b;});
+					var nns=chord.chordnotes.map(function(e) { return parseInt(e.note); }).sort(function(a,b) { return a-b;});
 					
-						console.log("~~~~Dealing with the ChordNotes~~~~~"+pp.gridType)
+					console.log("~~~~Dealing with the ChordNotes~~~~~"+pp.gridType)
 					if (chord.bass!=null) {
 						console.log("~~~~Dealing with the bass~~~~~")
-						console.log("Steps before: "+steps);
+						console.log("nns before: "+nns);
 						var bass=chord.bass.key;
-						var idx=steps.indexOf(bass);
-						steps.pop(); // retirer le "12"
-						console.log("Steps without 12: "+steps);
-						steps=steps.concat(steps.splice(0,idx).map(function(e){ return e+12}));
-						console.log("Steps rotated: "+steps);
-						steps=steps.concat(12+bass);
-						console.log("Steps with bass+12: "+steps);
+						var idx=nns.indexOf(bass);
+						nns.pop(); // retirer le "12"
+						console.log("nns without 12: "+nns);
+						nns=nns.concat(nns.splice(0,idx).map(function(e){ return e+12}));
+						console.log("nns rotated: "+nns);
+						nns=nns.concat(12+bass);
+						console.log("nns with bass+12: "+nns);
+
 					}
 					
-					if(pp.gridType=="chorddown") steps=steps.reverse();
+					steps=nns.map(function(e) { return { note: e, duration: 1 }});
+					
+					if(pp.gridType=="chorddown") steps=reversePattern(steps);
 					
 				} else {
 					// Traditional mode: pattern based
 					for (var n = 0; n < pp.notes.length; n++) {
-						var ip = parseInt(pp.notes[n]) - 1; // TODO: This is not clean: using a label "1" and trying to deduce the valid array index
+						var degree=pp.notes[n];
+						var inScale =null;
+						if (degree.note !== null) {
+						var ip = parseInt(degree.note) - 1; // TODO: This is not clean: using a label "1" and trying to deduce the valid array index
 
 						console.log(ip + "--" + (ip % 7) + "--" + Math.floor(ip / 7) + "--" + (Math.floor(ip / 7) * 12) + "**" + scale[ip % 7] + "**" + (scale[ip % 7] + (Math.floor(ip / 7) * 12)));
 
-						var inScale = (scale[ip % 7]) + (Math.floor(ip / 7) * 12);
-
+						inScale = (scale[ip % 7]) + (Math.floor(ip / 7) * 12);
+						}
 						console.log(n + ": " + pp.notes[n].note + " --> " + ip + " --> " + inScale);
-						steps.push(inScale);
+						var step={note: inScale, duration: degree.duration}; 
+						steps.push(step);
 					}
 				}
 
@@ -620,7 +670,7 @@ MuseScore {
 
                 var local = extendPattern(pattern);
                 // tweak the representation
-                local.representation = (pattern.name && pattern.name !== "") ? pattern.name : pp.notes.join("/");
+                local.representation = (pattern.name && pattern.name !== "") ? pattern.name : pp.notes.map(function(e) { e.note }).filter(function(e) { e!==null }) .join("/");
                 var subpatterns = local["subpatterns"];
 
                 //console.log("# subpatterns: "+subpatterns.length);
@@ -640,6 +690,7 @@ MuseScore {
                     var notes = [];
 
 					var p=(!chkInvert.checked || ((r % 2) == 0))?basesteps:reversePattern(basesteps);
+					
                         for (var j = 0; j < p.length; j++) {
                             console.log(">>> Looking at note " + j + ": " + p[j].note);
                             //notes.push(root + p[j]);
@@ -666,6 +717,7 @@ MuseScore {
         }
 
         return pages;
+        //return [];
 
     }
     function printWorkout_forScale() {
@@ -1080,7 +1132,8 @@ MuseScore {
 
                 if (adaptativeMeasure) {
                     // beatsByMeasure = (pages[i][j].gridType!=="grid")?pages[i][j].notes.length:signatureForPattern(pages[i][j].notes.length);
-                    beatsByMeasure = (pages[i][j].gridType!==undefined && pages[i][j].gridType!=="grid")?pages[i][j].notes.length:signatureForPattern(pages[i][j].notes);
+                    // beatsByMeasure = (pages[i][j].gridType!==undefined && pages[i][j].gridType!=="grid")?pages[i][j].notes.length:signatureForPattern(pages[i][j].notes);
+                    beatsByMeasure = signatureForPattern(pages[i][j].notes);
 					console.log("recomputing beatsByMeasure to "+beatsByMeasure+" (#2) / gridType: "+pages[i][j].gridType);
                 } else {
                     beatsByMeasure = 4;
@@ -2756,9 +2809,6 @@ MuseScore {
 							    }
 
 							    Binding on currentIndex {
-							        // value: model.map(function (e) {
-							            // return e[lstStep.valueRole]
-							        // }).indexOf(note);
 							        value: {
 										_ddNotes.map(function (e) {
 							            return e[lstStep.valueRole]
@@ -2800,21 +2850,49 @@ MuseScore {
 
 								enabled: gridType==="grid"
 
+							    textRole: "text"
+							    property var valueRole: "step"
+
 								onActivated: {
 									console.log("degree at "+stepIndex+" of "+patternIndex+": "+degree);
-									degree = model[currentIndex];
+									degree = model[currentIndex][valueRole];
 									workoutName = undefined; // resetting the name of the 
 									console.log("==> now degree: "+degree);
 								}
 								
 								Binding on currentIndex {
-									value: lstGStep.model.indexOf(degree)
+									// value: lstGStep.model.indexOf(degree)
+							        value: {
+										_ddGridNotes.map(function (e) {
+							            return e[lstGStep.valueRole]
+							        }).indexOf(note);
+									}
 								}
 
 
 								editable: false
 								Layout.alignment: Qt.AlignLeft | Qt.QtAlignBottom
 								implicitWidth: 30
+								
+							    delegate: ItemDelegate {
+							        contentItem: Text {
+							            text: modelData[lstGStep.textRole]
+							            // textFormat: Text.RichText
+										anchors.verticalCenter: parent.verticalCenter
+							            font: lstGStep.font
+							        }
+							        highlighted: lstStep.highlightedIndex === index
+
+							    }
+
+							    contentItem: Text {
+							        text: lstGStep.displayText
+							        // textFormat: Text.RichText
+									verticalAlignment: Text.AlignVCenter
+									anchors.verticalCenter: parent.verticalCenter
+							        horizontalAlignment: Qt.AlignHCenter
+							    }
+								
 							}
 						}
 						
