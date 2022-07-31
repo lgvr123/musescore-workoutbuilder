@@ -35,6 +35,7 @@ import "workoutbuilder"
 /*  - 2.3.0 Add new "Bass" instrument (should a require a F-clef, but the clef is not available from the API)
 /*  - 2.4.0 alpha 1: Add step durations
 /*  - 2.4.0 alpha 2: Limit to standard Harmony types
+/*  - 2.4.0 alpha 2: Improved chord naming
 /**********************************************/
 MuseScore {
     menuPath: "Plugins." + pluginName
@@ -788,9 +789,9 @@ MuseScore {
                 if (nn.indexOf(10) > -1) { //m7
                     cText = m3 ? "m7" : "7";
                 } else if (nn.indexOf(11) > -1) { //M7
-                    cText = m3 ? "m7" : "M7";
+                    cText = m3 ? "m7" : "t7";
                 } else {
-                    cText = m3 ? "m" : "M";
+                    cText = m3 ? "m" : "Maj";
                 }
 
             }
