@@ -33,12 +33,13 @@ import "workoutbuilder"
 /*  - 2.3.0 Moved *.js libraries to own folder
 /*  - 2.3.0 Store settings (checkboxes, instrument)
 /*  - 2.3.0 Add new "Bass" instrument (should a require a F-clef, but the clef is not available from the API)
-/*  - 2.4.0 Add step durations
+/*  - 2.4.0 alpha 1: Add step durations
+/*  - 2.4.0 alpha 2: Limit to standard Harmony types
 /**********************************************/
 MuseScore {
     menuPath: "Plugins." + pluginName
     description: "This plugin builds chordscale workouts based on patterns defined by the user."
-    version: "2.3.0"
+    version: "2.4.0 alpha2"
 
     pluginType: "dialog"
     requiresScore: false
@@ -2166,7 +2167,7 @@ MuseScore {
                     for (var j = 0; j < annotations.length; j++) {
                         var ann = annotations[j];
                         //console.log("  (" + i + ") " + ann.userName() + " / " + ann.text + " / " + ann.harmonyType);
-                        if (ann.type === Element.HARMONY) {
+                        if (ann.type === Element.HARMONY && ann.harmonyType === HarmonyType.STANDARD ) { // Not using the Roman and Nashvill Harmony types 
                             // keeping 1st Chord
                             var c = ChordHelper.chordFromText(ann.text);
                             if (c != null) {
