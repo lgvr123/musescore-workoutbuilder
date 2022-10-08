@@ -36,11 +36,12 @@ import "workoutbuilder"
 /*  - 2.4.0 alpha 1: Add step durations
 /*  - 2.4.0 alpha 2: Limit to standard Harmony types
 /*  - 2.4.0 alpha 2: Improved chord naming
+/*  - 2.4.0 alpha 3: Pushing grid patterns was not working
 /**********************************************/
 MuseScore {
     menuPath: "Plugins." + pluginName
     description: "This plugin builds chordscale workouts based on patterns defined by the user."
-    version: "2.4.0 alpha2"
+    version: "2.4.0 alpha3"
 
     pluginType: "dialog"
     requiresScore: false
@@ -1870,7 +1871,7 @@ MuseScore {
         if (scaleMode === undefined)
             scaleMode = (modeIndex() == 0);
 
-        // console.log("Setting pattern " + index + ", mode: " + (scaleMode ? _SCALE_MODE : _GRID_MODE));
+        console.log("Setting pattern " + index + ", mode: " + (scaleMode ? _SCALE_MODE : _GRID_MODE)+", pattern: "+((pattern)?pattern.label:"undefined"));
 
         if (pattern !== undefined && pattern.type !== (scaleMode ? _SCALE_MODE : _GRID_MODE)) {
             console.log("!! Cannot setPattern due to non-matching pattern. Expected " + (scaleMode ? _SCALE_MODE : _GRID_MODE) + ", while pattern is: " + pattern.type);
@@ -2224,7 +2225,7 @@ MuseScore {
         var log = ((workout === undefined) ? "Null" : workout.label);
         if (workout !== undefined)
             log += ", mode: " + workout.type;
-        console.log("Appying workout " + log);
+        console.log("Applying workout " + log);
         // debugO("Workout", workout);
 
         // patterns
@@ -2852,6 +2853,7 @@ MuseScore {
 
 								enabled: gridType==="grid"
 
+                                // Roles in the ComboBox model
 							    textRole: "text"
 							    property var valueRole: "step"
 
@@ -2867,7 +2869,7 @@ MuseScore {
 							        value: {
 										_ddGridNotes.map(function (e) {
 							            return e[lstGStep.valueRole]
-							        }).indexOf(note);
+                                    }).indexOf(degree);
 									}
 								}
 
@@ -4385,7 +4387,7 @@ MuseScore {
         }
 
         if (this.phrase !== undefined) {
-            label += " - on " + this.phrase.name;
+            label += " - on " + this.phrase.label;
         }
 
         this.label = label;
