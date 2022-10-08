@@ -37,6 +37,7 @@ import "workoutbuilder"
 /*  - 2.4.0 alpha 2: Limit to standard Harmony types
 /*  - 2.4.0 alpha 2: Improved chord naming
 /*  - 2.4.0 alpha 3: Pushing grid patterns was not working
+/*  - 2.4.0 alpha 3: A GridWorkout with 2 patterns was not correctly printed.
 /**********************************************/
 MuseScore {
     menuPath: "Plugins." + pluginName
@@ -64,6 +65,13 @@ MuseScore {
 
     readonly property var keyRegexp: /^(\((b*?|#*?)\))?\s*(.*?)(\|?)$/m
     readonly property var endRegexp: /\|\s*;?/g
+
+    readonly property var debugPrepare: true
+    readonly property var tracePrepare: false
+    readonly property var debugPrint: false
+    readonly property var tracePrint: false
+    readonly property var debugNextMeasure: false
+    readonly property var traceLoadSave: false
 
     onRun: {
 
@@ -477,69 +485,61 @@ MuseScore {
         var chords = getPhrase().chords;
 
         var patts = [];
+        
+        console.log("~~Preparing for GridWorkout print~~");
 
         // 2) Collect the patterns and their definition
         for (var i = 0; i < _max_patterns; i++) {
+            console.log("Analyzing pattern "+i);
             // 1.1) Collecting the basesteps
 			var raw=mpatterns.get(i);
 
             var p = null;
+            console.log("\twhich is "+raw.gridType+" pattern type");
 			if (raw.gridType==='grid') {
 				p = [];
-				// for (var j = 0; j < _max_steps; j++) {
-					// var sn = raw.steps.get(j);
-					// if (sn.degree !== '') {
-						// var d = _griddegrees.indexOf(sn.degree);
-						// if (d > -1)
-							// p.push(sn.degree); // we keep the degree !!!
-					// } else
-						// break;
-				// }
-			// 2.4.0 adding in reverse order
-            for (var j = (_max_steps-1); j >=0 ; j--) {
-                var sn = raw.steps.get(j);
-                if (sn.degree === 'R') {
-                    p.unshift({"note": null, "duration": sn.duration}); 
-				}
-                else if (sn.degree !== '') {
-						var d = _griddegrees.indexOf(sn.degree);
-						if (d > -1)
-                        p.unshift({"note": sn.degree, "duration": sn.duration}); // we keep the degree !!!
-                } else if (p.length===0) {
-					continue;
-                } 
-				// else
-                    // p.unshift({"note": null, "duration": sn.duration}); 
-            }
+                for (var j = (_max_steps-1); j >=0 ; j--) {
+                    var sn = raw.steps.get(j);
+                    if (sn.degree === 'R') {
+                        p.unshift({"note": null, "duration": sn.duration}); 
+                    }
+                    else if (sn.degree !== '') {
+                            var d = _griddegrees.indexOf(sn.degree);
+                            if (d > -1)
+                            p.unshift({"note": sn.degree, "duration": sn.duration}); // we keep the degree !!!
+                    } else if (p.length===0) {
+                        continue;
+                    } 
+                    // else
+                        // p.unshift({"note": null, "duration": sn.duration}); 
+                }
 
-				if (p.length == 0) {
-					break;
-				}
-				
-				
-				
-			
-			// 1.2) Completing the pattern to have a round duration
-			if (chkAdaptativeMeasure.checked && chkStrictLayout.checked) {
-			    var total = p.map(function (e) {
-			        return e.duration
-			    }).reduce(function (t, n) {
-			        return t + n;
-			    });
-			    if (total < Math.ceil(total)) {
-			        var inc = Math.ceil(total) - total;
-			        console.log("adding a rest of " + inc);
-			        p.push({
-			            "note": null,
-			            "duration": inc
-			        });
-			    } else
-			        console.log("!! Measure is complete. Don't need to add some rests");
-			} else
-			    console.log("!! Don't need to check for measure completness");
+                if (p.length == 0) {
+                    console.log("\tbut empty. Stopping here.");
+                    break;
+                }
+                
+                // 1.2) Completing the pattern to have a round duration
+                if (chkAdaptativeMeasure.checked && chkStrictLayout.checked) {
+                    var total = p.map(function (e) {
+                        return e.duration
+                    }).reduce(function (t, n) {
+                        return t + n;
+                    });
+                    if (total < Math.ceil(total)) {
+                        var inc = Math.ceil(total) - total;
+                        console.log("adding a rest of " + inc);
+                        p.push({
+                            "note": null,
+                            "duration": inc
+                        });
+                    } else
+                        console.log("!! Measure is complete. Don't need to add some rests");
+                } else
+                    console.log("!! Don't need to check for measure completness");
 
 
-			debugO("after cleaning", p);
+                debugO("after cleaning", p);
 			}
 
             // 1.3) Retrieving loop mode
@@ -556,7 +556,7 @@ MuseScore {
 				"gridType": raw.gridType,
             };
             patts.push(pattern);
-			debugO("ready",pattern.notes); // debug
+			debugO("Notes in pattern",pattern.notes); // debug
 
         }
 
@@ -571,9 +571,10 @@ MuseScore {
 
         // We sort by patterns. By pattern, repeat over each root
         for (var p = 0; p < patts.length; p++) {
+            console.log("~~Building pattern " + p + "/" + patts.length+" ~~");
             var pp = patts[p];
             // On change de "page" entre chaque pattern
-            console.log("page++ (SP)");
+            if (debugPrepare) console.log("page++ (SP)");
             page = pages.length; // i.e. Go 1 index further (so if the array is empty, the first index will be 0)
             console.log(">>page for pattern " + p + ": " + page);
 
@@ -587,7 +588,7 @@ MuseScore {
                 // v2.1.0
                 var effective_chord;
                 var scale;
-                console.log(Object.keys(_chordTypes));
+                if (debugPrepare) console.log(Object.keys(_chordTypes));
 
                 if (Object.keys(_chordTypes).indexOf(chordtype) >= 0) {
                     // known scale
@@ -626,18 +627,18 @@ MuseScore {
 					// Chord mode: take only the notes of the chord
 					var nns=chord.chordnotes.map(function(e) { return parseInt(e.note); }).sort(function(a,b) { return a-b;});
 					
-					console.log("~~~~Dealing with the ChordNotes~~~~~"+pp.gridType)
+					console.log("~~Collecting notes for "+pp.gridType+" on "+effective_chord.name+" ~~");
 					if (chord.bass!=null) {
-						console.log("~~~~Dealing with the bass~~~~~")
-						console.log("nns before: "+nns);
+						if (debugPrepare) console.log("~~~~Dealing with the bass~~~~~")
+						if (debugPrepare) console.log("nns before: "+nns);
 						var bass=chord.bass.key;
 						var idx=nns.indexOf(bass);
 						nns.pop(); // retirer le "12"
-						console.log("nns without 12: "+nns);
+						if (tracePrepare) console.log("nns without 12: "+nns);
 						nns=nns.concat(nns.splice(0,idx).map(function(e){ return e+12}));
-						console.log("nns rotated: "+nns);
+						if (tracePrepare) console.log("nns rotated: "+nns);
 						nns=nns.concat(12+bass);
-						console.log("nns with bass+12: "+nns);
+						if (tracePrepare) console.log("nns with bass+12: "+nns);
 
 					}
 					
@@ -647,17 +648,18 @@ MuseScore {
 					
 				} else {
 					// Traditional mode: pattern based
+					console.log("~~Collecting notes for "+pp.gridType+" ~~");
 					for (var n = 0; n < pp.notes.length; n++) {
 						var degree=pp.notes[n];
 						var inScale =null;
 						if (degree.note !== null) {
-						var ip = parseInt(degree.note) - 1; // TODO: This is not clean: using a label "1" and trying to deduce the valid array index
+                            var ip = parseInt(degree.note) - 1; // TODO: This is not clean: using a label "1" and trying to deduce the valid array index
 
-						console.log(ip + "--" + (ip % 7) + "--" + Math.floor(ip / 7) + "--" + (Math.floor(ip / 7) * 12) + "**" + scale[ip % 7] + "**" + (scale[ip % 7] + (Math.floor(ip / 7) * 12)));
+                            if (tracePrepare) console.log(ip + "--" + (ip % 7) + "--" + Math.floor(ip / 7) + "--" + (Math.floor(ip / 7) * 12) + "**" + scale[ip % 7] + "**" + (scale[ip % 7] + (Math.floor(ip / 7) * 12)));
 
-						inScale = (scale[ip % 7]) + (Math.floor(ip / 7) * 12);
+                            inScale = (scale[ip % 7]) + (Math.floor(ip / 7) * 12);
 						}
-						console.log(n + ": " + pp.notes[n].note + " --> " + ip + " --> " + inScale);
+						if (debugPrepare) console.log(n + ": " + pp.notes[n].note + " --> " + ip + " --> " + inScale);
 						var step={note: inScale, duration: degree.duration}; 
 						steps.push(step);
 					}
@@ -684,7 +686,7 @@ MuseScore {
                 for (var s = 0; s < subpatterns.length; s++) {
                     var placeAt = page + ((chkByPattern.checked) ? 0 : s);
 
-                    console.log(">> Looking at pattern " + p + ", subpattern " + s + " => will be placed at page " + placeAt + " (page=" + page + ")");
+                    if (debugPrepare) console.log(">> Looking at pattern " + p + ", subpattern " + s + " => will be placed at page " + placeAt + " (page=" + page + ")");
                     if (pages[placeAt] === undefined)
                         pages[placeAt] = [];
 
@@ -692,18 +694,18 @@ MuseScore {
 
                     var notes = [];
 
-					var p=(!chkInvert.checked || ((r % 2) == 0))?basesteps:reversePattern(basesteps);
+					var pt=(!chkInvert.checked || ((r % 2) == 0))?basesteps:reversePattern(basesteps);
 					
-                        for (var j = 0; j < p.length; j++) {
-                            console.log(">>> Looking at note " + j + ": " + p[j].note);
-                            //notes.push(root + p[j]);
-								var _n=(p[j].note!==null)?(root + p[j].note):null;
-								// var _n=(p[j].note!==null)?root + p[j].note:0;
-                                notes.push({"note" : _n, "duration": p[j].duration });
-                        }
+                    for (var j = 0; j < pt.length; j++) {
+                        if (debugPrepare) console.log(">>> Looking at note " + j + ": " + pt[j].note);
+                        //notes.push(root + pt[j]);
+                            var _n=(pt[j].note!==null)?(root + pt[j].note):null;
+                            // var _n=(pt[j].note!==null)?root + pt[j].note:0;
+                            notes.push({"note" : _n, "duration": pt[j].duration });
+                    }
 
 
-                    debugO("pushing to pages (effective_chord): ", effective_chord, ["scale"]);
+                    if (debugPrepare) debugO("pushing to pages (effective_chord): ", effective_chord, ["scale"]);
 
                     pages[placeAt].push({
                         "root": root,
@@ -718,6 +720,8 @@ MuseScore {
 
             }
         }
+        
+        console.log("~~Preparing for GridWorkout print : done ~~");
 
         return pages;
         //return [];
@@ -725,10 +729,13 @@ MuseScore {
     }
     function printWorkout_forScale() {
 
+        console.log("~~Preparing for ScaleWorkout print~~");
+
         var patts = [];
 
         // 1) Collect the patterns and their definition
         for (var i = 0; i < _max_patterns; i++) {
+            console.log("Analyzing pattern "+i);
 			var raw=mpatterns.get(i);
 			// if (raw.isEmpty(_SCALE_MODE)) continue;
 			
@@ -972,6 +979,8 @@ MuseScore {
 
         }
 
+        console.log("~~Preparing for GridWorkout print : done ~~");
+
         return pages;
 
     }
@@ -1061,12 +1070,12 @@ MuseScore {
         // first measure sign
         if (adaptativeMeasure) {
             beatsByMeasure = signatureForPattern(pages[0][0].notes);
-			console.log("recomputing beatsByMeasure to "+beatsByMeasure);
-			console.log("--> "+typeof(beatsByMeasure));
+			if (debugPrint) console.log("recomputing beatsByMeasure to "+beatsByMeasure);
+			if (debugPrint) console.log("--> "+typeof(beatsByMeasure));
 			
         } else {
             beatsByMeasure = 4;
-			console.log("forcing beatsByMeasure to "+beatsByMeasure);
+			if (debugPrint) console.log("forcing beatsByMeasure to "+beatsByMeasure);
         }
         console.log("Adapting measure to " + beatsByMeasure + "/4 (#1)");
         var ts = newElement(Element.TIMESIG);
@@ -1106,7 +1115,7 @@ MuseScore {
 
                     addDoubleLineBar(measure, score);
                 } else {
-                    console.log("Changing the bar line is delayed after the next measure is added");
+                    if (debugPrint) console.log("Changing the bar line is delayed after the next measure is added");
                 }
 
                 // ... add a  linebreak
@@ -1115,7 +1124,7 @@ MuseScore {
                 cursor.add(lbreak);
                 newLine = true;
             } else {
-                console.log("NO <BR>");
+                if (debugPrint) console.log("No LAYOUT_BREAK required");
 
             }
 
@@ -1137,21 +1146,22 @@ MuseScore {
                     // beatsByMeasure = (pages[i][j].gridType!=="grid")?pages[i][j].notes.length:signatureForPattern(pages[i][j].notes.length);
                     // beatsByMeasure = (pages[i][j].gridType!==undefined && pages[i][j].gridType!=="grid")?pages[i][j].notes.length:signatureForPattern(pages[i][j].notes);
                     beatsByMeasure = signatureForPattern(pages[i][j].notes);
-					console.log("recomputing beatsByMeasure to "+beatsByMeasure+" (#2) / gridType: "+pages[i][j].gridType);
+					if (debugPrint) console.log("recomputing beatsByMeasure to "+beatsByMeasure+" (#2) / gridType: "+pages[i][j].gridType);
                 } else {
                     beatsByMeasure = 4;
-					console.log("forcing beatsByMeasure to "+beatsByMeasure+" (#2) / gridType: "+pages[i][j].gridType);
+					if (debugPrint) console.log("forcing beatsByMeasure to "+beatsByMeasure+" (#2) / gridType: "+pages[i][j].gridType);
                 }
-					debugO("before print",pages[i][j].notes);
+				
+                if (tracePrint) debugO("before print",pages[i][j].notes);
 
                 for (var k = 0; k < pages[i][j].notes.length; k++, counter++) {
 
                     var duration = pages[i][j].notes[k].duration;
                     var fduration = durations.find(function(e) {return e.duration===duration;});
-					console.log("duration = "+duration+" => fduration = "+((fduration!==undefined)?fduration.fraction.str:"undefined"));
+					if (debugPrint) console.log("duration = "+duration+" => fduration = "+((fduration!==undefined)?fduration.fraction.str:"undefined"));
 					fduration=(fduration!==undefined)?fduration.fraction:fraction(1,4);
 
-					console.log("--["+k+"] NEXT 0");
+					if (debugNextMeasure) console.log("--["+k+"] NEXT 0");
 
                     if (counter > 0) { // the first time (ie counter===0, we don't need to move to the next one)
                         cursor.rewindToTick(cur_time); // be sure to move to the next rest, as now defined
@@ -1160,7 +1170,7 @@ MuseScore {
 						// looking for a next rest
 						var success = cursor.next();
 						while(success && (cursor.element.type!==Element.REST)) {
-							 console.log("--["+k+"] NEXT 1: next: "+cursor.element.userName()+" at "+cursor.segment.tick);
+							 if (debugNextMeasure) console.log("--["+k+"] NEXT 1: next: "+cursor.element.userName()+" at "+cursor.segment.tick);
 							 success = cursor.next();
 						 }
 						
@@ -1171,37 +1181,37 @@ MuseScore {
 							// - either this rest is enough for the duration of what we have to write
 							// - there is a measure following
 							// In the contrary, we add a new measure
-							console.log("--["+k+"] NEXT 2: last next: "+cursor.element.userName()+" at "+cursor.segment.tick);
+							if (debugNextMeasure) console.log("--["+k+"] NEXT 2: last next: "+cursor.element.userName()+" at "+cursor.segment.tick);
 							var remaining=computeRemainingRest(cursor.measure, cursor.track); //, cursor.segment.tick);
 							var needed = durationTo64(fduration);
 							success=((cursor.measure.nextMeasure!==null) || (needed<=remaining));
 
-							console.log("?? could move to next segment, ==> checking if enough place or a next measure ("+(cursor.measure.nextMeasure?"next measure":"null")+" -- "+needed+"<>"+remaining+") => "+success);
+							if (debugNextMeasure) console.log("?? could move to next segment, ==> checking if enough place or a next measure ("+(cursor.measure.nextMeasure?"next measure":"null")+" -- "+needed+"<>"+remaining+") => "+success);
 						} else {
-							console.log("--["+k+"] NEXT 2: last next: not found");
+							if (debugNextMeasure) console.log("--["+k+"] NEXT 2: last next: not found");
 						}
 						
                         if (!success) {
 							// If the measure is full or doesn't have enough place, we add a new measure
-							console.log("--["+k+"] NEXT 3: adding a new measure");
+							if (debugNextMeasure) console.log("--["+k+"] NEXT 3: adding a new measure");
                             score.appendMeasures(1);
                             cursor.rewindToTick(cur_time);
 
                             if (newLine) {
                                 var measure = cursor.measure;
-                                console.log("Delayed change of ending bar line");
+                                if (debugPrint) console.log("Delayed change of ending bar line");
                                 addDoubleLineBar(measure, score);
                             }
 
                             cursor.next();
-							console.log("--["+k+"] NEXT 4: after new measure: "+cursor.element.userName()+" at "+cursor.segment.tick);
+							if (debugNextMeasure) console.log("--["+k+"] NEXT 4: after new measure: "+cursor.element.userName()+" at "+cursor.segment.tick);
 						}
                     }
 
                     var note = cursor.element;
 					cur_time = cursor.segment.tick;
 
-					console.log("--["+k+"] NEXT 5: adding note/rest at "+cursor.segment.tick);
+					if (debugNextMeasure) console.log("--["+k+"] NEXT 5: adding note/rest at "+cursor.segment.tick);
 			
                     var delta = pages[i][j].notes[k].note;
 					
@@ -1227,7 +1237,7 @@ MuseScore {
 					} else {
 					    // Rest
 					    //2.4.0 change adapt rest to the right duration
-						console.log("...of "+fduration.str);
+						if (debugPrint) console.log("Adding rest of "+fduration.str);
 						cursor.setDuration(fduration.numerator,fduration.denominator);
 						cursor.addRest();
 						cursor.rewindToTick(cur_time);
@@ -1352,7 +1362,7 @@ MuseScore {
 
         extpattern["subpatterns"] = [];
 		
-		debugO("before",basesteps);
+		if (tracePrepare) debugO("before",basesteps);
 
 
         // first the original pattern
@@ -1363,7 +1373,7 @@ MuseScore {
         if ((loopAt.type == 1) && (Math.abs(loopAt.shift) < basesteps.length) && (loopAt.shift != 0)) {
             // 1) Regular loopAt mode, where we loop from the current pattern, restarting the pattern (and looping)
             // from the next step of it : A-B-C, B-C-A, C-A-B
-            console.log("--Looping patterns : shift mode--");
+            if (debugPrepare) console.log("--Looping patterns : shift mode--");
 			
 			// reducing the basesteps to only the 1) the notes (and dropping the rests) 2) only the notes (not taking care of the durations)
 			var reduced=basesteps.filter(function(e) { return e.note!==null}).map(function(e) { return e.note});
@@ -1409,7 +1419,7 @@ MuseScore {
                 debug++;
 
                 // Building next start point
-                console.log("Regular Looping at " + from);
+                if (debugPrepare) console.log("Regular Looping at " + from);
 
                 // Have we reached the end ?
                 if ((loopAt.shift > 0) && (from > 0) && ((from % reduced.length) == 0))
@@ -1458,7 +1468,7 @@ MuseScore {
                 }
         } else if (loopAt.type == 2) {
             // 2) REverse loopAt mode, we simply reverse the pattern
-            console.log("-- Looping patterns : reverse mode --");
+            if (debugPrepare) console.log("-- Looping patterns : reverse mode --");
 
 			if (lastrest) {
             extpattern["subpatterns"].push([].concat(basesteps).concat(lastrest));
@@ -1471,15 +1481,15 @@ MuseScore {
 				reversed.push(lastrest);
 			}
 			
-			debugO("basesteps",basesteps); // debug
-			debugO("reversed",reversed); // debug
+			if (tracePrepare) debugO("basesteps",basesteps); // debug
+			if (tracePrepare) debugO("reversed",reversed); // debug
 
 
             extpattern["subpatterns"].push(reversed);
 			
         } else if (loopAt.type == -1) {
             // 3) Scale loopAt mode, we decline the pattern along the scale (up/down, by degree/Triad)
-            console.log("Looping patterns : scale mode (" + shift + ") --");
+            if (debugPrepare) console.log("Looping patterns : scale mode (" + shift + ") --");
             var shift = loopAt.shift; //Math.abs(loopAt) * (-1);
             // We clear all the patterns because will be restarting from the last step
             extpattern["subpatterns"] = [];
@@ -1490,7 +1500,7 @@ MuseScore {
             var delta = Math.abs(shift);
             // we compute the degree to have III V VII
             for (var i = 0; i < scale.length; i += delta) {
-                console.log("Adding " + i + " (" + scale[i] + ")");
+                if (debugPrepare) console.log("Adding " + i + " (" + scale[i] + ")");
                 dia.push(i);
             }
 
@@ -1503,7 +1513,7 @@ MuseScore {
                 // we loop it
                 for (var i = 0; i < dia.length; i++) {
                     counter++;
-                    console.log("Looping patterns : scale mode at " + dia[i]);
+                    if (debugPrepare) console.log("Looping patterns : scale mode at " + dia[i]);
                     var shifted = shiftPattern(basesteps, scale, dia[i]);
 					if (lastrest) {
 						shifted.push(lastrest);
@@ -1518,7 +1528,7 @@ MuseScore {
                 // we loop it in reverse
                 for (var i = (dia.length - 1); i >= 0; i--) {
                     counter++;
-                    console.log("Looping patterns : scale mode at " + dia[i]);
+                    if (debugPrepare) console.log("Looping patterns : scale mode at " + dia[i]);
                     var shifted = shiftPattern(basesteps, scale, dia[i]);
 					if (lastrest) {
 						shifted.push(lastrest);
@@ -1530,7 +1540,7 @@ MuseScore {
             }
 
         } else {
-            console.log("-- Looping patterns : no loop requested --");
+            if (debugPrepare) console.log("-- Looping patterns : no loop requested --");
 			if (lastrest) {
 				basesteps.push(lastrest);
 			}
@@ -1665,7 +1675,7 @@ MuseScore {
 		var count=0;
 		for(var i=0; i<notes.length;i++) {
 			count+=notes[i].duration;
-			console.log("--- "+i+") "+notes[i].duration + " ==> total = "+count);
+			if (debugPrint) console.log("--- "+i+") "+notes[i].duration + " ==> total = "+count);
 		}
 		console.log("total pattern duration "+count);
 		return count;
@@ -1986,7 +1996,7 @@ MuseScore {
                     "end": end,
                     "key": key,
                 };
-                debugO("Using chord : > ", forPhrase, ["scale"]);
+                //debugO("Using chord : > ", forPhrase, ["scale"]);
                 return forPhrase;
             } else {
                 return null;
@@ -2187,7 +2197,7 @@ MuseScore {
                                     "name": ann.text
                                 };
 
-                                debugO("Using chord : > ", forPhrase, ["scale"]);
+                                //debugO("Using chord : > ", forPhrase, ["scale"]);
                                 if ((prevChord===null) || (prevChord.root !== forPhrase.root) || (prevChord.type !== forPhrase.type)) {
                                     prevChord = forPhrase;
 									console.log("ADD IT");
@@ -2343,7 +2353,7 @@ MuseScore {
      */
     function saveWorkout(workout) {
 
-        debugO("Workout à sauver", workout);
+        if (traceLoadSave) debugO("Workout à sauver", workout);
 
         workouts.push(workout);
         resetL = !resetL;
