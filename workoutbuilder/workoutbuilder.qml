@@ -8,10 +8,9 @@ import QtQuick.Layouts 1.3
 import FileIO 3.0
 import Qt.labs.settings 1.0
 
-import "workoutbuilder/notehelper.js" as NoteHelper
-import "workoutbuilder/chordanalyser.js" as ChordHelper
-import "workoutbuilder/selectionhelper.js" as SelHelper
-import "workoutbuilder"
+import "notehelper.js" as NoteHelper
+import "chordanalyser.js" as ChordHelper
+import "selectionhelper.js" as SelHelper
 
 /**********************
 /* Parking B - MuseScore - Scale Workout builder plugin
@@ -38,11 +37,12 @@ import "workoutbuilder"
 /*  - 2.4.0 alpha 2: Improved chord naming
 /*  - 2.4.0 alpha 3: Pushing grid patterns was not working
 /*  - 2.4.0 alpha 3: A GridWorkout with 2 patterns was not correctly printed.
+/*  - 2.4.0 beta 1: New plugin folder organisation
 /**********************************************/
 MuseScore {
     menuPath: "Plugins." + pluginName
     description: "This plugin builds chordscale workouts based on patterns defined by the user."
-    version: "2.4.0 alpha3"
+    version: "2.4.0 beta1"
 
     pluginType: "dialog"
     requiresScore: false
@@ -57,7 +57,7 @@ MuseScore {
     readonly property var selHelperVersion: "1.2.0"
 
     readonly property var librarypath: { {
-            var f = Qt.resolvedUrl("workoutbuilder/workoutbuilder.library");
+            var f = Qt.resolvedUrl("workoutbuilder.library");
             f = f.slice(8); // remove the "file:" added by Qt.resolveUrl and not understood by the FileIO API
             return f;
         }
@@ -1051,7 +1051,7 @@ MuseScore {
         score.style.setValue("footerFirstPage", "true");
         score.style.setValue("footerOddEven", "false");
         score.style.setValue("evenFooterL", "");
-        score.style.setValue("oddFooterC", "More scores on https://musescore.com/parkingb\nhttps://www.parkingb.be/");
+        score.style.setValue("oddFooterC", "More scores on https://www.parkingb.be/");
         score.style.setValue("evenFooterR", "");
 
         // end of styling
@@ -2651,7 +2651,7 @@ MuseScore {
                         contentItem: Image {
                             height: 25
                             width: 25
-                            source: "./workoutbuilder/" + modelData[imageRole]
+                            source: "./" + modelData[imageRole]
                             fillMode: Image.Pad
                             verticalAlignment: Text.AlignVCenter
                             ToolTip.text: modelData[textRole]
@@ -2667,7 +2667,7 @@ MuseScore {
                         height: 25
                         width: 25
                         fillMode: Image.Pad
-                        source: "./workoutbuilder/" +model[lstGridType.currentIndex][imageRole]
+                        source: "./" +model[lstGridType.currentIndex][imageRole]
 
                         ToolTip.text: lstGridType.displayText
                         ToolTip.delay: tooltipShow
@@ -3001,7 +3001,7 @@ MuseScore {
                         contentItem: Image {
                             height: 25
                             width: 25
-                            source: "./workoutbuilder/" + modelData[imageRole]
+                            source: "./" + modelData[imageRole]
                             fillMode: Image.Pad
                             verticalAlignment: Text.AlignVCenter
                             ToolTip.text: modelData[textRole]
@@ -3018,7 +3018,7 @@ MuseScore {
                         width: 25
                         fillMode: Image.Pad
                         // source: lstLoop.displayText?"./workoutbuilder/" +lstLoop.displayText:null
-                        source: "./workoutbuilder/" +model[lstLoop.currentIndex][imageRole]
+                        source: "./" +model[lstLoop.currentIndex][imageRole]
 
                         ToolTip.text: lstLoop.displayText
                         ToolTip.delay: tooltipShow

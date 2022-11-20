@@ -1,6 +1,6 @@
 /**********************
 /* Parking B - MuseScore - Chord analyser
-/* v1.2.13
+/* v1.2.16
 /* ChangeLog:
 /* 	- 1.0.0: Initial release
 /*  - 1.0.1: The 7th degree was sometime erased
@@ -19,6 +19,11 @@
 /*  - 1.2.11(1.3.1): Better handling of (b5) chords
 /*  - 1.2.12(1.3.2): Better handling of some Maj7 chords
 /* 	- 1.2.13(1.3.3): key was doubled in case of bass
+/*  - 1.2.14: Better handling of Aug, Sus2, Sus4
+/*  - 1.2.15: Invalid definition of Aug
+/*  - 1.2.16: Invalid definition of Aug
+/*  - 1.2.17: Invalid definition of Dim7
+/*  - 1.2.18: 7 as bass was labelled #13
 /**********************************************/
 // -----------------------------------------------------------------------
 // --- Vesionning-----------------------------------------
@@ -26,7 +31,7 @@
 var default_names = ["1", "b9", "2", "#9", "b11", "4", "#11", "(5)", "m6", "M6", "m7", "M7"];
 
 function checkVersion(expected) {
-    var version = "1.2.13";
+    var version = "1.2.16";
 
     var aV = version.split('.').map(function (v) {
         return parseInt(v);
@@ -217,27 +222,27 @@ function scaleFromText(text, bass) {
         n5role = "b5";
     }
 
-    // No indication => Major, with dominant 7
+    // No indication => Major
     else {
         n3 = 4;
         n5 = 7;
         def6 = 9; // Je force une 6ème par défaut. Qui sera peut-être écrasée après.
-        def7 = 11; // Je force une 7ème par défaut. Qui sera peut-être écrasée après.
+        //def7 = 11; // Je force une 7ème par défaut. Qui sera peut-être écrasée après. 3/9/22: pas d'interprétation ici. Fait plus loin
         //outside = outside.concat([1, 3, 6, 8]);
     }
 
     // Posibles additions
     // ..Aug..
-    if (text.startsWith("aug") || text.startsWith("+")) {
+    if (text.includes("aug") || text.includes("+")) {
         console.log("Starts with aug/+");
-        n3 = 3;
-        n5 = 6;
+        // n3 = 3; // 1.2.16: un accord augmenté n'a pas nécessairement une tierce mineure
+        n5 = 8;
         //def6 = 9; // Je force une 6ème par défaut. Qui sera peut-être écrasée après.
         //def7 = 11; // Je force une 7ème par défaut. Qui sera peut-être écrasée après.
     }
 
     // ..sus2..
-    else if (text.startsWith("sus2")) {
+    else if (text.includes("sus2")) {
         console.log("Starts with sus2");
         n2 = 2;
         n3 = null; // pas de tierce explicite
@@ -247,7 +252,7 @@ function scaleFromText(text, bass) {
     }
 
     // ..sus4..
-    else if (text.startsWith("sus4")) {
+    else if (text.includes("sus4")) {
         console.log("Starts with sus4");
         n4 = 5;
         n3 = null; // pas de tierce explicite
@@ -263,8 +268,13 @@ function scaleFromText(text, bass) {
         n7 = 11;
     } else
         if (n7 == null && text.includes("7")) {
+           if (def7 == null) {
+                def7 = 10;
             console.log("Has m7");
-            n7 = 10;
+           } else {
+                console.log("Has specific 7");
+           }
+            n7 = def7;
         };
 
     // ..3..
@@ -399,7 +409,7 @@ function scaleFromText(text, bass) {
         n13 = 9;
         pushToKeys(keys, n13, "13");
         pushToNotes(chordnotes, n13, "13");
-    } else if (((at = [8, 9, 10].indexOf(bass)) >= 0) && (bass != n6)) {
+    } else if (((at = [8, 9, 10].indexOf(bass)) >= 0) && ([n5, n6, n7].indexOf(bass) < 0)) { // The bass is b13,13,#13 but is aot already defined as the 5,6 or 7.
         n13 = bass;
         pushToKeys(keys, bass, "bass as 6/13");
         pushToNotes(chordnotes, bass, ["b", "", "#"][at] + "13");
@@ -452,6 +462,7 @@ function pushToNotes(collection, note, role) {
         console.log("Not adding " + role + "(" + note + ") because it exist as " + exist.role);
         return;
     }
+    console.log("....pushing note >>" + note + " as " + role + "<<");
     collection.push({
         "note": note,
         "role": role
@@ -459,7 +470,7 @@ function pushToNotes(collection, note, role) {
 }
 
 function pushToKeys(keys, value, comment) {
-    // console.log("....pushing >>" + value + "<< (" + comment + ")");
+    console.log("....pushing key >>" + value + "<< (" + comment + ")");
 	
 	if(keys.indexOf(value)>=0) {
         console.log("Not adding " +  value + "to keys because it is already present");
