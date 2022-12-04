@@ -38,6 +38,8 @@ import "selectionhelper.js" as SelHelper
 /*  - 2.4.0 alpha 3: Pushing grid patterns was not working
 /*  - 2.4.0 alpha 3: A GridWorkout with 2 patterns was not correctly printed.
 /*  - 2.4.0 beta 1: New plugin folder organisation
+/*  - 2.4.0 beta 1: Port to MS4
+/*  - 2.4.0 beta 1: Loop mode was not deducing the right chord type at some occasions
 /**********************************************/
 MuseScore {
     menuPath: "Plugins." + pluginName
@@ -55,6 +57,12 @@ MuseScore {
     readonly property var noteHelperVersion: "1.0.3"
     readonly property var chordHelperVersion: "1.2.8"
     readonly property var selHelperVersion: "1.2.0"
+
+    Component.onCompleted : {
+        if (mscoreMajorVersion >= 4) {
+            mainWindow.thumbnailName = "logo.png";
+        }
+    }
 
     readonly property var librarypath: { {
             var f = Qt.resolvedUrl("workoutbuilder.library");
@@ -284,7 +292,7 @@ MuseScore {
             "mode": "minor"
         },
         "dim": {
-            "symb": "o",
+            "symb": "dim",
             "scale": [0, 1, 3, 4, 6, 7, 9, 12],
             "mode": "minor"
         },
@@ -790,27 +798,42 @@ MuseScore {
             console.log("looping mode : " + mode.label);
 
             // Retrieving Chord type
-            var cText = raw.chordType // editable
-            if (cText === '') {
-				var nn=p.map(function(e) { return e.note });
-                var m3 = (nn.indexOf(3) > -1); // if we have the "m3" the we are in minor mode.
-                if (nn.indexOf(10) > -1) { //m7
-                    cText = m3 ? "m7" : "7";
-                } else if (nn.indexOf(11) > -1) { //M7
-                    cText = m3 ? "m7" : "t7";
-                } else {
-                    cText = m3 ? "m" : "Maj";
-                }
-
-            }
+            var cText = raw.chordType; // editable
+            var orig = cText;
+            console.log("Retrieving scale for \""+cText+"\"");
             var cSymb = _chordTypes[cText];
             if (cSymb === undefined) {
-                cSymb = {}+cText.includes("-") ? _chordTypes['m'] : _chordTypes['M']; //clone it // For user-specific chord type, we take a Major scale, or the Min scale of we found a "-"
+                if (cText === '') {
+                    var nn = p.map(function (e) {return e.note});
+                    var m3 = (nn.indexOf(3) > -1); // if we have the "m3" the we are in minor mode.
+                    if (nn.indexOf(10) > -1) { //m7
+                        cText = m3 ? "m7" : "7";
+                    } else if (nn.indexOf(11) > -1) { //M7
+                        cText = m3 ? "m7" : "t7";
+                    } else {
+                        cText = m3 ? "m" : "M";
+                    }
+                    console.log("Empty scale text. So building one from the pattern. Ending up with \"" + cText + "\"");
+                } else if (cText.toLowerCase() === 'dom7') {
+                    cText = "7";
+                    console.log("Unknown scale text. Translating it if possible. Ending up with \"" + cText + "\"");
+                }
+                cSymb = _chordTypes[cText];
+            }
+            if (cSymb === undefined) {
+                // For user-specific chord type, we take a Major scale, or the Min scale of we found a "-"
+                // Clone them so we can modify the name without affecting the main object
+                if (cText.includes("-"))  {
+                    cSymb = JSON.parse( JSON.stringify( _chordTypes['m'])); 
+                    console.log("Couldn't find a scale for that text. Taking the minor one.");
+                } else {
+                    cSymb = JSON.parse( JSON.stringify( _chordTypes['M'])); 
+                    console.log("Couldn't find a scale for that text. Taking the major one.");
+                }
                 cSymb.symb = cText;
-
             }
 
-            console.log("Pattern " + i + ": " + cText + " > " + cSymb.symb);
+            console.log("Pattern " + i + ": \"" + orig + "\" > \"" + cSymb.symb + "\", scale : "+JSON.stringify(cSymb.scale));
 
             // Build final pattern
             var pattern = {
@@ -1489,8 +1512,8 @@ MuseScore {
 			
         } else if (loopAt.type == -1) {
             // 3) Scale loopAt mode, we decline the pattern along the scale (up/down, by degree/Triad)
-            if (debugPrepare) console.log("Looping patterns : scale mode (" + shift + ") --");
             var shift = loopAt.shift; //Math.abs(loopAt) * (-1);
+            if (debugPrepare) console.log("Looping patterns : scale mode (" + shift + ") --");
             // We clear all the patterns because will be restarting from the last step
             extpattern["subpatterns"] = [];
 
@@ -1588,40 +1611,40 @@ MuseScore {
             var d = undefined;
             var p = pattern[ip].note;
 			if(p!==null) {
-            var o = Math.floor(p / 12);
-            p = p % 12;
-            for (var is = 0; is < scale.length; is++) {
-                s = scale[is];
-                if (s == p) {
-                    d = {
-                        "degree": is,
-                        "semi": 0,
-                        "octave": o
-                    };
-                    break;
-                } else if (s > p) {
-                    d = {
-                        "degree": (is == 0) ? 0 : is - 1,
-                        "semi": s - p,
-                        "octave": o
-                    };
-                    break;
+                var o = Math.floor(p / 12);
+                p = p % 12;
+                for (var is = 0; is < scale.length; is++) {
+                    s = scale[is];
+                    if (s == p) {
+                        d = {
+                            "degree": is,
+                            "semi": 0,
+                            "octave": o
+                        };
+                        break;
+                    } else if (s > p) {
+                        d = {
+                            "degree": (is == 0) ? 0 : is - 1,
+                            "semi": s - p,
+                            "octave": o
+                        };
+                        break;
+                    }
                 }
+
+                if (d === undefined) {
+                    // if not found, it means we are beyond the last degree
+                    d = {
+                        "degree": scale.length - 1,
+                        "semi": p - scale[scale.length - 1],
+                        "octave": o
+                    };
+
+                }
+
+            } else {
+                d=null;
             }
-
-            if (d === undefined) {
-                // if not found, it means we are beyond the last degree
-                d = {
-                    "degree": scale.length - 1,
-                    "semi": p - scale[scale.length - 1],
-                    "octave": o
-                };
-
-            }
-
-		} else {
-			d=null;
-		}
             pdia.push(d);
 			console.log("[shift " + step + "] 1)[" + ip + "]" + p + "->" + debugDia(d));
         }
@@ -1631,7 +1654,7 @@ MuseScore {
             var d = pdia[ip];
 			if (d!==null) {
             d.degree += step;
-            d.octave += Math.floor(d.degree / 7); // degrees are ranging from 0->6, 7 is 0 at the nexy octave //scale.length);
+            d.octave += Math.floor(d.degree / 7); // degrees are ranging from 0->6, 7 is 0 at the next octave //scale.length);
             d.degree = d.degree % 7; //scale.length;
 			}
             pdia[ip] = d;
@@ -1644,14 +1667,15 @@ MuseScore {
             var d = pdia[ip];
 			var s=null;
 			if(d!==null) {
-            if (d.degree >= scale.length) {
-                // We are beyond the scale, let's propose some value
-                d.semi += (d.degree - scale.length + 1) * 1; // 1 semi-tone by missing degree
-                d.degree = scale.length - 1;
-                if ((scale[d.degree] + d.semi) >= 12)
-                    d.semi = 11;
-            }
-            s = scale[d.degree] + 12 * d.octave + d.semi;
+                if (d.degree >= scale.length) {
+                    // We are beyond the scale, let's propose some value
+                    d.semi += (d.degree - scale.length + 1) * 1; // 1 semi-tone by missing degree
+                    d.degree = scale.length - 1;
+                    if ((scale[d.degree] + d.semi) >= 12)
+                        d.semi = 11;
+                }
+                s = scale[d.degree] + 12 * d.octave + d.semi;
+                console.log("\tscale[d.degree] + 12 * d.octave + d.semi: "+JSON.stringify(scale));
 			} else {
 				s=null;
 			}
