@@ -3,8 +3,8 @@
 
 ## New features in 2.4.0
 * [New] Add steps duration (quarter, dotted, ...)
-* [New] Option to produce one score by root note, allowing for producing exercice sheets for multiple roots at once. 
-* [Improvment] Chord naming, chords extraction from a current score (grid mode)
+* [New] Option to produce one score by root note, allowing for producing exercise sheets for multiple roots at once. 
+* [Improvement] Chord naming, chords extraction from a current score (grid mode)
 
 ## Features
 * Choose workout type between *Scale mode* or *Grid mode*,
