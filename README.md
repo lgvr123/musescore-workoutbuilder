@@ -19,6 +19,9 @@
 ## Download and Install ##
 Download the [last stable version](https://github.com/lgvr123/musescore-workoutbuilder/releases).
 For installation see [Plugins](https://musescore.org/en/handbook/3/plugins).
+### Remark
+The whole zip content (so the `workoutbuilder\ ` folder) must be unzipped **as such** in your plugin folder. <br/>
+If you had a previous version installed, please delete the previous `workoutbuilder.qml` file to avoid conflicts.
 
 ## User manual
 Refer to the [PDF instruction file](user_manual.pdf). (NOT UPDATED FOR v2.3.0)
