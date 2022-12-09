@@ -1,1 +1,486 @@
-{"patterns":[{"gridType":"grid","loopMode":"--","name":"","scale":"","steps":[12,11,7,4,0],"type":"scale"},{"gridType":"grid","loopMode":"--","name":"","scale":"","steps":[0,2,4,5,7,9,10,12],"type":"scale"},{"gridType":"grid","loopMode":"S+","name":"","scale":"Dom7","steps":[0,2,4],"type":"scale"},{"gridType":"grid","loopMode":"--","name":"","scale":"","steps":[0,1,2],"type":"grid"},{"gridType":"grid","loopMode":"--","name":"","scale":"","steps":[0,1,2,3],"type":"grid"},{"gridType":"grid","loopMode":"--","name":"","steps":[0,3,2,1,4,3,2,5,4],"type":"grid"},{"gridType":"grid","loopMode":"--","name":"","steps":[1,0,2,2,1,3],"type":"grid"},{"gridType":"grid","loopMode":"--","name":"Pentatonic Minor","scale":"","steps":[0,3,5,7,10,12],"type":"scale"},{"gridType":"grid","loopMode":"--","name":"Pentatonic Major","scale":"","steps":[0,2,4,7,9,12],"type":"scale"},{"gridType":"grid","loopMode":"--","name":"Scale up","steps":[0,1,2,3,4,5,6,7],"type":"grid"},{"gridType":"grid","loopMode":"--","name":"","steps":[0,2,4,6],"type":"grid"},{"gridType":"grid","loopMode":"R","name":"","scale":"","steps":[0,1,2],"type":"grid"},{"gridType":"grid","loopMode":"--","name":"","scale":"","steps":[0,2,3,5,7],"type":"scale"},{"gridType":"grid","loopMode":"--","name":"Dominant triad","scale":"","steps":[0,4,7,10,12],"type":"scale"},{"gridType":"grid","loopMode":"--","name":"Maj7 triad","scale":"","steps":[0,4,7,11,12],"type":"scale"},{"gridType":"grid","loopMode":"--","name":"Minor triad","scale":"","steps":[0,3,7,10,12],"type":"scale"},{"gridType":"grid","loopMode":"--","name":"","scale":"","steps":[],"type":"scale"},{"gridType":"grid","loopMode":"--","name":"Minor Bebop scale","scale":"","steps":[0,2,3,5,7,8,10,11],"type":"scale"}],"phrases":[{"chords":[{"root":5,"type":"7"},{"root":10,"type":"7"},{"root":5,"type":"7"},{"root":0,"type":"m7"},{"root":5,"type":"7"},{"root":10,"type":"7"},{"root":11,"type":"dim"},{"root":5,"type":"7"},{"root":9,"type":"m7"},{"root":2,"type":"7"},{"root":7,"type":"m7"},{"root":0,"type":"7"},{"root":5,"type":"7"},{"root":2,"type":"7"},{"root":7,"type":"m7"},{"root":0,"type":"7"}],"name":"Now's The Time (complexe)"},{"chords":[{"root":5,"type":"7"},{"root":10,"type":"7"},{"root":5,"type":"7"},{"root":0,"type":"m7"},{"root":10,"type":"7"},{"root":11,"type":"dim"},{"root":5,"type":"7"},{"root":2,"type":"7"},{"root":7,"type":"m7"},{"root":0,"type":"7"},{"root":5,"type":"7"},{"root":0,"type":"7"}],"name":"Now's The Time"},{"chords":[{"name":"Bb7","root":10,"sharp":false,"type":"7"},{"name":"Eb7","root":3,"sharp":false,"type":"7"},{"name":"Bb7","root":10,"sharp":false,"type":"7"},{"name":"C-7","root":0,"type":"-7"},{"name":"F7","root":5,"type":"7"},{"name":"Bb7","root":10,"sharp":false,"type":"7"}],"name":"Tenor Madness"},{"chords":[{"name":"Bb7#9","root":10,"sharp":false,"type":"7#9"},{"name":"G7add13/Bb","root":7,"type":"7add13/Bb"},{"name":"Gb-7add13/Bb","root":6,"sharp":false,"type":"-7add13/Bb"},{"name":"Gb/Ab","root":6,"sharp":false,"type":"/Ab"}],"name":"Hottentot"},{"chords":[{"end":false,"key":"bbb","name":"C-7","root":0,"sharp":false,"type":"-7"},{"end":false,"name":"F-7","root":5,"sharp":false,"type":"-7"},{"end":false,"name":"D07","root":2,"sharp":false,"type":"07"},{"end":false,"name":"G7b9","root":7,"sharp":false,"type":"7b9"},{"end":false,"name":"C-7","root":0,"sharp":false,"type":"-7"},{"end":false,"name":"Eb-7","root":3,"sharp":false,"type":"-7"},{"end":false,"name":"Ab7","root":8,"sharp":false,"type":"7"},{"end":false,"name":"Dbt7","root":1,"sharp":false,"type":"t7"},{"end":false,"name":"D07","root":2,"sharp":false,"type":"07"},{"end":false,"name":"G7b9","root":7,"sharp":false,"type":"7b9"},{"end":false,"name":"C-7","root":0,"sharp":false,"type":"-7"},{"end":false,"name":"D07","root":2,"sharp":false,"type":"07"}],"name":"Blue bossa"},{"chords":[{"end":false,"key":"b","name":"D-6","root":2,"sharp":false,"type":"-6"},{"end":false,"name":"E07","root":4,"sharp":false,"type":"07"},{"end":false,"name":"A7b9","root":9,"sharp":false,"type":"7b9"},{"end":false,"name":"D-6","root":2,"sharp":false,"type":"-6"},{"end":false,"name":"E07","root":4,"sharp":false,"type":"07"},{"end":true,"name":"A7b9","root":9,"sharp":false,"type":"7b9"},{"end":false,"name":"D-6","root":2,"sharp":false,"type":"-6"},{"end":false,"name":"A07","root":9,"sharp":false,"type":"07"},{"end":false,"name":"D7","root":2,"sharp":false,"type":"7"},{"end":true,"name":"G-7","root":7,"sharp":false,"type":"-7"},{"end":false,"name":"B-7","root":11,"sharp":false,"type":"-7"},{"end":false,"name":"C7","root":0,"sharp":false,"type":"7"},{"end":false,"name":"Ft7","root":5,"sharp":false,"type":"t7"},{"end":false,"name":"E07","root":4,"sharp":false,"type":"07"},{"end":false,"name":"A7b9","root":9,"sharp":false,"type":"7b9"},{"end":false,"name":"Dt7","root":2,"sharp":false,"type":"t7"}],"name":"Alone Together (A)"},{"chords":[{"end":false,"key":"b","name":"A05","root":9,"sharp":false,"type":"05"},{"end":false,"name":"D7(b9)","root":2,"sharp":false,"type":"7(b9)"},{"end":true,"name":"G-6","root":7,"sharp":false,"type":"-6"},{"end":false,"name":"G07","root":7,"sharp":false,"type":"07"},{"end":false,"name":"C7(b9)","root":0,"sharp":false,"type":"7(b9)"},{"end":false,"name":"Ft7","root":5,"sharp":false,"type":"t7"},{"end":true,"name":"A7b9","root":9,"sharp":false,"type":"7b9"},{"end":false,"name":"D-6","root":2,"sharp":false,"type":"-6"},{"end":false,"name":"E07","root":4,"sharp":false,"type":"07"},{"end":false,"name":"A7b9","root":9,"sharp":false,"type":"7b9"},{"end":false,"name":"D-6","root":2,"sharp":false,"type":"-6"},{"end":false,"name":"E07","root":4,"sharp":false,"type":"07"},{"end":true,"name":"A7b9","root":9,"sharp":false,"type":"7b9"},{"end":false,"name":"D-6","root":2,"sharp":false,"type":"-6"},{"end":false,"name":"Bb7","root":10,"sharp":false,"type":"7"},{"end":false,"name":"D-6","root":2,"sharp":false,"type":"-6"}],"name":"Alone Together (B)"},{"chords":[{"name":"F-","root":5,"type":"-"},{"name":"Ab9","root":8,"sharp":false,"type":"9"},{"name":"G7","root":7,"type":"7"},{"name":"C7#9","root":0,"type":"7#9"},{"name":"Bb-9","root":10,"sharp":false,"type":"-9"},{"name":"Ab9","root":8,"sharp":false,"type":"9"},{"name":"G7b9","root":7,"type":"7b9"},{"name":"C7#9","root":0,"type":"7#9"},{"name":"F-7","root":5,"type":"-7"},{"name":"F7","root":5,"type":"7"},{"name":"B7","root":11,"type":"7"},{"name":"Bb-7","root":10,"sharp":false,"type":"-7"},{"name":"Ab9","root":8,"sharp":false,"type":"9"},{"name":"G7b9","root":7,"type":"7b9"},{"name":"G-7","root":7,"type":"-7"},{"name":"C7","root":0,"type":"7"}],"name":"Moanin'"},{"chords":[{"end":true,"name":"C#m7","root":1,"sharp":true,"type":"m7"},{"end":false,"name":"F#7","root":6,"sharp":true,"type":"7"},{"end":true,"name":"C#m","root":1,"sharp":true,"type":"m"},{"end":false,"name":"A7","root":9,"type":"7"},{"end":false,"name":"G#7","root":8,"sharp":true,"type":"7"},{"end":false,"name":"C#m7","root":1,"sharp":true,"type":"m7"}],"name":"Equinox"},{"chords":[{"end":false,"key":"#","name":"Gt7","root":7,"sharp":true,"type":"t7"},{"end":false,"name":"Em","root":4,"sharp":true,"type":"m"},{"end":false,"name":"am7","root":9,"sharp":true,"type":"m7"},{"end":false,"name":"d7","root":2,"sharp":true,"type":"7"},{"end":false,"name":"gt7","root":7,"sharp":true,"type":"t7"},{"end":false,"name":"bm7","root":11,"sharp":true,"type":"m7"},{"end":false,"name":"e7","root":4,"sharp":true,"type":"7"},{"end":false,"name":"a7","root":9,"sharp":true,"type":"7"},{"end":false,"name":"am7","root":9,"sharp":true,"type":"m7"},{"end":false,"name":"d7","root":2,"sharp":true,"type":"7"},{"end":false,"name":"gt7","root":7,"sharp":true,"type":"t7"},{"end":false,"name":"dm7","root":2,"sharp":true,"type":"m7"},{"end":false,"name":"g7","root":7,"sharp":true,"type":"7"},{"end":false,"name":"ct7","root":0,"sharp":true,"type":"t7"},{"end":false,"name":"cm7","root":0,"sharp":true,"type":"m7"},{"end":false,"name":"f7","root":5,"sharp":true,"type":"7"},{"end":false,"name":"gt7","root":7,"sharp":true,"type":"t7"},{"end":false,"name":"em7","root":4,"sharp":true,"type":"m7"},{"end":false,"name":"a7","root":9,"sharp":true,"type":"7"},{"end":false,"name":"am7","root":9,"sharp":true,"type":"m7"},{"end":false,"name":"d7","root":2,"sharp":true,"type":"7"}],"name":"But Not For me- A"},{"chords":[{"end":false,"name":"C-","root":0,"type":"-"},{"end":false,"name":"Eb-9","root":3,"sharp":false,"type":"-9"},{"end":false,"name":"D7add#9","root":2,"type":"7add#9"},{"end":false,"name":"G7add#9","root":7,"type":"7add#9"},{"end":false,"name":"C-","root":0,"type":"-"},{"end":false,"name":"G7add#9","root":7,"type":"7add#9"}],"name":"Quarter n°2 - Part 2"},{"chords":[{"bass":null,"chordnotes":[{"note":0,"role":"1"},{"note":4,"role":"3"},{"note":7,"role":"5"},{"note":11,"role":"7"},{"note":12,"role":"1"}],"end":false,"key":"bbb","name":"Ebmaj7","root":3,"sharp":false,"type":"maj7"},{"bass":null,"chordnotes":[{"note":0,"role":"1"},{"note":4,"role":"3"},{"note":6,"role":"#11"},{"note":7,"role":"5"},{"note":10,"role":"7"},{"note":12,"role":"1"}],"end":false,"name":"Ab7#11","root":8,"sharp":false,"type":"7#11"},{"bass":null,"chordnotes":[{"note":0,"role":"1"},{"note":4,"role":"3"},{"note":7,"role":"5"},{"note":10,"role":"7"},{"note":12,"role":"1"}],"end":false,"name":"Db7","root":1,"sharp":false,"type":"7"},{"bass":null,"chordnotes":[{"note":0,"role":"1"},{"note":2,"role":"9"},{"note":4,"role":"3"},{"note":7,"role":"5"},{"note":10,"role":"7"},{"note":12,"role":"1"}],"end":true,"name":"Eb9","root":3,"sharp":false,"type":"9"},{"bass":null,"chordnotes":[{"note":0,"role":"1"},{"note":4,"role":"3"},{"note":7,"role":"5"},{"note":10,"role":"7"},{"note":12,"role":"1"}],"end":false,"name":"Ab7","root":8,"sharp":false,"type":"7"},{"bass":null,"chordnotes":[{"note":0,"role":"1"},{"note":4,"role":"3"},{"note":6,"role":"b5"},{"note":10,"role":"7"},{"note":12,"role":"1"}],"end":false,"name":"D7b5","root":2,"sharp":false,"type":"7b5"},{"bass":null,"chordnotes":[{"note":0,"role":"1"},{"note":4,"role":"3"},{"note":7,"role":"5"},{"note":11,"role":"7"},{"note":12,"role":"1"}],"end":false,"name":"Ebmaj7","root":3,"sharp":false,"type":"maj7"},{"bass":null,"chordnotes":[{"note":0,"role":"1"},{"note":3,"role":"3"},{"note":7,"role":"5"},{"note":10,"role":"7"},{"note":12,"role":"1"}],"end":false,"name":"Db-7","root":1,"sharp":false,"type":"-7"},{"bass":null,"chordnotes":[{"note":0,"role":"1"},{"note":4,"role":"3"},{"note":7,"role":"5"},{"note":10,"role":"7"},{"note":12,"role":"1"}],"end":true,"name":"Gb7","root":6,"sharp":false,"type":"7"},{"bass":null,"chordnotes":[{"note":0,"role":"1"},{"note":3,"role":"3"},{"note":6,"role":"b5"},{"note":10,"role":"7"},{"note":12,"role":"1"}],"end":false,"name":"F-7b5","root":5,"sharp":false,"type":"-7b5"},{"bass":null,"chordnotes":[{"note":0,"role":"1"},{"note":4,"role":"3"},{"note":6,"role":"b5"},{"note":10,"role":"7"},{"note":12,"role":"1"}],"end":false,"name":"Bb7b5","root":10,"sharp":false,"type":"7b5"},{"bass":null,"chordnotes":[{"note":0,"role":"1"},{"note":3,"role":"3"},{"note":7,"role":"5"},{"note":10,"role":"7"},{"note":12,"role":"1"}],"end":false,"name":"B-7","root":11,"sharp":false,"type":"-7"},{"bass":null,"chordnotes":[{"note":0,"role":"1"},{"note":4,"role":"3"},{"note":7,"role":"5"},{"note":10,"role":"7"},{"note":12,"role":"1"}],"end":false,"name":"E7","root":4,"sharp":false,"type":"7"},{"bass":null,"chordnotes":[{"note":0,"role":"1"},{"note":4,"role":"3"},{"note":6,"role":"#11"},{"note":7,"role":"5"},{"note":10,"role":"7"},{"note":12,"role":"1"}],"end":false,"name":"Ab7#11","root":8,"sharp":false,"type":"7#11"}],"name":"Serene"},{"chords":[{"bass":null,"chordnotes":[{"note":0,"role":"1"},{"note":3,"role":"3"},{"note":7,"role":"5"},{"note":12,"role":"1"}],"end":false,"key":"bbb","name":"C-","root":0,"sharp":false,"type":"-"},{"bass":null,"chordnotes":[{"note":0,"role":"1"},{"note":3,"role":"3"},{"note":7,"role":"5"},{"note":11,"role":"7"},{"note":12,"role":"1"}],"end":false,"name":"C-^","root":0,"sharp":false,"type":"-^"},{"bass":null,"chordnotes":[{"note":0,"role":"1"},{"note":3,"role":"3"},{"note":7,"role":"5"},{"note":10,"role":"7"},{"note":12,"role":"1"}],"end":false,"name":"C-7","root":0,"sharp":false,"type":"-7"},{"bass":null,"chordnotes":[{"note":0,"role":"1"},{"note":3,"role":"3"},{"note":7,"role":"5"},{"note":9,"role":"6"},{"note":12,"role":"1"}],"end":true,"name":"C-6","root":0,"sharp":false,"type":"-6"},{"bass":null,"chordnotes":[{"note":0,"role":"1"},{"note":4,"role":"3"},{"note":7,"role":"5"},{"note":11,"role":"7"},{"note":12,"role":"1"}],"end":false,"name":"Abt","root":8,"sharp":false,"type":"t"},{"bass":null,"chordnotes":[{"note":0,"role":"1"},{"note":3,"role":"3"},{"note":7,"role":"5"},{"note":10,"role":"7"},{"note":12,"role":"1"}],"end":false,"name":"F-7","root":5,"sharp":false,"type":"-7"},{"bass":null,"chordnotes":[{"note":0,"role":"1"},{"note":3,"role":"3"},{"note":6,"role":"b5"},{"note":12,"role":"1"}],"end":false,"name":"D0","root":2,"sharp":false,"type":"0"},{"bass":null,"chordnotes":[{"note":0,"role":"1"},{"note":1,"role":"b9"},{"note":4,"role":"3"},{"note":7,"role":"5"},{"note":10,"role":"7"},{"note":12,"role":"1"}],"end":false,"name":"G7b9","root":7,"sharp":false,"type":"7b9"}],"name":"My Funny Valentine A1"},{"chords":[{"bass":null,"chordnotes":[{"note":0,"role":"1"},{"note":4,"role":"3"},{"note":7,"role":"5"},{"note":11,"role":"7"},{"note":12,"role":"1"}],"end":false,"name":"Ct7","root":0,"type":"t7"},{"bass":null,"chordnotes":[{"note":0,"role":"1"},{"note":3,"role":"3"},{"note":7,"role":"5"},{"note":10,"role":"7"},{"note":12,"role":"1"}],"end":false,"name":"Fm7","root":5,"type":"m7"},{"bass":null,"chordnotes":[{"note":0,"role":"1"},{"note":4,"role":"3"},{"note":7,"role":"5"},{"note":10,"role":"7"},{"note":12,"role":"1"}],"end":false,"name":"Bb7","root":10,"sharp":false,"type":"7"},{"bass":null,"chordnotes":[{"note":0,"role":"1"},{"note":4,"role":"3"},{"note":7,"role":"5"},{"note":10,"role":"7"},{"note":12,"role":"1"}],"end":false,"name":"Eb7","root":3,"sharp":false,"type":"7"},{"bass":null,"chordnotes":[{"note":0,"role":"1"},{"note":4,"role":"3"},{"note":7,"role":"5"},{"note":11,"role":"7"},{"note":12,"role":"1"}],"end":false,"name":"Abt7","root":8,"sharp":false,"type":"t7"},{"bass":null,"chordnotes":[{"note":0,"role":"1"},{"note":3,"role":"3"},{"note":7,"role":"5"},{"note":10,"role":"7"},{"note":12,"role":"1"}],"end":false,"name":"Am7","root":9,"type":"m7"},{"bass":null,"chordnotes":[{"note":0,"role":"1"},{"note":4,"role":"3"},{"note":7,"role":"5"},{"note":10,"role":"7"},{"note":12,"role":"1"}],"end":false,"name":"D7","root":2,"type":"7"},{"bass":null,"chordnotes":[{"note":0,"role":"1"},{"note":3,"role":"3"},{"note":7,"role":"5"},{"note":10,"role":"7"},{"note":12,"role":"1"}],"end":false,"name":"Dm7","root":2,"type":"m7"},{"bass":null,"chordnotes":[{"note":0,"role":"1"},{"note":4,"role":"3"},{"note":7,"role":"5"},{"note":10,"role":"7"},{"note":12,"role":"1"}],"end":false,"name":"G7","root":7,"type":"7"},{"bass":null,"chordnotes":[{"note":0,"role":"1"},{"note":3,"role":"3"},{"note":7,"role":"5"},{"note":10,"role":"7"},{"note":12,"role":"1"}],"end":false,"name":"Em7","root":4,"type":"m7"},{"bass":null,"chordnotes":[{"note":0,"role":"1"},{"note":4,"role":"3"},{"note":7,"role":"5"},{"note":10,"role":"7"},{"note":12,"role":"1"}],"end":false,"name":"Eb7","root":3,"sharp":false,"type":"7"},{"bass":null,"chordnotes":[{"note":0,"role":"1"},{"note":4,"role":"3"},{"note":7,"role":"5"},{"note":10,"role":"7"},{"note":12,"role":"1"}],"end":false,"name":"Db7","root":1,"sharp":false,"type":"7"}],"name":"Lady Bird"},{"chords":[{"bass":null,"chordnotes":[{"note":0,"role":"1"},{"note":3,"role":"3"},{"note":7,"role":"5"},{"note":10,"role":"7"},{"note":12,"role":"1"}],"end":false,"name":"D-7","root":2,"type":"-7"},{"bass":null,"chordnotes":[{"note":0,"role":"1"},{"note":4,"role":"3"},{"note":7,"role":"5"},{"note":11,"role":"7"},{"note":12,"role":"1"}],"end":false,"name":"Bbt7","root":10,"sharp":false,"type":"t7"},{"bass":null,"chordnotes":[{"note":0,"role":"1"},{"note":3,"role":"3"},{"note":7,"role":"5"},{"note":10,"role":"7"},{"note":12,"role":"1"}],"end":false,"name":"G-7","root":7,"type":"-7"},{"bass":null,"chordnotes":[{"note":0,"role":"1"},{"note":3,"role":"3"},{"note":7,"role":"5"},{"note":10,"role":"7"},{"note":12,"role":"1"}],"end":true,"name":"A-7Bbt7","root":9,"type":"-7Bbt7"},{"bass":{"accidental":"NONE","key":2,"pitch":5,"root":"F"},"chordnotes":[{"note":0,"role":"1"},{"note":2,"role":"9(B)"},{"note":4,"role":"3"},{"note":7,"role":"5"},{"note":10,"role":"7"},{"note":12,"role":"1"}],"end":false,"name":"Eb/F","root":3,"sharp":false,"type":""},{"bass":{"accidental":"NONE","key":8,"pitch":5,"root":"F"},"chordnotes":[{"note":0,"role":"1"},{"note":4,"role":"3"},{"note":7,"role":"5"},{"note":8,"role":"b13"},{"note":12,"role":"1"}],"end":false,"name":"A/F","root":9,"type":""},{"bass":null,"chordnotes":[{"note":0,"role":"1"},{"note":1,"role":"b9"},{"note":4,"role":"3"},{"note":7,"role":"5"},{"note":10,"role":"7"},{"note":12,"role":"1"}],"end":true,"name":"F7b9","root":5,"type":"7b9"},{"bass":{"accidental":"FLAT","key":2,"pitch":8,"root":"A"},"chordnotes":[{"note":0,"role":"1"},{"note":2,"role":"9(B)"},{"note":4,"role":"3"},{"note":7,"role":"5"},{"note":10,"role":"7"},{"note":12,"role":"1"}],"end":false,"name":"Gb/Ab/Eb/F","root":6,"sharp":false,"type":""},{"bass":{"accidental":"NONE","key":10,"pitch":2,"root":"D"},"chordnotes":[{"note":0,"role":"1"},{"note":4,"role":"3"},{"note":7,"role":"5"},{"note":10,"role":"#13"},{"note":12,"role":"1"}],"end":false,"name":"E/D","root":4,"type":""}],"name":"Spiral"}],"workouts":[{"bypattern":false,"invert":false,"name":"Basic Arpeggio","patterns":[{"gridType":"grid","loopMode":"R","name":"","steps":[0,2,4,6,7],"type":"grid"},{"gridType":"grid","loopMode":"R","name":"","steps":[0,4,2,6,4,7],"type":"grid"}],"type":"grid"},{"bypattern":false,"invert":false,"name":"Basic Scale","patterns":[{"gridType":"grid","loopMode":"R","name":"","steps":[0,1,2],"type":"grid"},{"gridType":"grid","loopMode":"R","name":"","steps":[4,2,1],"type":"grid"},{"gridType":"grid","loopMode":"R","name":"","steps":[0,2,1],"type":"grid"},{"gridType":"grid","loopMode":"R","name":"","steps":[0,3,2,1,4,3,2,5,4],"type":"grid"},{"gridType":"grid","loopMode":"R","name":"","steps":[1,0,2,2,1,3],"type":"grid"}],"type":"grid"},{"name":"Bepop scale triads","patterns":[{"gridType":"grid","loopMode":"P+","name":"","scale":"","steps":[0,4,7,10,11,12],"type":"scale"},{"gridType":"grid","loopMode":"P-","name":"","scale":"","steps":[0,4,7,10,11,12],"type":"scale"},{"gridType":"grid","loopMode":"P+","name":"","scale":"","steps":[12,11,10,7,4,0],"type":"scale"},{"gridType":"grid","loopMode":"P-","name":"","scale":"","steps":[12,11,10,7,4,0],"type":"scale"}],"type":"scale"},{"name":"Dominant 7 Scale #1","patterns":[{"gridType":"grid","loopMode":"S+","name":"","scale":"Dom7","steps":[0,2,4],"type":"scale"},{"gridType":"grid","loopMode":"S-","name":"","scale":"Dom7","steps":[0,2,4],"type":"scale"},{"gridType":"grid","loopMode":"S+","name":"","scale":"Dom7","steps":[0,2,4,5],"type":"scale"},{"gridType":"grid","loopMode":"S-","name":"","scale":"Dom7","steps":[0,2,4,5],"type":"scale"},{"gridType":"grid","loopMode":"S+","name":"","scale":"Dom7","steps":[4,2,0],"type":"scale"},{"gridType":"grid","loopMode":"S-","name":"","scale":"Dom7","steps":[4,2,0],"type":"scale"},{"gridType":"grid","loopMode":"S+","name":"","scale":"Dom7","steps":[5,4,2,0],"type":"scale"},{"gridType":"grid","loopMode":"S-","name":"","scale":"Dom7","steps":[5,4,2,0],"type":"scale"}],"type":"scale"},{"name":"Dominant 7 Scale #2","patterns":[{"gridType":"grid","loopMode":"S+","name":"","scale":"Dom7","steps":[0,7,4],"type":"scale"},{"gridType":"grid","loopMode":"S-","name":"","scale":"Dom7","steps":[0,7,4],"type":"scale"},{"gridType":"grid","loopMode":"S+","name":"","scale":"Dom7","steps":[4,7,0],"type":"scale"},{"gridType":"grid","loopMode":"S-","name":"","scale":"Dom7","steps":[4,7,0],"type":"scale"},{"gridType":"grid","loopMode":"S3+","name":"","scale":"Dom7","steps":[0,4,5,2],"type":"scale"},{"gridType":"grid","loopMode":"S3-","name":"","scale":"Dom7","steps":[0,4,5,2],"type":"scale"},{"gridType":"grid","loopMode":"S3+","name":"","scale":"Dom7","steps":[12,9,10,7],"type":"scale"},{"gridType":"grid","loopMode":"S3-","name":"","scale":"Dom7","steps":[12,9,10,7],"type":"scale"}],"type":"scale"},{"name":"Dominant 7 Triads","patterns":[{"gridType":"grid","loopMode":"P+","name":"","scale":"","steps":[0,4,7,10,12],"type":"scale"},{"gridType":"grid","loopMode":"P-","name":"","scale":"","steps":[0,4,7,10,12],"type":"scale"},{"gridType":"grid","loopMode":"P+","name":"","scale":"","steps":[12,10,7,4,0],"type":"scale"},{"gridType":"grid","loopMode":"P-","name":"","scale":"","steps":[12,10,7,4,0],"type":"scale"}],"type":"scale"},{"bypattern":true,"invert":false,"name":"Dominant7 Scale Basic","patterns":[{"gridType":"grid","loopMode":"R","name":"Scale up and down","scale":"Dom7","steps":[0,2,4,5,7,9,10,12],"type":"scale"},{"gridType":"grid","loopMode":"S+","name":"","scale":"Dom7","steps":[2,0],"type":"scale"},{"gridType":"grid","loopMode":"S-","name":"","scale":"Dom7","steps":[0,2],"type":"scale"},{"gridType":"grid","loopMode":"--","name":"","scale":"Dom7","steps":[0,4,7,4,0],"type":"scale"},{"gridType":"grid","loopMode":"--","name":"","scale":"Dom7","steps":[0,4,7,10,12,10,7,4,0],"type":"scale"},{"gridType":"grid","loopMode":"--","name":"","scale":"Dom7","steps":[7,4,0,4,7],"type":"scale"},{"gridType":"grid","loopMode":"--","name":"","scale":"Dom7","steps":[12,10,7,4,0,4,7,10,12],"type":"scale"},{"gridType":"grid","loopMode":"--","name":"Pentatonic up and down","scale":"Dom7","steps":[0,2,4,7,9,12,12,9,7,4,2,0],"type":"scale"}],"type":"scale"},{"bypattern":true,"invert":false,"name":"Dominant7 Scale Summary","patterns":[{"gridType":"grid","loopMode":"R","name":"","scale":"","steps":[0,4,7,10,12],"type":"scale"},{"gridType":"grid","loopMode":"R","name":"","scale":"","steps":[12,10,7,4,0],"type":"scale"},{"gridType":"grid","loopMode":"R","name":"Pentatonic Major","scale":"","steps":[0,2,4,7,9,12],"type":"scale"},{"gridType":"grid","loopMode":"R","name":"Pentatonic Minor","scale":"","steps":[0,3,5,7,10,12],"type":"scale"}],"type":"scale"},{"bypattern":false,"invert":false,"name":"Fourths and Fifths","patterns":[{"gridType":"grid","loopMode":"--","name":"Descending Fifths","scale":"","steps":[7,0],"type":"scale"},{"gridType":"grid","loopMode":"--","name":"Ascending Fifths","scale":"","steps":[0,7],"type":"scale"},{"gridType":"grid","loopMode":"--","name":"Descending Fourths","scale":"","steps":[12,7],"type":"scale"},{"gridType":"grid","loopMode":"--","name":"Ascending Fourths","scale":"","steps":[7,12],"type":"scale"}],"type":"scale"},{"name":"Major 7 Triads","patterns":[{"gridType":"grid","loopMode":"P+","name":"","scale":"","steps":[0,4,7,11,12],"type":"scale"},{"gridType":"grid","loopMode":"P-","name":"","scale":"","steps":[0,4,7,11,12],"type":"scale"},{"gridType":"grid","loopMode":"P+","name":"","scale":"","steps":[12,11,7,4,0],"type":"scale"},{"gridType":"grid","loopMode":"P-","name":"","scale":"","steps":[12,11,7,4,0],"type":"scale"}],"type":"scale"},{"bypattern":true,"invert":false,"name":"Minor 7 Scale #1","patterns":[{"gridType":"grid","loopMode":"S+","name":"","scale":"m7","steps":[0,2,3],"type":"scale"},{"gridType":"grid","loopMode":"S-","name":"","scale":"m7","steps":[0,2,3],"type":"scale"},{"gridType":"grid","loopMode":"S+","name":"","scale":"m7","steps":[0,2,3,5],"type":"scale"},{"gridType":"grid","loopMode":"S-","name":"","scale":"m7","steps":[0,2,3,5],"type":"scale"},{"gridType":"grid","loopMode":"S+","name":"","scale":"m7","steps":[3,2,0],"type":"scale"},{"gridType":"grid","loopMode":"S-","name":"","scale":"m7","steps":[3,2,0],"type":"scale"},{"gridType":"grid","loopMode":"S+","name":"","scale":"m7","steps":[5,3,2,0],"type":"scale"},{"gridType":"grid","loopMode":"S-","name":"","scale":"m7","steps":[5,3,2,0],"type":"scale"}],"type":"scale"},{"bypattern":false,"invert":false,"name":"Minor 7 Scale #2","patterns":[{"gridType":"grid","loopMode":"S+","name":"","scale":"m7","steps":[0,7,3],"type":"scale"},{"gridType":"grid","loopMode":"S-","name":"","scale":"m7","steps":[0,7,3],"type":"scale"},{"gridType":"grid","loopMode":"S+","name":"","scale":"m7","steps":[3,7,0],"type":"scale"},{"gridType":"grid","loopMode":"S-","name":"","scale":"m7","steps":[3,7,0],"type":"scale"},{"gridType":"grid","loopMode":"S3+","name":"","scale":"m7","steps":[0,3,5,2],"type":"scale"},{"gridType":"grid","loopMode":"S3-","name":"","scale":"m7","steps":[0,3,5,2],"type":"scale"},{"gridType":"grid","loopMode":"S3+","name":"","scale":"m7","steps":[12,8,10,7],"type":"scale"},{"gridType":"grid","loopMode":"S3-","name":"","scale":"m7","steps":[12,8,10,7],"type":"scale"}],"type":"scale"},{"bypattern":false,"invert":false,"name":"Minor 7 Scale Basic","patterns":[{"gridType":"grid","loopMode":"R","name":"Scale up and down","scale":"m7","steps":[0,2,3,5,7,8,10,12],"type":"scale"},{"gridType":"grid","loopMode":"S+","name":"","scale":"m7","steps":[2,0],"type":"scale"},{"gridType":"grid","loopMode":"S-","name":"","scale":"m7","steps":[0,2],"type":"scale"},{"gridType":"grid","loopMode":"--","name":"","scale":"m7","steps":[0,3,7,3,0],"type":"scale"},{"gridType":"grid","loopMode":"--","name":"","scale":"m7","steps":[0,3,7,10,12,10,7,3,0],"type":"scale"},{"gridType":"grid","loopMode":"--","name":"","scale":"m7","steps":[7,3,0,3,7],"type":"scale"},{"gridType":"grid","loopMode":"--","name":"","scale":"m7","steps":[12,10,7,3,0,3,7,10,12],"type":"scale"},{"gridType":"grid","loopMode":"--","name":"Pentatonic up and down","scale":"m7","steps":[0,3,5,7,10,12,12,10,7,5,3,0],"type":"scale"}],"type":"scale"},{"name":"Minor 7 Triads","patterns":[{"gridType":"grid","loopMode":"P+","name":"","scale":"","steps":[0,3,7,10,12],"type":"scale"},{"gridType":"grid","loopMode":"P-","name":"","scale":"","steps":[0,3,7,10,12],"type":"scale"},{"gridType":"grid","loopMode":"P+","name":"","scale":"","steps":[12,10,7,3,0],"type":"scale"},{"gridType":"grid","loopMode":"P-","name":"","scale":"","steps":[12,10,7,3,0],"type":"scale"}],"type":"scale"},{"bypattern":true,"invert":false,"name":"Pentatonics","patterns":[{"gridType":"grid","loopMode":"--","name":"Pentatonic Minor","scale":"","steps":[0,3,5,7,10,12],"type":"scale"},{"gridType":"grid","loopMode":"--","name":"Pentatonic Major","scale":"","steps":[0,2,4,7,9,12],"type":"scale"},{"gridType":"grid","loopMode":"--","name":"Pentatonic Minor","scale":"","steps":[12,10,7,5,3,0],"type":"scale"},{"gridType":"grid","loopMode":"--","name":"Pentatonic Major","scale":"","steps":[12,9,7,4,2,0],"type":"scale"}],"type":"scale"},{"bypattern":true,"invert":false,"name":"Scale by steps","patterns":[{"gridType":"grid","loopMode":"S+","name":"","scale":"7","steps":[2,0],"type":"scale"},{"gridType":"grid","loopMode":"S-","name":"","scale":"7","steps":[4,0],"type":"scale"}],"type":"scale"},{"bypattern":false,"invert":false,"name":"test","patterns":[{"gridType":"grid","loopMode":"--","name":"","scale":"","steps":[0,1,2],"type":"grid"}],"phrase":{"chords":[{"bass":null,"chordnotes":[{"note":0,"role":"1"},{"note":3,"role":"3"},{"note":7,"role":"5"},{"note":10,"role":"7"},{"note":12,"role":"1"}],"end":false,"name":"Cm7","root":0,"type":"m7"}]},"type":"grid"},{"bypattern":false,"invert":false,"name":"Test Chords Up and Down","patterns":[{"gridType":"chordup","loopMode":"--","name":"","scale":"","steps":[],"type":"grid"},{"gridType":"chorddown","loopMode":"--","name":"","scale":"","steps":[],"type":"grid"}],"phrase":{"chords":[{"bass":null,"chordnotes":[{"note":0,"role":"1"},{"note":3,"role":"3"},{"note":7,"role":"5"},{"note":12,"role":"1"}],"end":false,"name":"Em","root":4,"type":"m"},{"bass":null,"chordnotes":[{"note":0,"role":"1"},{"note":4,"role":"3"},{"note":7,"role":"5"},{"note":11,"role":"7"},{"note":12,"role":"1"}],"end":false,"name":"Ft7","root":5,"type":"t7"}]},"type":"grid"},{"bypattern":false,"invert":false,"name":"Test#11","patterns":[{"gridType":"grid","loopMode":"--","name":"Scale up","steps":[0,1,2,3,4,5,6,7],"type":"grid"}],"phrase":{"chords":[{"end":false,"name":"Csus2","root":0,"type":"sus2"},{"end":false,"name":"Csus4","root":0,"type":"sus4"}]},"type":"grid"},{"bypattern":false,"invert":false,"name":"Tiny test","patterns":[{"gridType":"grid","loopMode":"--","name":"","steps":[0,1],"type":"grid"}],"phrase":{"chords":[{"end":true,"key":"###","name":"C","root":0,"type":""},{"end":false,"key":"","name":"F","root":5,"type":""}]},"type":"grid"},{"bypattern":false,"invert":false,"name":"Tiny2","patterns":[{"gridType":"grid","loopMode":"--","name":"","steps":[0,2,4,6],"type":"grid"}],"phrase":{"chords":[{"end":false,"key":"b","name":"D-6","root":2,"sharp":false,"type":"-6"},{"end":false,"name":"E07","root":4,"type":"07"}]},"type":"grid"}]}
+{
+    "patterns": [{
+            "gridType": "grid",
+            "loopMode": "--",
+            "name": "",
+            "scale": "",
+            "steps": [0, 1, 2],
+            "type": "grid"
+        }, {
+            "gridType": "grid",
+            "loopMode": "--",
+            "name": "",
+            "scale": "",
+            "steps": [0, 1, 2, 3],
+            "type": "grid"
+        }, {
+            "gridType": "grid",
+            "loopMode": "--",
+            "name": "",
+            "steps": [0, 3, 2, 1, 4, 3, 2, 5, 4],
+            "type": "grid"
+        }, {
+            "gridType": "grid",
+            "loopMode": "--",
+            "name": "",
+            "steps": [1, 0, 2, 2, 1, 3],
+            "type": "grid"
+        }, {
+            "gridType": "grid",
+            "loopMode": "--",
+            "name": "Pentatonic Minor",
+            "scale": "",
+            "steps": [0, 3, 5, 7, 10, 12],
+            "type": "scale"
+        }, {
+            "gridType": "grid",
+            "loopMode": "--",
+            "name": "Pentatonic Major",
+            "scale": "",
+            "steps": [0, 2, 4, 7, 9, 12],
+            "type": "scale"
+        }, {
+            "gridType": "grid",
+            "loopMode": "--",
+            "name": "",
+            "steps": [0, 2, 4, 6],
+            "type": "grid"
+        }, {
+            "gridType": "grid",
+            "loopMode": "R",
+            "name": "",
+            "scale": "",
+            "steps": [0, 1, 2],
+            "type": "grid"
+        }
+    ],
+    "phrases": [ {
+            "chords": [{
+                    "name": "Bb7",
+                    "root": 10,
+                    "sharp": false,
+                    "type": "7"
+                }, {
+                    "name": "Eb7",
+                    "root": 3,
+                    "sharp": false,
+                    "type": "7"
+                }, {
+                    "name": "Bb7",
+                    "root": 10,
+                    "sharp": false,
+                    "type": "7"
+                }, {
+                    "name": "C-7",
+                    "root": 0,
+                    "type": "-7"
+                }, {
+                    "name": "F7",
+                    "root": 5,
+                    "type": "7"
+                }, {
+                    "name": "Bb7",
+                    "root": 10,
+                    "sharp": false,
+                    "type": "7"
+                }
+            ],
+            "name": "Tenor Madness"
+        }, {
+            "chords": [{
+                    "end": false,
+                    "key": "bbb",
+                    "name": "C-7",
+                    "root": 0,
+                    "sharp": false,
+                    "type": "-7"
+                }, {
+                    "end": false,
+                    "name": "F-7",
+                    "root": 5,
+                    "sharp": false,
+                    "type": "-7"
+                }, {
+                    "end": false,
+                    "name": "D07",
+                    "root": 2,
+                    "sharp": false,
+                    "type": "07"
+                }, {
+                    "end": false,
+                    "name": "G7b9",
+                    "root": 7,
+                    "sharp": false,
+                    "type": "7b9"
+                }, {
+                    "end": false,
+                    "name": "C-7",
+                    "root": 0,
+                    "sharp": false,
+                    "type": "-7"
+                }, {
+                    "end": false,
+                    "name": "Eb-7",
+                    "root": 3,
+                    "sharp": false,
+                    "type": "-7"
+                }, {
+                    "end": false,
+                    "name": "Ab7",
+                    "root": 8,
+                    "sharp": false,
+                    "type": "7"
+                }, {
+                    "end": false,
+                    "name": "Dbt7",
+                    "root": 1,
+                    "sharp": false,
+                    "type": "t7"
+                }, {
+                    "end": false,
+                    "name": "D07",
+                    "root": 2,
+                    "sharp": false,
+                    "type": "07"
+                }, {
+                    "end": false,
+                    "name": "G7b9",
+                    "root": 7,
+                    "sharp": false,
+                    "type": "7b9"
+                }, {
+                    "end": false,
+                    "name": "C-7",
+                    "root": 0,
+                    "sharp": false,
+                    "type": "-7"
+                }, {
+                    "end": false,
+                    "name": "D07",
+                    "root": 2,
+                    "sharp": false,
+                    "type": "07"
+                }
+            ],
+            "name": "Blue bossa"
+        }
+    ],
+    "workouts": [{
+            "bypattern": false,
+            "invert": false,
+            "name": "Basic Arpeggio",
+            "patterns": [{
+                    "gridType": "grid",
+                    "loopMode": "R",
+                    "name": "",
+                    "steps": [0, 2, 4, 6, 7],
+                    "type": "grid"
+                }, {
+                    "gridType": "grid",
+                    "loopMode": "R",
+                    "name": "",
+                    "steps": [0, 4, 2, 6, 4, 7],
+                    "type": "grid"
+                }
+            ],
+            "type": "grid"
+        }, {
+            "bypattern": false,
+            "invert": false,
+            "name": "Basic Scale",
+            "patterns": [{
+                    "gridType": "grid",
+                    "loopMode": "R",
+                    "name": "",
+                    "steps": [0, 1, 2],
+                    "type": "grid"
+                }, {
+                    "gridType": "grid",
+                    "loopMode": "R",
+                    "name": "",
+                    "steps": [4, 2, 1],
+                    "type": "grid"
+                }, {
+                    "gridType": "grid",
+                    "loopMode": "R",
+                    "name": "",
+                    "steps": [0, 2, 1],
+                    "type": "grid"
+                }, {
+                    "gridType": "grid",
+                    "loopMode": "R",
+                    "name": "",
+                    "steps": [0, 3, 2, 1, 4, 3, 2, 5, 4],
+                    "type": "grid"
+                }, {
+                    "gridType": "grid",
+                    "loopMode": "R",
+                    "name": "",
+                    "steps": [1, 0, 2, 2, 1, 3],
+                    "type": "grid"
+                }
+            ],
+            "type": "grid"
+        }, {
+            "name": "Dominant 7 Triads",
+            "patterns": [{
+                    "gridType": "grid",
+                    "loopMode": "P+",
+                    "name": "",
+                    "scale": "",
+                    "steps": [0, 4, 7, 10, 12],
+                    "type": "scale"
+                }, {
+                    "gridType": "grid",
+                    "loopMode": "P-",
+                    "name": "",
+                    "scale": "",
+                    "steps": [0, 4, 7, 10, 12],
+                    "type": "scale"
+                }, {
+                    "gridType": "grid",
+                    "loopMode": "P+",
+                    "name": "",
+                    "scale": "",
+                    "steps": [12, 10, 7, 4, 0],
+                    "type": "scale"
+                }, {
+                    "gridType": "grid",
+                    "loopMode": "P-",
+                    "name": "",
+                    "scale": "",
+                    "steps": [12, 10, 7, 4, 0],
+                    "type": "scale"
+                }
+            ],
+            "type": "scale"
+        }, {
+            "name": "Minor 7 Triads",
+            "patterns": [{
+                    "gridType": "grid",
+                    "loopMode": "P+",
+                    "name": "",
+                    "scale": "",
+                    "steps": [0, 3, 7, 10, 12],
+                    "type": "scale"
+                }, {
+                    "gridType": "grid",
+                    "loopMode": "P-",
+                    "name": "",
+                    "scale": "",
+                    "steps": [0, 3, 7, 10, 12],
+                    "type": "scale"
+                }, {
+                    "gridType": "grid",
+                    "loopMode": "P+",
+                    "name": "",
+                    "scale": "",
+                    "steps": [12, 10, 7, 3, 0],
+                    "type": "scale"
+                }, {
+                    "gridType": "grid",
+                    "loopMode": "P-",
+                    "name": "",
+                    "scale": "",
+                    "steps": [12, 10, 7, 3, 0],
+                    "type": "scale"
+                }
+            ],
+            "type": "scale"
+        }, {
+            "bypattern": false,
+            "invert": false,
+            "name": "test",
+            "patterns": [{
+                    "gridType": "grid",
+                    "loopMode": "--",
+                    "name": "",
+                    "scale": "",
+                    "steps": [0, 1, 2],
+                    "type": "grid"
+                }
+            ],
+            "phrase": {
+                "chords": [{
+                        "bass": null,
+                        "chordnotes": [{
+                                "note": 0,
+                                "role": "1"
+                            }, {
+                                "note": 3,
+                                "role": "3"
+                            }, {
+                                "note": 7,
+                                "role": "5"
+                            }, {
+                                "note": 10,
+                                "role": "7"
+                            }, {
+                                "note": 12,
+                                "role": "1"
+                            }
+                        ],
+                        "end": false,
+                        "name": "Cm7",
+                        "root": 0,
+                        "type": "m7"
+                    }
+                ]
+            },
+            "type": "grid"
+        }, {
+            "bypattern": false,
+            "invert": false,
+            "name": "Test Chords Up and Down",
+            "patterns": [{
+                    "gridType": "chordup",
+                    "loopMode": "--",
+                    "name": "",
+                    "scale": "",
+                    "steps": [],
+                    "type": "grid"
+                }, {
+                    "gridType": "chorddown",
+                    "loopMode": "--",
+                    "name": "",
+                    "scale": "",
+                    "steps": [],
+                    "type": "grid"
+                }
+            ],
+            "phrase": {
+                "chords": [{
+                        "bass": null,
+                        "chordnotes": [{
+                                "note": 0,
+                                "role": "1"
+                            }, {
+                                "note": 3,
+                                "role": "3"
+                            }, {
+                                "note": 7,
+                                "role": "5"
+                            }, {
+                                "note": 12,
+                                "role": "1"
+                            }
+                        ],
+                        "end": false,
+                        "name": "Em",
+                        "root": 4,
+                        "type": "m"
+                    }, {
+                        "bass": null,
+                        "chordnotes": [{
+                                "note": 0,
+                                "role": "1"
+                            }, {
+                                "note": 4,
+                                "role": "3"
+                            }, {
+                                "note": 7,
+                                "role": "5"
+                            }, {
+                                "note": 11,
+                                "role": "7"
+                            }, {
+                                "note": 12,
+                                "role": "1"
+                            }
+                        ],
+                        "end": false,
+                        "name": "Ft7",
+                        "root": 5,
+                        "type": "t7"
+                    }
+                ]
+            },
+            "type": "grid"
+        }, {
+            "bypattern": false,
+            "invert": false,
+            "name": "Test#11",
+            "patterns": [{
+                    "gridType": "grid",
+                    "loopMode": "--",
+                    "name": "Scale up",
+                    "steps": [0, 1, 2, 3, 4, 5, 6, 7],
+                    "type": "grid"
+                }
+            ],
+            "phrase": {
+                "chords": [{
+                        "end": false,
+                        "name": "Csus2",
+                        "root": 0,
+                        "type": "sus2"
+                    }, {
+                        "end": false,
+                        "name": "Csus4",
+                        "root": 0,
+                        "type": "sus4"
+                    }
+                ]
+            },
+            "type": "grid"
+        }, {
+            "bypattern": false,
+            "invert": false,
+            "name": "Tiny test",
+            "patterns": [{
+                    "gridType": "grid",
+                    "loopMode": "--",
+                    "name": "",
+                    "steps": [0, 1],
+                    "type": "grid"
+                }
+            ],
+            "phrase": {
+                "chords": [{
+                        "end": true,
+                        "key": "###",
+                        "name": "C",
+                        "root": 0,
+                        "type": ""
+                    }, {
+                        "end": false,
+                        "key": "",
+                        "name": "F",
+                        "root": 5,
+                        "type": ""
+                    }
+                ]
+            },
+            "type": "grid"
+        }, {
+            "bypattern": false,
+            "invert": false,
+            "name": "Tiny2",
+            "patterns": [{
+                    "gridType": "grid",
+                    "loopMode": "--",
+                    "name": "",
+                    "steps": [0, 2, 4, 6],
+                    "type": "grid"
+                }
+            ],
+            "phrase": {
+                "chords": [{
+                        "end": false,
+                        "key": "b",
+                        "name": "D-6",
+                        "root": 2,
+                        "sharp": false,
+                        "type": "-6"
+                    }, {
+                        "end": false,
+                        "name": "E07",
+                        "root": 4,
+                        "type": "07"
+                    }
+                ]
+            },
+            "type": "grid"
+        }
+    ]
+}

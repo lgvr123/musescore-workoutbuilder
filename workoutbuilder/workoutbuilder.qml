@@ -46,7 +46,7 @@ import "selectionhelper.js" as SelHelper
 MuseScore {
     menuPath: "Plugins." + pluginName
     description: "This plugin builds chordscale workouts based on patterns defined by the user."
-    version: "2.4.0 beta1"
+    version: "2.4.0"
 
     pluginType: "dialog"
     requiresScore: false
@@ -3539,7 +3539,7 @@ MuseScore {
                 id: chkSingleScoreExport
                 text: "One score for all"
                 checked: true
-                enabled: !chkByPattern.checked || modeIndex() != 0
+                enabled: !chkByPattern.checked && modeIndex() === 0
                 ToolTip.text: "When grouping the pattern by roots, use one score for all the patterns or export every root on its own pattern."
                 ToolTip.delay: tooltipShow
                 ToolTip.timeout: tooltipHide
