@@ -40,6 +40,8 @@ import "selectionhelper.js" as SelHelper
 /*  - 2.4.0 beta 1: New plugin folder organisation
 /*  - 2.4.0 beta 1: Port to MS4
 /*  - 2.4.0 beta 1: Loop mode was not deducing the right chord type at some occasions
+/*  - 2.4.0 beta 1: New option of exporting 1 score by root note.
+/*  - 2.4.0 beta 1: 6/4 measures allowed (instead of splitting them in two 3/4).
 /**********************************************/
 MuseScore {
     menuPath: "Plugins." + pluginName
@@ -60,6 +62,7 @@ MuseScore {
 
     Component.onCompleted : {
         if (mscoreMajorVersion >= 4) {
+            mainWindow.title = pluginName ;
             mainWindow.thumbnailName = "logo.png";
         }
     }
@@ -75,7 +78,7 @@ MuseScore {
     readonly property var endRegexp: /\|\s*;?/g
 
     readonly property var debugPrepare: true
-    readonly property var tracePrepare: false
+    readonly property var tracePrepare: true
     readonly property var debugPrint: false
     readonly property var tracePrint: false
     readonly property var debugNextMeasure: false
@@ -118,6 +121,7 @@ MuseScore {
         id: settings
         category: "WorkoutBuilder"
 		property alias invertOdds: chkInvert.checked
+		property alias singleScoreExport: chkSingleScoreExport.checked
 		property alias orderByPattern: chkByPattern.checked
 		property alias adaptativeMeasure: chkAdaptativeMeasure.checked
 		property alias strictLayout: chkStrictLayout.checked
@@ -474,7 +478,7 @@ MuseScore {
 
         // Debug
         for (var i = 0; i < pages.length; i++) {
-            console.log("[" + i + "]" + pages[i]);
+            debugO("[" + i + "]", pages[i], ["notes","chord"]);
             //if (pages[i]===undefined) continue; // ne devrait plus arriver
             for (var j = 0; j < pages[i].length; j++) {
 				debugO("for print, pattern "+j+"/"+i, pages[i][j],["scale"]);
@@ -484,8 +488,34 @@ MuseScore {
             }
         }
 
-        printWorkout_pushToScore(pages);
+        if (!scaleMode || chkByPattern.checked || chkSingleScoreExport.checked) {
+        // if (chkSingleScoreExport.checked) {
+            printWorkout_pushToScore(pages);
+        } else {
+            if (debugPrepare) console.log("Splitting workout in multiple scores");
 
+            var prevroot = null;
+            var one = null;
+            for (var i = 0; i < pages.length; i++) {
+                var page = pages[i];
+                var root=pages[i][0].root; // on prend la pattern de la 1ère root
+                if (debugPrepare) console.log("This root: "+root+", previous root: "+prevroot);
+                
+                if (root !== prevroot) {
+                    if (one) {
+                        if (debugPrepare) console.log("Building a new page (for: "+prevroot+")");
+                        printWorkout_pushToScore(one);
+                    }
+                    one = [];
+                    prevroot=root;
+                }
+                one.push(page);
+            }
+            if (one) {
+                if (debugPrepare) console.log("Building the last page (for: "+prevroot+")");
+                printWorkout_pushToScore(one);
+            }
+        }
     }
 	
     function printWorkout_forGrid() {
@@ -1024,18 +1054,38 @@ MuseScore {
         title += " - ";
         if (rootSchemeName !== undefined && rootSchemeName.trim() !== "") {
             title += rootSchemeName;
-        } else if ((modeIndex() == 0)) {
+
+        }
+        else if ((modeIndex() == 0)) {
             // scale mode
-            for (var i = 0; i < _max_roots; i++) {
-                var txt = idRoot.itemAt(i).currentText;
-                // console.log("Next Root: " + txt);
-                if (txt === '' || txt === undefined)
-                    break;
-                if (i > 0)
-                    title += ", ";
-                title += txt;
+            /*for (var i = 0; i < _max_roots; i++) {
+            var txt = idRoot.itemAt(i).currentText;
+            // console.log("Next Root: " + txt);
+            if (txt === '' || txt === undefined)
+            break;
+            if (i > 0)
+            title += ", ";
+            title += txt;
+            }*/
+            // On ne prend que les roots de ce qui nous est envoyé (2.4.0 Beta1)
+            var sub = pages.reduce(function (acc, val) {
+                var roots = val.map(function (e) {
+                    return e.root;
+                });
+                for (var r = 0; r < roots.length; r++) {
+                    var root = roots[r];
+                    if (acc.indexOf(root) === -1)
+                        acc.push(root);
+                }
+                return acc;
+            }, [])
+            .map(function (e) {
+                return _chords[e].root;
+            })
+            .join(", ");
+            title += sub;
             }
-        } else {
+            else {
             // grid mode
             var names = txtPhrase.text.replace(endRegexp, '|;').split(";")
                 .map(function (c) {
@@ -1712,6 +1762,8 @@ MuseScore {
 		
         if ((count % 4) === 0)
             return 4;
+        else if ((count % 6) === 0)
+            return 6;
         else if ((count % 3) === 0)
             return 3;
         else if ((count % 5) === 0)
@@ -3484,6 +3536,16 @@ MuseScore {
                 ]
             }
             CheckBox {
+                id: chkSingleScoreExport
+                text: "One score for all"
+                checked: true
+                enabled: !chkByPattern.checked || modeIndex() != 0
+                ToolTip.text: "When grouping the pattern by roots, use one score for all the patterns or export every root on its own pattern."
+                ToolTip.delay: tooltipShow
+                ToolTip.timeout: tooltipHide
+                ToolTip.visible: hovered
+            }
+            CheckBox {
                 id: chkInvert
                 text: "Invert pattern every two roots"
                 checked: false
@@ -4574,7 +4636,7 @@ MuseScore {
         var last = measure.lastSegment;
         var duration = 0;
 
-        console.log("Analyzing track " + (((track !== undefined) && (track != null)) ? track : "all") + ", above " + (abovetick ? abovetick : "-1"));
+        if (debugPrint) console.log("Analyzing track " + (((track !== undefined) && (track != null)) ? track : "all") + ", above " + (abovetick ? abovetick : "-1"));
 
         if ((track !== undefined) && (track != null)) {
             duration = _computeRemainingRest(measure, track, abovetick);
@@ -4584,9 +4646,9 @@ MuseScore {
             duration = 999;
             // Analyze made on all tracks
             for (var t = 0; t < curScore.ntracks; t++) {
-                console.log(">>>> " + t + "/" + curScore.ntracks + " <<<<");
+                if (tracePrint) console.log(">>>> " + t + "/" + curScore.ntracks + " <<<<");
                 var localavailable = _computeRemainingRest(measure, t, abovetick);
-                console.log("Available at track " + t + ": " + localavailable + " (" + duration + ")");
+                if (tracePrint) console.log("Available at track " + t + ": " + localavailable + " (" + duration + ")");
                 duration = Math.min(duration, localavailable);
                 if (duration == 0)
                     break;
@@ -4607,7 +4669,7 @@ MuseScore {
         // setting the limit until which to look for rests
         abovetick = (abovetick === undefined) ? -1 : abovetick;
 
-        console.log("_computeRemainingRest: " + (((track !== undefined) && (track != null)) ? track : "all") + ", above tick " + (abovetick ? abovetick : "-1"));
+        if (debugPrint) console.log("_computeRemainingRest: " + (((track !== undefined) && (track != null)) ? track : "all") + ", above tick " + (abovetick ? abovetick : "-1"));
 
         if ((track !== undefined) && (track != null)) {
             // Analyze limited to one track
@@ -4617,7 +4679,7 @@ MuseScore {
                 // if ((element != null) && ((element.type == Element.CHORD) )) {
                 if ((element != null) && ((element.type == Element.CHORD) || (last.tick <= abovetick))) { // 16/3/22
                     if (inTail)
-                        console.log("switching outside of available buffer");
+                        if (tracePrint) console.log("switching outside of available buffer");
                     // As soon as we encounter a Chord, we leave the "rest-tail"
                     inTail = false;
                 }
@@ -4659,7 +4721,7 @@ MuseScore {
 	
     function _d(last, track) {
         var el = last.elementAt(track);
-        console.log(" At " + last.tick + "/" + track + ": " + ((el !== null) ? el.userName() : " / "));
+        if (tracePrint) console.log(" At " + last.tick + "/" + track + ": " + ((el !== null) ? el.userName() : " / "));
         return el;
     }
 
