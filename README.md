@@ -24,6 +24,12 @@ For installation see [Plugins](https://musescore.org/en/handbook/3/plugins).
 The whole zip content (so the `workoutbuilder\ ` folder) must be unzipped **as such** in your plugin folder. <br/>
 If you had a previous version installed, please delete the previous `workoutbuilder.qml` file to avoid conflicts.
 
+## Support of MS4.0
+**NOT SUPPORTED**
+
+MuseScore 4.0 support for plugin is minimal. Many functions like creation of scores, reading of scores through the API are not implemented yet.
+Therefore, this plugin does not work under MuseScore 4.0.
+
 ## User manual
 Refer to the [PDF instruction file](user_manual.pdf). (NOT UPDATED FOR v2.3.0)
 
