@@ -2,7 +2,7 @@
 *Scale Workout Builder plugin for MuseScore 3.x* is a plugin for MuseScore 3.0 for the creation of exercises and workouts scores for practising your playing skills and knowledge of scales, improvisation patterns, ...
 <p align="center"><img src="/workoutbuilder/logo.png" Alt="logo" width="300" /></p>
 
-![Scale Workout Builder plugin](/demo/demo scale workout builder.gif)
+<p align="center"><img src="/demo/demo scale workout builder.gif" Alt="Scale Workout Builder plugin in action"/></p>
 
 ## New features in 2.4.1
 * [Improvment] Better titles in the new *One score by root* mode
