@@ -42,6 +42,8 @@ import "selectionhelper.js" as SelHelper
 /*  - 2.4.0 beta 1: Loop mode was not deducing the right chord type at some occasions
 /*  - 2.4.0 beta 1: New option of exporting 1 score by root note.
 /*  - 2.4.0 beta 1: 6/4 measures allowed (instead of splitting them in two 3/4).
+/*  - 2.4.1 Better title in case of one score per root note
+/*  - 2.4.1 Improvment for MS4 - but still no effect.
 /**********************************************/
 MuseScore {
     menuPath: "Plugins." + pluginName
@@ -1052,11 +1054,18 @@ MuseScore {
 
         var title = (workoutName !== undefined) ? workoutName : "Scale workout";
         title += " - ";
-        if (rootSchemeName !== undefined && rootSchemeName.trim() !== "") {
+        
+        console.log("------------- rootSchemeName: "+rootSchemeName);
+        console.log("------------- chkSingleScoreExport.enabled: "+chkSingleScoreExport.enabled);
+        console.log("------------- chkSingleScoreExport.checked: "+chkSingleScoreExport.checked);
+        console.log("------------- modeIndex: "+modeIndex());
+        
+        if (rootSchemeName !== undefined && rootSchemeName.trim() !== "" && (chkSingleScoreExport.checked || !chkSingleScoreExport.enabled)) {
+            // Si on a un nom schéma mais qu'on est en mode 1 page par root => on n'utilise pas ce nom.
             title += rootSchemeName;
 
         }
-        else if ((modeIndex() == 0)) {
+        else if ((modeIndex() === 0)) {
             // scale mode
             /*for (var i = 0; i < _max_roots; i++) {
             var txt = idRoot.itemAt(i).currentText;
@@ -2693,18 +2702,18 @@ MuseScore {
 					
 					textRole: "label" 
 					property var imageRole: "image"
-					property var valueRole: "type"
+					property var comboValue: "type"
 
 
 					onActivated: {
 					    // loopMode = currentValue;
-					    gridType = model[currentIndex][valueRole];
+					    gridType = model[currentIndex][comboValue];
 					    console.log(gridType);
 					}
 
 					Binding on currentIndex {
 					    value: {
-							var ci=_gridTypes.map(function(e) { return e[valueRole] }).indexOf(gridType);
+							var ci=_gridTypes.map(function(e) { return e[comboValue] }).indexOf(gridType);
 							ci;
 						}
 					}
@@ -2780,12 +2789,12 @@ MuseScore {
                         model: durations
 
                         textRole: "text"
-                        property var valueRole: "duration"
+                        property var comboValue: "duration"
                         property var duration: 1
 
                         onActivated: {
                             // loopMode = currentValue;
-                            duration = model[currentIndex][valueRole];
+                            duration = model[currentIndex][comboValue];
                             console.log(duration);
 
                             for (var i = 0; i < _max_patterns; i++) {
@@ -2800,7 +2809,7 @@ MuseScore {
 
                         Binding on currentIndex {
                             value: durations.map(function (e) {
-                                return e[lstStepDuration.valueRole]
+                                return e[lstStepDuration.comboValue]
                             }).indexOf(lstStepDuration.duration);
                         }
 
@@ -2890,17 +2899,17 @@ MuseScore {
 							    model: _ddNotes
 
 							    textRole: "text"
-							    property var valueRole: "step"
+							    property var comboValue: "step"
 
 							    onActivated: {
-							        note = model[currentIndex][valueRole];
+							        note = model[currentIndex][comboValue];
 							        console.log(note);
 							    }
 
 							    Binding on currentIndex {
 							        value: {
 										_ddNotes.map(function (e) {
-							            return e[lstStep.valueRole]
+							            return e[lstStep.comboValue]
 							        }).indexOf(note);
 									}
 							    }
@@ -2941,11 +2950,11 @@ MuseScore {
 
                                 // Roles in the ComboBox model
 							    textRole: "text"
-							    property var valueRole: "step"
+							    property var comboValue: "step"
 
 								onActivated: {
 									console.log("degree at "+stepIndex+" of "+patternIndex+": "+degree);
-									degree = model[currentIndex][valueRole];
+									degree = model[currentIndex][comboValue];
 									workoutName = undefined; // resetting the name of the 
 									console.log("==> now degree: "+degree);
 								}
@@ -2954,7 +2963,7 @@ MuseScore {
 									// value: lstGStep.model.indexOf(degree)
 							        value: {
 										_ddGridNotes.map(function (e) {
-							            return e[lstGStep.valueRole]
+							            return e[lstGStep.comboValue]
                                     }).indexOf(degree);
 									}
 								}
@@ -2991,17 +3000,17 @@ MuseScore {
 					        model: durations
 
 					        textRole: "text"
-					        property var valueRole: "duration"
+					        property var comboValue: "duration"
 
 					        onActivated: {
 					            // loopMode = currentValue;
-					            duration = model[currentIndex][valueRole];
+					            duration = model[currentIndex][comboValue];
 					            console.log(duration);
 					        }
 
 					        Binding on currentIndex {
 					            value: durations.map(function (e) {
-					                return e[lstNoteDuration.valueRole]
+					                return e[lstNoteDuration.comboValue]
 					            }).indexOf(duration);
 					        }
 
@@ -3047,17 +3056,17 @@ MuseScore {
 					
 					textRole: "label" 
 					property var imageRole: "image"
-					property var valueRole: "id"
+					property var comboValue: "id"
 					
 					onActivated: {
                         // loopMode = currentValue;
-                        loopMode = model[currentIndex][valueRole];;
+                        loopMode = model[currentIndex][comboValue];;
                         console.log(loopMode);
                     }
 
                     Binding on currentIndex {
 					    value: {
-							var ci=model.map(function(e) { return e[valueRole] }).indexOf(loopMode);
+							var ci=model.map(function(e) { return e[comboValue] }).indexOf(loopMode);
 							ci;
 						}
                     }
