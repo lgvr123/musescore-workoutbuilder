@@ -14,7 +14,6 @@ import "selectionhelper.js" as SelHelper
 
 /**********************
 /* Parking B - MuseScore - Scale Workout builder plugin
-/* v2.4.0
 /* ChangeLog:
 /* 	- 0.0.0: Initial release
 /*  - 1.0.0: Tools and library of patterns and workouts
@@ -44,11 +43,12 @@ import "selectionhelper.js" as SelHelper
 /*  - 2.4.0 beta 1: 6/4 measures allowed (instead of splitting them in two 3/4).
 /*  - 2.4.1 Better title in case of one score per root note
 /*  - 2.4.1 Improvment for MS4 - but still no effect.
+/*  - 2.4.1 Bugfix in the QML subcomponents and in chordanalyser library (Issue#2)
 /**********************************************/
 MuseScore {
     menuPath: "Plugins." + pluginName
     description: "This plugin builds chordscale workouts based on patterns defined by the user."
-    version: "2.4.0"
+    version: "2.4.1"
 
     pluginType: "dialog"
     requiresScore: false

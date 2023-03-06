@@ -2,6 +2,12 @@
 *Scale Workout Builder plugin for MuseScore 3.x* is a plugin for MuseScore 3.0 for the creation of exercises and workouts scores for practising your playing skills and knowledge of scales, improvisation patterns, ...
 <p align="center"><img src="/workoutbuilder/logo.png" Alt="logo" width="300" /></p>
 
+![Scale Workout Builder plugin](/demo/demo scale workout builder.gif)
+
+## New features in 2.4.1
+* [Improvment] Better titles in the new *One score by root* mode
+* [Bug] [Issue#2](https://github.com/lgvr123/musescore-workoutbuilder/issues/2) The plugin did not show up on some Linux configurations
+
 ## New features in 2.4.0
 * [New] Add steps duration (quarter, dotted, ...)
 * [New] Option to produce one score by root note, allowing for producing exercise sheets for multiple roots at once. 
@@ -21,7 +27,7 @@
 Download the [last stable version](https://github.com/lgvr123/musescore-workoutbuilder/releases).
 For installation see [Plugins](https://musescore.org/en/handbook/3/plugins).
 ### Remark
-The whole zip content (so the `workoutbuilder\ ` folder) must be unzipped **as such** in your plugin folder. <br/>
+The `workoutbuilder/ ` folder must be unzipped **as such** in your plugin folder (so leading to ´.../plugins/workoutbuilder/...´) . <br/>
 If you had a previous version installed, please delete the previous `workoutbuilder.qml` file to avoid conflicts.
 
 ## Support of MS4.0
