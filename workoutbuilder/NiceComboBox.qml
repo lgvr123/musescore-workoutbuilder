@@ -2,13 +2,14 @@ import QtQuick 2.9
 import QtQuick.Controls 2.2
 
 // v1.1.0: including textRole
+// v1.1.1: bugfix on textRole
 
 ComboBox {
     id: control
 
     model: []
 	
-	textRole: text
+	textRole: "text"
 
     delegate: ItemDelegate { // requiert QuickControls 2.2
         width: control.width
