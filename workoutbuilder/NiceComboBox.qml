@@ -3,13 +3,14 @@ import QtQuick.Controls 2.2
 
 // v1.1.0: including textRole
 // v1.1.1: bugfix on textRole
+// v1.1.2: MS4 bugfix
 
 ComboBox {
     id: control
 
-    model: []
+    //model: []
 	
-	textRole: "text"
+	//textRole: "text"
 
     delegate: ItemDelegate { // requiert QuickControls 2.2
         width: control.width
@@ -22,7 +23,7 @@ ComboBox {
 
     contentItem: Text {
 
-        text: (control.model[control.currentIndex])?control.model[control.currentIndex][textRole]:"--"
+        text: (control.model && control.model[control.currentIndex])?control.model[control.currentIndex][textRole]:"--"
         anchors.verticalCenter: parent.verticalCenter
         leftPadding: 10
         rightPadding: 10
@@ -46,7 +47,7 @@ ComboBox {
 
     function computeWidth(mdl) {
         if (mdl == null) {
-            return;
+            return 200; // returning a default value in case of no model (yet)
         }
 
 
@@ -61,7 +62,7 @@ ComboBox {
         pwidth += control.contentItem.rightPadding + control.contentItem.leftPadding;
         pwidth += control.indicator.width
 
-        return pwidth;
+        return Math.max(pwidth,10);  // returning minimum 10
     }
 
 }

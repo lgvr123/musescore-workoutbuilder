@@ -44,6 +44,7 @@ import "selectionhelper.js" as SelHelper
 /*  - 2.4.1 Better title in case of one score per root note
 /*  - 2.4.1 Improvment for MS4 - but still no effect.
 /*  - 2.4.1 Bugfix in the QML subcomponents and in chordanalyser library (Issue#2)
+/*  - 2.4.2 repeat the chord symbol at each pattern repetition
 /**********************************************/
 MuseScore {
     menuPath: "Plugins." + pluginName
@@ -1223,6 +1224,13 @@ MuseScore {
                 if (root !== prevRoot || mode !== prevMode) {
                     preferredTpcs = filterTpcs(root, mode);
                 }
+
+                // 2.4.2: reset prevChord to be sure to reprint it at each pattern repetition
+                prevChord = {
+                    "symb": 'xxxxxxxxxxxxxxx',
+                    "name": 'xxxxxxxxxxxxxxx'
+                };
+
 
                 if (adaptativeMeasure) {
                     // beatsByMeasure = (pages[i][j].gridType!=="grid")?pages[i][j].notes.length:signatureForPattern(pages[i][j].notes.length);
