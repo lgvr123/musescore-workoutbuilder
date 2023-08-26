@@ -49,7 +49,7 @@ import "selectionhelper.js" as SelHelper
 MuseScore {
     menuPath: "Plugins." + pluginName
     description: "This plugin builds chordscale workouts based on patterns defined by the user."
-    version: "2.4.1"
+    version: "2.4.2-SNAPSHOT"
 
     pluginType: "dialog"
     requiresScore: false
@@ -331,27 +331,43 @@ MuseScore {
             "major": false, // we consider C as a flat scale, sothat a m7 is displayed as B♭ instead of A♯
             "minor": false
         }, {
-            "root": 'D♭/C♯',
+            "root": 'D♭',
             "major": false,
+            "minor": false
+        }, {
+            "root": 'C♯',
+            "major": true,
             "minor": true
         }, {
             "root": 'D',
             "major": true,
             "minor": false
         }, {
-            "root": 'E♭/D♯',
+            "root": 'E♭',
             "major": false,
+            "minor": false
+        }, {
+            "root": 'D♯',
+            "major": true,
             "minor": true
         }, {
             "root": 'E',
             "major": true,
             "minor": true
         }, {
+            "root": 'F♭',
+            "major": false,
+            "minor": false
+        }, {
             "root": 'F',
             "major": false,
             "minor": false
         }, {
-            "root": 'F♯/G♭',
+            "root": 'G♭',
+            "major": false,
+            "minor": false
+        }, {
+            "root": 'F♯',
             "major": true,
             "minor": true
         }, {
@@ -359,21 +375,33 @@ MuseScore {
             "major": true,
             "minor": false
         }, {
-            "root": 'A♭/G♯',
+            "root": 'A♭',
             "major": false,
+            "minor": false
+        }, {
+            "root": 'G♯',
+            "major": true,
             "minor": true
         }, {
             "root": 'A',
             "major": true,
             "minor": true
         }, {
-            "root": 'B♭/A♯',
+            "root": 'B♭',
             "major": false,
             "minor": false
+        }, {
+            "root": 'A♯',
+            "major": true,
+            "minor": true
         }, {
             "root": 'B',
             "major": true,
             "minor": true
+        }, {
+            "root": 'Cb',
+            "major": false,
+            "minor": false
         }
     ]
 
