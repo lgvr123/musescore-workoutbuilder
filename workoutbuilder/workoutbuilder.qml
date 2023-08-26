@@ -45,11 +45,15 @@ import "selectionhelper.js" as SelHelper
 /*  - 2.4.1 Improvment for MS4 - but still no effect.
 /*  - 2.4.1 Bugfix in the QML subcomponents and in chordanalyser library (Issue#2)
 /*  - 2.4.2 repeat the chord symbol at each pattern repetition
+/*  - 2.4.2 Add option for line break at each repetition
+/*  - 2.4.2 Size of several small windows
+/*  - 2.4.2 degrees up to "15" (thord ocatve root)
+
 /**********************************************/
 MuseScore {
     menuPath: "Plugins." + pluginName
     description: "This plugin builds chordscale workouts based on patterns defined by the user."
-    version: "2.4.1"
+    version: "2.4.2-SNAPSHOT"
 
     pluginType: "dialog"
     requiresScore: false
@@ -128,6 +132,7 @@ MuseScore {
 		property alias orderByPattern: chkByPattern.checked
 		property alias adaptativeMeasure: chkAdaptativeMeasure.checked
 		property alias strictLayout: chkStrictLayout.checked
+		property alias lineBreak: chkLineBreak.checked
 		property alias instrument: lstTransposition.currentIndex
     }
 
@@ -136,11 +141,11 @@ MuseScore {
     readonly property var _GRID_MODE: "grid"
 
     property int _max_patterns: 10
-    property int _max_steps: 12 
+    property int _max_steps: 18 
 	
     property int _max_roots: 12
     property var _degrees: ['1', 'b2', '2', 'm3', 'M3', '4', 'b5', '5', 'm6', 'M6', 'm7', 'M7',
-        '(8)', 'b9', '9', '#9', 'b11', '11', '#11', '(12)', 'b13', '13', '#13', '(14)']
+        '(8)', 'b9', '9', '#9', 'b11', '11', '#11', '(12)', 'b13', '13', '#13', '(14)', '(15)']
 
     // v2.1.0
     // property var _griddegrees: ['1', '3', '5', '7', '8', '9', '11'];
@@ -914,7 +919,6 @@ MuseScore {
             for (var p = 0; p < extpatts.length; p++) {
                 var pp = extpatts[p];
                 var mode = (pp.notes.map(function(e) { return e.note }).indexOf(3) > -1) ? "minor" : "major"; // if we have the "m3" the we are in minor mode.
-                //var page = p; //0; //(chkPageBreak.checked) ? p : 0;
                 if ((p == 0) || ((patts.length > 1) && (roots.length > 1))) {
                     console.log("page++");
                     page++;
@@ -975,7 +979,6 @@ MuseScore {
         } else {
             // We sort by roots. By root, repeat every pattern
             for (var r = 0; r < roots.length; r++) {
-                //var page = r; //0; //(chkPageBreak.checked) ? r : 0;
 
                 var root = roots[r];
 
@@ -1186,30 +1189,8 @@ MuseScore {
         var newLine = false;
 		
 
-        for (var i = 0; i < pages.length; i++) {
+        for (var i = 0; i < pages.length; i++) {;
 
-            if (i > 0) {
-                // New Page ==> double bar + section break;
-                cursor.rewindToTick(cur_time); // rewing to the last note
-
-                // ... add a double line
-                var measure = cursor.measure;
-                if (measure.nextMeasure != null) {
-
-                    addDoubleLineBar(measure, score);
-                } else {
-                    if (debugPrint) console.log("Changing the bar line is delayed after the next measure is added");
-                }
-
-                // ... add a  linebreak
-                var lbreak = newElement(Element.LAYOUT_BREAK);
-                lbreak.layoutBreakType = 2; //section break
-                cursor.add(lbreak);
-                newLine = true;
-            } else {
-                if (debugPrint) console.log("No LAYOUT_BREAK required");
-
-            }
 
             var prevRoot = '';
             var prevMode = 'xxxxxxxxxxxxxxx';
@@ -1218,6 +1199,33 @@ MuseScore {
                 "name": 'xxxxxxxxxxxxxxx'
             };
             for (var j = 0; j < pages[i].length; j++) {
+                var shouldLineBreak=(chkLineBreak.checked)?((i>0) || (j>0)):((i>0) && (j==0));
+
+                if (shouldLineBreak) {
+                    // New Page ==> double bar + section break;
+                    cursor.rewindToTick(cur_time); // rewing to the last note
+
+                    // ... add a double line
+                    var measure = cursor.measure;
+                    if (measure.nextMeasure != null) {
+
+                        addDoubleLineBar(measure, score);
+                    } else {
+                        if (debugPrint) console.log("Changing the bar line is delayed after the next measure is added");
+                    }
+
+                    // ... add a  linebreak
+                    var lbreak = newElement(Element.LAYOUT_BREAK);
+                    lbreak.layoutBreakType = 2; //section break
+                    cursor.add(lbreak);
+                    newLine = true;
+                } else {
+                    if (debugPrint) console.log("No LAYOUT_BREAK required");
+
+                }
+
+
+
                 var root = pages[i][j].root;
                 var chord = pages[i][j].chord;
                 var mode = pages[i][j].mode;
@@ -3591,11 +3599,11 @@ MuseScore {
                 ToolTip.timeout: tooltipHide
                 ToolTip.visible: hovered
             }
-            /*CheckBox {
-            id : chkPageBreak
-            checked : false
-            text : "Page break after each group"
-            }*/
+            CheckBox {
+                id : chkLineBreak
+                checked : false
+                text : "Line break after each repetition"
+            }
             Item {
                 Layout.fillWidth: true
             }
@@ -3781,7 +3789,7 @@ MuseScore {
     Window {
         id: loadWindow
         title: "Reuse pattern..."
-        width: 500
+        width: 800
         height: 500
         modality: Qt.WindowModal
         flags: Qt.Dialog | Qt.WindowSystemMenuHint | Qt.WindowTitleHint | Qt.WindowCloseButtonHint
@@ -4021,7 +4029,7 @@ MuseScore {
                 //Layout.preferredHeight: 30
                 text: "--"
                 Layout.fillWidth: true
-                Layout.preferredWidth: 200
+                Layout.preferredWidth: 400
                 placeholderText: "Enter new " + ((state === "workout") ? "workout" : "phrase") + "'s name"
                 maximumLength: 255
 
@@ -4119,8 +4127,8 @@ MuseScore {
             TextField {
                 id: txtInputPatternName
 
-                //Layout.preferredHeight: 30
                 text: ""
+                Layout.preferredWidth: 400
                 Layout.fillWidth: true
                 placeholderText: "Leave blank for default name"
                 maximumLength: 255
