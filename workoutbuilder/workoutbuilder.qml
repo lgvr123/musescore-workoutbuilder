@@ -45,6 +45,7 @@ import "selectionhelper.js" as SelHelper
 /*  - 2.4.1 Improvment for MS4 - but still no effect.
 /*  - 2.4.1 Bugfix in the QML subcomponents and in chordanalyser library (Issue#2)
 /*  - 2.4.2 repeat the chord symbol at each pattern repetition
+/*  - 2.4.2 Distinction between C# and Db, G# and Ab, ... (ongoing)
 /**********************************************/
 MuseScore {
     menuPath: "Plugins." + pluginName
