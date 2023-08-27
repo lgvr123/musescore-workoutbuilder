@@ -8,6 +8,7 @@
 /*	- 13/03/22: v1.0.4 Extra parameter to keep the rest duration when adding notes and chords.
 /*	- 13/03/22: v1.0.4 New restToChords function.
 /*	- 18/03/22: v1.0.5 restToNote and New restToChords accept now tpc1 and tpc2 values.
+/*	- 26/08/23: v1.0.6 set TPC by note name 
 /**********************************************/
 // -----------------------------------------------------------------------
 // --- Vesionning-----------------------------------------
@@ -17,7 +18,7 @@ function checktVersion(expected) {
     return checkVersion(expected);
 }
 function checkVersion(expected) {
-    var version = "1.0.5";
+    var version = "1.0.6";
 
     var aV = version.split('.').map(function (v) {
         return parseInt(v);
@@ -301,26 +302,36 @@ function changeNote(note, toNote) {
         //    ", tpc: " + ((toNote.tpc1 === undefined) ? "undefined" : toNote.tpc1) + "/" + ((toNote.tpc2 === undefined) ? "undefined" : toNote.tpc2));
 
         if (!concertPitch) {
-            // We need to align the pitch, beacause the specified pitched is the score pitch and non the concert pitch²
+            // We need to align the pitch, beacause the specified pitched is the score pitch and not the concert pitch
             var dtpc = note.tpc2 - note.tpc1;
             var dpitch = deltaTpcToPitch(note.tpc1, note.tpc2);
 
             note.pitch += dpitch;
 
-            // basic approach. This will be correct but not all the time nice
+            // basic approach. This will be correct but not all the time nice. We'll correct it later on.
             note.tpc1 -= dtpc;
             note.tpc2 -= dtpc;
 
         }
 
-        var tpc = getPreferredTpc(note.tpc1, sharp_mode);
-        if (tpc !== null)
-            note.tpc1 = tpc;
 
+        var tpc1=null;
+        if (toNote.name)
+            tpc1=getPreferredTpcForName(note.tpc1,toNote.name);
+        if (tpc1 === null)
+            tpc1 = getPreferredTpc(note.tpc1, sharp_mode);
+
+        if (tpc1 !== null)
+            note.tpc1 = tpc1;
+
+        var tpc2=null;
         //delta = toNote.pitch - 60;
-        var tpc = getPreferredTpc(note.tpc2, sharp_mode);
-        if (tpc !== null)
-            note.tpc2 = tpc;
+        if (toNote.name)
+            tpc2=getPreferredTpcForName(note.tpc2,toNote.name);
+        if (tpc2 === null)
+            tpc2 = getPreferredTpc(note.tpc2, sharp_mode);
+        if (tpc2 !== null)
+            note.tpc2 = tpc2;
 
     }
 
@@ -333,11 +344,11 @@ function changeNote(note, toNote) {
 function getPreferredTpc(tpc, sharp_mode) {
     var delta = tpcToPitch(tpc);
 
-    var tpcs = (sharp_mode) ? sharpTpcs : flatTpcs;
+    var mtpcs = (sharp_mode) ? sharpTpcs : flatTpcs;
 
-    for (var t = 0; t < tpcs.length; t++) {
-        if (tpcs[t].pitch == delta) {
-            return tpcs[t].tpc;
+    for (var t = 0; t < mtpcs.length; t++) {
+        if (mtpcs[t].pitch == delta) {
+            return mtpcs[t].tpc;
             break;
         }
     }
@@ -345,6 +356,27 @@ function getPreferredTpc(tpc, sharp_mode) {
     return null;
 
 }
+
+function getPreferredTpcForName(tpc, noteName) {
+    var delta = tpcToPitch(tpc);
+    
+    console.log("-->Searching tpc pitch "+delta+" and note "+noteName);
+
+    
+    // On ne garde que les tpcs correspondant au nom de la note souhaitée
+    for (var i = 0; i < tpcs.length; i++) {
+        if (tpcs[i].raw === noteName) {
+            console.log("  analysing "+JSON.stringify(tpcs[i]));
+            if (tpcs[i].pitch === delta) {
+                return tpcs[i].tpc;
+            }
+        }
+    }
+
+    return null;
+
+}
+
 
 var pitchnotes = ['C', 'C', 'D', 'D', 'E', 'F', 'F', 'G', 'G', 'A', 'A', 'B'];
 

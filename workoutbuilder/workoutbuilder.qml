@@ -46,6 +46,7 @@ import "selectionhelper.js" as SelHelper
 /*  - 2.4.1 Bugfix in the QML subcomponents and in chordanalyser library (Issue#2)
 /*  - 2.4.2 repeat the chord symbol at each pattern repetition
 /*  - 2.4.2 Distinction between C# and Db, G# and Ab, ... (ongoing)
+/*  - 2.4.2 Use correct notes e.g. a 3rd of Bb must be some kind of D. So 3m of Bb is Db and not C#
 /**********************************************/
 MuseScore {
     menuPath: "Plugins." + pluginName
@@ -142,6 +143,8 @@ MuseScore {
     property int _max_roots: 12
     property var _degrees: ['1', 'b2', '2', 'm3', 'M3', '4', 'b5', '5', 'm6', 'M6', 'm7', 'M7',
         '(8)', 'b9', '9', '#9', 'b11', '11', '#11', '(12)', 'b13', '13', '#13', '(14)']
+
+    property var _notenames: ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
 
     // v2.1.0
     // property var _griddegrees: ['1', '3', '5', '7', '8', '9', '11'];
@@ -330,79 +333,98 @@ MuseScore {
     property var _chords: [{
             "root": 'C',
             "major": false, // we consider C as a flat scale, sothat a m7 is displayed as B♭ instead of A♯
-            "minor": false
-        }, {
-            "root": 'D♭',
-            "major": false,
-            "minor": false
+            "minor": false,
+            "semitones": 0
         }, {
             "root": 'C♯',
             "major": true,
-            "minor": true
+            "minor": true,
+            "semitones": 1
+        }, {
+            "root": 'D♭',
+            "major": false,
+            "minor": false,
+            "semitones": 1
         }, {
             "root": 'D',
             "major": true,
-            "minor": false
-        }, {
-            "root": 'E♭',
-            "major": false,
-            "minor": false
+            "minor": false,
+            "semitones": 2
         }, {
             "root": 'D♯',
             "major": true,
-            "minor": true
+            "minor": true,
+            "semitones": 3
+        }, {
+            "root": 'E♭',
+            "major": false,
+            "minor": false,
+            "semitones": 3
         }, {
             "root": 'E',
             "major": true,
-            "minor": true
+            "minor": true,
+            "semitones": 4
         }, {
             "root": 'F♭',
             "major": false,
-            "minor": false
+            "minor": false,
+            "semitones": 4
         }, {
             "root": 'F',
             "major": false,
-            "minor": false
-        }, {
-            "root": 'G♭',
-            "major": false,
-            "minor": false
+            "minor": false,
+            "semitones": 5
         }, {
             "root": 'F♯',
             "major": true,
-            "minor": true
+            "minor": true,
+            "semitones": 6
+        }, {
+            "root": 'G♭',
+            "major": false,
+            "minor": false,
+            "semitones": 6
         }, {
             "root": 'G',
             "major": true,
-            "minor": false
-        }, {
-            "root": 'A♭',
-            "major": false,
-            "minor": false
+            "minor": false,
+            "semitones": 7
         }, {
             "root": 'G♯',
             "major": true,
-            "minor": true
+            "minor": true,
+            "semitones": 8
+        }, {
+            "root": 'A♭',
+            "major": false,
+            "minor": false,
+            "semitones": 8
         }, {
             "root": 'A',
             "major": true,
-            "minor": true
-        }, {
-            "root": 'B♭',
-            "major": false,
-            "minor": false
+            "minor": true,
+            "semitones": 9
         }, {
             "root": 'A♯',
             "major": true,
-            "minor": true
+            "minor": true,
+            "semitones": 10
+        }, {
+            "root": 'B♭',
+            "major": false,
+            "minor": false,
+            "semitones": 10
         }, {
             "root": 'B',
             "major": true,
-            "minor": true
+            "minor": true,
+            "semitones": 11
         }, {
             "root": 'Cb',
             "major": false,
-            "minor": false
+            "minor": false,
+            "semitones": 11
         }
     ]
 
@@ -440,7 +462,7 @@ MuseScore {
         }
     }
 	
-		property var durations : [
+    property var durations : [
 		//mult is a tempo-multiplier compared to a crotchet      
 		{text: '\uECA2',               duration: 4     ,  fraction: fraction( 1, 1)  },
 		{text: '\uECA3 \uECB7',        duration: 3     ,  fraction: fraction( 3, 4)  },
@@ -653,6 +675,8 @@ MuseScore {
 
                 var chord = chords[r];
                 var root = chord.root;
+                var rawRootName = _chords[root].root.substr(0,1); // raw root name : e.g. "E" for "Eb";
+                
                 var chordtype = chord.type;
                 // var scale = _chordTypes[chordtype].scale;
                 // v2.1.0
@@ -695,7 +719,8 @@ MuseScore {
 				// if (pp.notes.length==1 && pp.notes[0]==null) {
 				if (pp.gridType!=="grid") {
 					// Chord mode: take only the notes of the chord
-					var nns=chord.chordnotes.map(function(e) { return parseInt(e.note); }).sort(function(a,b) { return a-b;});
+					var nns=chord.chordnotes.map(function(e) { return 
+                    (e.note); }).sort(function(a,b) { return a-b;});
 					
 					console.log("~~Collecting notes for "+pp.gridType+" on "+effective_chord.name+" ~~");
 					if (chord.bass!=null) {
@@ -768,10 +793,13 @@ MuseScore {
 					
                     for (var j = 0; j < pt.length; j++) {
                         if (debugPrepare) console.log(">>> Looking at note " + j + ": " + pt[j].note);
-                        //notes.push(root + pt[j]);
-                            var _n=(pt[j].note!==null)?(root + pt[j].note):null;
-                            // var _n=(pt[j].note!==null)?root + pt[j].note:0;
-                            notes.push({"note" : _n, "duration": pt[j].duration });
+
+                        var smt=_chords[root].semitones;
+                        var noteName = noteFromRoot(rawRootName,pt[j].degreeName);
+                        if (debugPrepare) console.log(">>>   with root id = "+root+" ("+smt+")");
+                        // var _n=(pt[j].note!==null)?(root + pt[j].note):null;
+                        var _n=(pt[j].note!==null)?(smt + pt[j].note):null;
+                        notes.push({"note" : _n, "noteName": noteName, "duration": pt[j].duration });
                     }
 
 
@@ -818,9 +846,13 @@ MuseScore {
                     p.unshift({"note": null, "duration": sn.duration}); 
 				}
                 else if (sn.note !== '') {
-                    var d = _degrees.indexOf(sn.note);
-                    if (d > -1)
-                        p.unshift({"note": d, "duration": sn.duration});
+                    var smt = _degrees.indexOf(sn.note);
+                    if (smt > -1) {
+                        var arr=sn.note.match(/\d+/); // On extrait si on un degré 3, 4
+                        var step={"note": smt, "degreeName": (arr!==null && arr.length>0)?arr[0]:null, "duration": sn.duration};
+                        p.unshift(step);
+                        if (tracePrepare) console.log("Adding "+JSON.stringify(step));
+                    }
                 } else if (p.length===0) {
 					continue;
                 } 
@@ -911,16 +943,19 @@ MuseScore {
         }
 
         // Collecting the roots
+        if (debugPrepare) console.log("collecting the roots: ");
         var roots = [];
         for (var i = 0; i < _max_roots; i++) {
             var txt = idRoot.itemAt(i).currentText;
-            // console.log("Next Root: " + txt);
+            if (debugPrepare) console.log("root at "+i+": "+txt);
             if (txt === '' || txt === undefined)
                 continue;
             var r = _roots.indexOf(txt);
-            // console.log("-- => " + r);
-            if (r > -1)
-                roots.push(r)
+            if (debugPrepare) console.log("-- => index = " + r);
+            if (r > -1) {
+                roots.push(r);
+                
+            }
         }
 
         // Must have at least 1 pattern and 1 root
@@ -951,7 +986,8 @@ MuseScore {
                 for (var r = 0; r < roots.length; r++) {
                     console.log("By P, patterns: " + p + "/" + (patts.length - 1) + "; roots:" + r + "/" + (roots.length - 1) + " => " + page);
 
-                    var root = roots[r];
+                    var root = roots[r]; // index in the _chords array
+                    var rawRootName = _chords[root].root.substr(0,1); // raw root name : e.g. "E" for "Eb";
 
                     // Looping through the "loopAt" subpatterns (keeping them as a whole)
                     for (var s = 0; s < pp["subpatterns"].length; s++) {
@@ -966,10 +1002,12 @@ MuseScore {
 
 						for (var j = 0; j < _base.length; j++) {
 							console.log(">>> Looking at note " + j + ": " + _base[j].note);
-							//notes.push(root + _base[j]);
-								var _n=(_base[j].note!==null)?(root + _base[j].note):null;
-								// var _n=(_base[j].note!==null)?root + _base[j].note:0;
-								notes.push({"note" : _n, "duration": _base[j].duration });
+                            var smt=_chords[root].semitones;
+                            var noteName = noteFromRoot(rawRootName,_base[j].degreeName);
+                            if (debugPrepare) console.log(">>>   with root id = "+root+" ("+smt+")");
+							// var _n=(_base[j].note!==null)?(root + _base[j].note):null;
+							var _n=(_base[j].note!==null)?(smt + _base[j].note):null;
+                            notes.push({"note" : _n, "noteName": noteName,  "duration": _base[j].duration });
 						}
 
 
@@ -1007,6 +1045,7 @@ MuseScore {
                 //var page = r; //0; //(chkPageBreak.checked) ? r : 0;
 
                 var root = roots[r];
+                var rawRootName = _chords[root].root.substr(0,1); // raw root name : e.g. "E" for "Eb";
 
                 if ((r == 0) || ((patts.length > 1) && (roots.length > 1))) {
                     console.log("page++");
@@ -1029,9 +1068,11 @@ MuseScore {
                         var notes = [];
 
                         for (var j = 0; j < basesteps.length; j++) {
-								var _n=(basesteps[j].note!==null)?(root + basesteps[j].note):null;
-								// var _n=(basesteps[j].note!==null)?root + basesteps[j].note:0;
-                                notes.push({"note" : _n, "duration": basesteps[j].duration });
+                            var smt=_chords[root].semitones;
+                            var noteName = noteFromRoot(rawRootName,basesteps[j].degreeName);
+                            // var _n=(basesteps[j].note!==null)?(root + basesteps[j].note):null;
+                            var _n=(basesteps[j].note!==null)?(smt + basesteps[j].note):null;
+                            notes.push({"note" : _n, "noteName": noteName, "duration": basesteps[j].duration });
                         }
 
                         pages[page].push({
@@ -1064,7 +1105,7 @@ MuseScore {
 
         }
 
-        console.log("~~Preparing for GridWorkout print : done ~~");
+        console.log("~~Preparing for ScaleWorkout print : done ~~");
 
         return pages;
 
@@ -1333,6 +1374,7 @@ MuseScore {
 					if (debugNextMeasure) console.log("--["+k+"] NEXT 5: adding note/rest at "+cursor.segment.tick);
 			
                     var delta = pages[i][j].notes[k].note;
+                    var noteName = pages[i][j].notes[k].noteName;
 					
 					if (delta !== null) {
 					    // Note
@@ -1346,7 +1388,8 @@ MuseScore {
 					    var target = {
 					        "pitch": pitch,
 					        "concertPitch": false,
-					        "sharp_mode": f
+                            "name" : noteName, // 2.4.2: by preference look for the right tpc based on the note name
+					        "sharp_mode": f,
 					    };
 
 					    //cur_time = note.parent.tick; // getting note's segment's tick
@@ -1572,6 +1615,7 @@ MuseScore {
                     }
                     p.push({
                         note: shifted[j],
+                        // degreeName: TODO
                         duration: basesteps[j].duration
                     });
                 }
@@ -1675,10 +1719,10 @@ MuseScore {
 	    var reduced = pattern.filter(function (e) {
 	        return e.note !== null
 	    }).map(function (e) {
-	        return e.note
+	        return JSON.parse( JSON.stringify(e)); // clone 
 	    });
 
-	    reduced = reduced.reverse();
+	    reduced.reverse(); // in place reverse
 
 	    var p = [];
 
@@ -1689,10 +1733,8 @@ MuseScore {
 	        if (_b.note === null) {
 	            reduced.splice(j, 0, null);
 	        }
-	        p.push({
-	            note: reduced[j],
-	            duration: pattern[j].duration
-	        });
+            reduced[j].duration=pattern[j].duration;
+	        p.push(reduced[j]);
 	    }
 	    return p;
 
@@ -1789,6 +1831,19 @@ MuseScore {
 		
         return pshift;
 
+    }
+    
+    function noteFromRoot(rootName,degree) {
+        var idxR=_notenames.indexOf(rootName);
+        console.log("idxR of "+rootName+" = "+idxR);
+        var idxN=idxR+parseInt(degree)-1; // degree goes from 1 to 7 and beyond
+        console.log("idxN at degree "+degree+" = "+idxN);
+        idxN = idxN % _notenames.length;
+        console.log(" ==> = "+idxN);
+        var noteName=_notenames[idxN];
+        console.log(" ==> noteName = "+noteName);
+        if(tracePrepare) console.log(degree +"° of "+rootName+" is "+noteName);
+        return noteName;
     }
 
 	function patternDuration(notes) {
@@ -2378,6 +2433,7 @@ MuseScore {
                 m = Math.min(_max_roots, workout.roots.length);
 
                 for (var i = 0; i < m; i++) {
+                    // TODO
                     idRoot.itemAt(i).currentIndex = _ddRoots.indexOf(_roots[workout.roots[i]]); // id --> label --> indexOf dans le tableau de présentation
                 }
 
@@ -3359,6 +3415,7 @@ MuseScore {
                     console.log("Preset Changed: " + __preset.name + " -- " + rr);
                     for (var i = 0; i < _max_roots; i++) {
                         if (i < rr.length) {
+                            // TODO
                             idRoot.itemAt(i).currentIndex = _ddRoots.indexOf(_roots[rr[i]]);
                         } else {
                             idRoot.itemAt(i).currentIndex = 0;
@@ -4704,7 +4761,7 @@ MuseScore {
 
     }
 	
-	    /*
+    /*
      * Instead of counting the rests at the end of measure, we count what's inside the measure beyond the last rests.
      * That way, we take into account the fact that changing the time signature of a measure doesn't fill it with rests, but leaves an empty space.
      */
@@ -4744,7 +4801,7 @@ MuseScore {
         return duration;
     }
 	
-	    /**
+    /**
      * Effective duration of an element (so taking into account the tuplet it belongs to)
      */
     function elementTo64Effective(element) {
