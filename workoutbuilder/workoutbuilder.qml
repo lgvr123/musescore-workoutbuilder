@@ -47,6 +47,7 @@ import "selectionhelper.js" as SelHelper
 /*  - 2.4.2 repeat the chord symbol at each pattern repetition
 /*  - 2.4.2 Distinction between C# and Db, G# and Ab, ... (ongoing)
 /*  - 2.4.2 Use correct notes e.g. a 3rd of Bb must be some kind of D. So 3m of Bb is Db and not C#
+/*  - 2.4.2 Correct scale notes naming convention (e.g. "♭3" and "3" instead of "m3" and "M3")
 /**********************************************/
 MuseScore {
     menuPath: "Plugins." + pluginName
@@ -141,8 +142,8 @@ MuseScore {
     property int _max_steps: 12 
 	
     property int _max_roots: 12
-    property var _degrees: ['1', 'b2', '2', 'm3', 'M3', '4', 'b5', '5', 'm6', 'M6', 'm7', 'M7',
-        '(8)', 'b9', '9', '#9', 'b11', '11', '#11', '(12)', 'b13', '13', '#13', '(14)']
+    property var _degrees: ['1', '♭2', '2', '♭3', '3', '4', '♭5', '5', '♭6', '6', '♭7', '7',
+        '(8)', '♭9', '9', '♯9', '♭11', '11', '♯11', '(12)', '♭13', '13', '♯13', '(14)']
 
     property var _notenames: ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
 
@@ -899,8 +900,8 @@ MuseScore {
             if (cSymb === undefined) {
                 if (cText === '') {
                     var nn = p.map(function (e) {return e.note});
-                    var m3 = (nn.indexOf(3) > -1); // if we have the "m3" the we are in minor mode.
-                    if (nn.indexOf(10) > -1) { //m7
+                    var m3 = (nn.indexOf(3) > -1); // if we have the "♭3" the we are in minor mode.
+                    if (nn.indexOf(10) > -1) { //♭7
                         cText = m3 ? "m7" : "7";
                     } else if (nn.indexOf(11) > -1) { //M7
                         cText = m3 ? "m7" : "t7";
@@ -977,7 +978,7 @@ MuseScore {
             // We sort by patterns. By pattern, repeat over each root
             for (var p = 0; p < extpatts.length; p++) {
                 var pp = extpatts[p];
-                var mode = (pp.notes.map(function(e) { return e.note }).indexOf(3) > -1) ? "minor" : "major"; // if we have the "m3" the we are in minor mode.
+                var mode = (pp.notes.map(function(e) { return e.note }).indexOf(3) > -1) ? "minor" : "major"; // if we have the "♭3" the we are in minor mode.
                 //var page = p; //0; //(chkPageBreak.checked) ? p : 0;
                 if ((p == 0) || ((patts.length > 1) && (roots.length > 1))) {
                     console.log("page++");
@@ -1055,7 +1056,7 @@ MuseScore {
                     console.log("By R, patterns: " + p + "/" + (patts.length - 1) + "; roots:" + r + "/" + (roots.length - 1) + " => " + page);
 
                     var pp = extpatts[p];
-                    var mode = (pp.notes.map(function(e) { return e.note }).indexOf(3) > -1) ? "minor" : "major"; // if we have the "m3" the we are in minor mode.
+                    var mode = (pp.notes.map(function(e) { return e.note }).indexOf(3) > -1) ? "minor" : "major"; // if we have the "♭3" the we are in minor mode.
 
 
                     // Looping through the "loopAt" subpatterns
