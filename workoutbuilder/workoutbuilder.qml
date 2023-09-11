@@ -1503,7 +1503,7 @@ MuseScore {
 
 	/**
 	a pattern described as :
-			"notes": array of {"note": integer/null, "durarion": float }; "null" is for rest
+			"notes": array of {"note": integer/null, "degreeName": [1..7], "durarion": float }; "null" is for rest
             "loopAt": mode,
             "chord": { "symb": text, "scale": [0, 2, 4, 5, 7, 9, 11, 12], "mode": "major"|"minor" }
             "name": text
@@ -1538,12 +1538,17 @@ MuseScore {
             if (debugPrepare) console.log("--Looping patterns : shift mode--");
 			
 			// reducing the basesteps to only the 1) the notes (and dropping the rests) 2) only the notes (not taking care of the durations)
-			var reduced=basesteps.filter(function(e) { return e.note!==null}).map(function(e) { return e.note});
+			//var reduced=basesteps.filter(function(e) { return e.note!==null}).map(function(e) { return e.note});
+    	    var reduced = basesteps.filter(function (e) {
+    	        return e.note !== null
+    	    }).map(function (e) {
+    	        return JSON.parse(JSON.stringify(e)); // clone
+    	    });
 
-            // octave up or down ? Is the pattern going up or going down ?
+    	    // octave up or down ? Is the pattern going up or going down ?
             var pattdir = 1;
-			var b0=reduced[0];
-			var bn=reduced[reduced.length - 1];
+			var b0=reduced[0].note;
+			var bn=reduced[reduced.length - 1].note;
             if (b0 > bn)
                 pattdir = -1; // first is higher than last, the pattern is going down
             else if (b0 == bn)
@@ -1561,7 +1566,7 @@ MuseScore {
             if ((pattdir < 0)) {
                 // En mode decreasing, je monte toute la pattern d'une octave
                 for (var i = 0; i < reduced.length; i++) {
-                    reduced[i] = reduced[i] + 12;
+                    reduced[i].note = reduced[i].note + 12;
                 }
             }
 
@@ -1596,13 +1601,15 @@ MuseScore {
                     // octave up or down ? Is the pattern going up or going down ?
                     octave *= pattdir;
 
-                    var _n = notesteps[idx] + octave * 12;
-                    console.log(">should play " + notesteps[idx] + " but I'm playing " + _n + " (" + octave + ")");
+                    var _n = JSON.parse(JSON.stringify(notesteps[idx]));
+                    _n.note =+ octave * 12;
+                    console.log(">should play " + notesteps[idx].note + " but I'm playing " + _n.note + " (" + octave + ")");
                     shifted.push(_n);
                 }
                 if (e2e) {
                     // We re-add the first note
-                    var _n = shifted[0] + 12 * e2edir;
+                    var _n = JSON.parse(JSON.stringify(shifted[idx]));
+                    _n.note =+ octave * 12;
                     shifted.push(_n);
                 }
 
@@ -1613,6 +1620,7 @@ MuseScore {
                     if (_b.note === null) {
                         shifted.splice(j, 0, null);
                     }
+                    // --- TODO ---- continuer à partir d'ici
                     p.push({
                         note: shifted[j],
                         // degreeName: TODO
