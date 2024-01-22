@@ -142,13 +142,41 @@ MuseScore {
     property int _max_steps: 12 
 	
     property int _max_roots: 12
-    property var _degrees: ['1', '♭2', '2', '♭3', '3', '4', '♭5', '5', '♭6', '6', '♭7', '7',
-        '(8)', '♭9', '9', '♯9', '♭11', '11', '♯11', '(12)', '♭13', '13', '♯13', '(14)']
+    property int _id_Rest: 999
+    property var _degrees: [
+        // id correspond à l'ancien index
+        {"semitones": -2, "degree": "7", "id": 40,  "label": "𝄫1"}, //bb1
+        {"semitones": -1, "degree": "7", "id": 41,  "label": "♭1"},
+        {"semitones": 0,  "degree": "1",  "id": 00, "label": "1"},
+        {"semitones": 1,  "degree": "2",  "id": 01, "label": "♭2"},
+        {"semitones": 2,  "degree": "2",  "id": 02, "label": "2"},
+        {"semitones": 3,  "degree": "3",  "id": 03, "label": "♭3"},
+        {"semitones": 4,  "degree": "3",  "id": 04, "label": "3"},
+        {"semitones": 5,  "degree": "4",  "id": 05, "label": "4"},
+        {"semitones": 6,  "degree": "4",  "id": 50, "label": "#4"},
+        {"semitones": 6,  "degree": "5",  "id": 06, "label": "♭5"},
+        {"semitones": 7,  "degree": "5",  "id": 07, "label": "5"},
+        {"semitones": 8,  "degree": "6",  "id": 08, "label": "♭6"},
+        {"semitones": 9,  "degree": "6",  "id": 09, "label": "6"},
+        {"semitones": 10, "degree": "7", "id": 10,  "label": "♭7"},
+        {"semitones": 11, "degree": "7", "id": 11,  "label": "7"},
+        {"semitones": 12, "degree": "1", "id": 12,  "label": "(8)"},
+        {"semitones": 13, "degree": "2", "id": 13,  "label": "♭9"},
+        {"semitones": 14, "degree": "2", "id": 14,  "label": "9"}       ,    
+        {"semitones": 15, "degree": "2", "id": 15,  "label": "♯9"},
+        {"semitones": 16, "degree": "4", "id": 16,  "label": "♭11"},
+        {"semitones": 17, "degree": "4", "id": 17,  "label": "11"},
+        {"semitones": 18, "degree": "4", "id": 18,  "label": "♯11"},
+        {"semitones": 19, "degree": "5", "id": 19,  "label": "(12)"},
+        {"semitones": 20, "degree": "6", "id": 20,  "label": "♭13"},
+        {"semitones": 21, "degree": "6", "id": 21,  "label": "13"},
+        {"semitones": 22, "degree": "6", "id": 22,  "label": "♯13"},
+        {"semitones": 23, "degree": "1", "id": 23,  "label": "(14)"},
+        {"semitones": -999, "degree": "", "id": _id_Rest,  "label": "𝄽"} // rest
+        ]
 
     property var _notenames: ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
 
-    // v2.1.0
-    // property var _griddegrees: ['1', '3', '5', '7', '8', '9', '11'];
     property var _griddegrees: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '11'];
 
     property var _instruments: [{
@@ -446,11 +474,10 @@ MuseScore {
     }
 
     property var _ddNotes: { {
-			var dd=_degrees.map(function (e) { return {text: e, step: e}});
+			var dd=_degrees.map(function (e) { return {text: e.label, id: e.id}});
 			// dd.unshift({text: '<html><span style="font-family:\'MScore Text\'; font-size: 20px; text-align: center; vertical-align: middle">\uE4E5</span></html>', step: 'R'});
 			// dd.unshift({text: String.fromCharCode(7694), step: 'R'});
-			dd.unshift({text: '(R)', step: 'R'});
-			dd.unshift({text: '', step: ''});
+			dd.unshift({text: '', id: -1});
             return dd;
         }
     }
@@ -488,7 +515,8 @@ MuseScore {
 				var steps = [];
 				for (var s = 0; s < _max_steps; s++) {
 					steps.push({
-                        "note": '', // scale mode
+                        // "note": '', // scale mode
+                        "note": -1, // scale mode 
                         "degree": '',// grid mode 
 						"duration": 1, // all modes
 					});
@@ -843,14 +871,26 @@ MuseScore {
 			// 2.4.0 adding in reverse order
             for (var j = (_max_steps-1); j >=0 ; j--) {
                 var sn = raw.steps.get(j);
-                if (sn.note === 'R') {
+                // if (sn.note === 'R') {
+                if (sn.note === _id_Rest) { // Step = Rest
                     p.unshift({"note": null, "duration": sn.duration}); 
 				}
-                else if (sn.note !== '') {
-                    var smt = _degrees.indexOf(sn.note);
-                    if (smt > -1) {
-                        var arr=sn.note.match(/\d+/); // On extrait si on un degré 3, 4
-                        var step={"note": smt, "degreeName": (arr!==null && arr.length>0)?arr[0]:null, "duration": sn.duration};
+                // else if (sn.note !== '') {
+                else if (sn.note > -1) { // Step not empty
+                    // var smt = _degrees.indexOf(sn.note);
+                    var noteData=_degrees.filter(function(e) {
+                        return e.id===sn.note;
+                    });
+                    noteData=(noteData && noteData.length>0)?noteData[0]:undefined;
+                    
+                    if(noteData) {
+                        var smt=parseInt(noteData.semitones);
+                    // if (smt > -1) {
+                        // var arr=noteData.label.match(/\d+/); // On extrait si on le degré auquel on se réfère (ex b2 => 2)
+                        // var degreeName=(arr!==null && arr.length>0)?arr[0]:null;
+                        var step={"note": smt, "degreeName": noteData.degree,
+                            "duration": sn.duration,
+                            "label": noteData.label};
                         p.unshift(step);
                         if (tracePrepare) console.log("Adding "+JSON.stringify(step));
                     }
@@ -1394,6 +1434,8 @@ MuseScore {
 					    };
 
 					    //cur_time = note.parent.tick; // getting note's segment's tick
+                        
+                        debugO("Target: ",target);
 
 					    note = NoteHelper.restToNote(note, target,fduration);
 
@@ -1504,7 +1546,7 @@ MuseScore {
 
 	/**
 	a pattern described as :
-			"notes": array of {"note": integer/null, "degreeName": [1..7], "durarion": float }; "null" is for rest
+			"notes": array of {"note": (semitones) integer/null, "degreeName": [1..14], "duration": float, "label": string }; "null" is for rest
             "loopAt": mode,
             "chord": { "symb": text, "scale": [0, 2, 4, 5, 7, 9, 11, 12], "mode": "major"|"minor" }
             "name": text
@@ -1602,15 +1644,15 @@ MuseScore {
                     // octave up or down ? Is the pattern going up or going down ?
                     octave *= pattdir;
 
-                    var _n = JSON.parse(JSON.stringify(notesteps[idx]));
-                    _n.note =+ octave * 12;
+                    var _n = JSON.parse(JSON.stringify(notesteps[idx])); 
+                    _n.note += octave * 12;
                     console.log(">should play " + notesteps[idx].note + " but I'm playing " + _n.note + " (" + octave + ")");
                     shifted.push(_n);
                 }
                 if (e2e) {
                     // We re-add the first note
-                    var _n = JSON.parse(JSON.stringify(shifted[idx]));
-                    _n.note =+ octave * 12;
+                    var _n = JSON.parse(JSON.stringify(shifted[0]));
+                    _n.note += e2edir * 12;
                     shifted.push(_n);
                 }
 
@@ -1621,12 +1663,14 @@ MuseScore {
                     if (_b.note === null) {
                         shifted.splice(j, 0, null);
                     }
-                    // --- TODO ---- continuer à partir d'ici
+                    var newDegree=degreeForSemitones(shifted[j].note);
                     p.push({
-                        note: shifted[j],
-                        // degreeName: TODO
+                        note: shifted[j].note,
+                        degreeName: newDegree.degree,
+                        label: newDegree.label,
                         duration: basesteps[j].duration
                     });
+                    // --- TODO ---- continuer à partir d'ici
                 }
 
 				// if there was a rest at the end reinserting it
@@ -1864,6 +1908,19 @@ MuseScore {
 		console.log("total pattern duration "+count);
 		return count;
 	}
+    
+    /*
+    Retourne l'objet _degree qui correspond au nombre de demi-tons demandé. Si plusieurs objets ont le même nombre de demi-tons (ex #4 et b5) retourne (pour le moment) le 1er trouvé.
+    */
+    function degreeForSemitones(semitones) {
+        var rounded=(144+semitones)%12; //144 = 12*12, on s'assure que 144+semitones soit tjs >=0
+        console.log("---> "+semitones+" => "+rounded);
+        var noteData=_degrees.filter(function(e) {
+            return e.semitones===rounded;
+        });
+        noteData=(noteData && noteData.length>0)?noteData[0]:undefined;
+        return noteData;
+    }
 
     function signatureForPattern(notes) {
 		var count=patternDuration(notes);
@@ -1882,13 +1939,19 @@ MuseScore {
             return count;
     }
 
-    function patternToString(pattern, loopAt) {
+
+	/**
+	notes described as :
+        array of {"note": integer/null, "degreeName": [1..14], "duration": float, "label": string }; "null" is for rest
+	*/		
+    function patternToString(notes, loopAt) {
         var str = "";
-        for (var i = 0; i < pattern.length; i++) {
-			if (pattern[i].note===null) continue;
+        for (var i = 0; i < notes.length; i++) {
+            var noteData=notes[i];
+			if (noteData.note===null) continue;
             if (str.length > 0)
                 str += "/";
-            var d = _degrees[pattern[i].note];
+            var d=noteData.label;
             if (d !== undefined) {
                 d = d.replace("(", "");
                 d = d.replace(")", "");
@@ -2038,9 +2101,11 @@ MuseScore {
         for (var i = 0; i < current.steps.count; i++) {
             var d = -1;
             if (scaleMode) {
-                var note = current.steps.get(i).note;
-                if (note !== '') {
-                    d = _degrees.indexOf(note);
+                var id = current.steps.get(i).note;
+                // if (note !== '') {
+                if (id >= 0) { // non empty step
+                    // d = _degrees.indexOf(id);
+                    d = id;
                 }
             } else {
                 var degree = current.steps.get(i).degree;
@@ -2078,7 +2143,8 @@ MuseScore {
         for (var i = 0; i < current.steps.count; i++) {
             var sn = current.steps.get(i);
             if (scaleMode) {
-                var note = (pattern !== undefined && (i < pattern.steps.length)) ? _degrees[pattern.steps[i]] : '';
+                // var note = (pattern !== undefined && (i < pattern.steps.length)) ? _degrees[pattern.steps[i]] : '';
+                var note = (pattern !== undefined && (i < pattern.steps.length)) ? pattern.steps[i] : -1;
                 sn.note = note;
             } else {
                 var degree = (pattern !== undefined && (i < pattern.steps.length)) ? _griddegrees[pattern.steps[i]] : '';
@@ -3001,7 +3067,7 @@ MuseScore {
 							    model: _ddNotes
 
 							    textRole: "text"
-							    property var comboValue: "step"
+							    property var comboValue: "id"
 
 							    onActivated: {
 							        note = model[currentIndex][comboValue];
@@ -4437,7 +4503,9 @@ MuseScore {
                 if (i > 0)
                     label += "-";
                 if (this.type === _SCALE_MODE) {
-                    label += _degrees[this.steps[i]];
+                    var id=this.steps[i];
+                    var lb=_degrees.filter(function(e) { return e.id===id;});
+                    label += (lb && lb.length>0)?lb[0].label:"?";
                 } else {
                     label += _griddegrees[this.steps[i]];
                 }
