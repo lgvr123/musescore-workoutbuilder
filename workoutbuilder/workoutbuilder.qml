@@ -144,35 +144,39 @@ MuseScore {
     property int _max_roots: 12
     property int _id_Rest: 999
     property var _degrees: [
+        // semitones = nb de demi-tons par rapport au root
+        // degree = degrée de référence. Ex: b3 => degré de référence = 3
         // id correspond à l'ancien index
-        {"semitones": -2, "degree": "7", "id": 40,  "label": "𝄫1"}, //bb1
-        {"semitones": -1, "degree": "7", "id": 41,  "label": "♭1"},
-        {"semitones": 0,  "degree": "1",  "id": 00, "label": "1"},
-        {"semitones": 1,  "degree": "2",  "id": 01, "label": "♭2"},
-        {"semitones": 2,  "degree": "2",  "id": 02, "label": "2"},
-        {"semitones": 3,  "degree": "3",  "id": 03, "label": "♭3"},
-        {"semitones": 4,  "degree": "3",  "id": 04, "label": "3"},
-        {"semitones": 5,  "degree": "4",  "id": 05, "label": "4"},
-        {"semitones": 6,  "degree": "4",  "id": 50, "label": "#4"},
-        {"semitones": 6,  "degree": "5",  "id": 06, "label": "♭5"},
-        {"semitones": 7,  "degree": "5",  "id": 07, "label": "5"},
-        {"semitones": 8,  "degree": "6",  "id": 08, "label": "♭6"},
-        {"semitones": 9,  "degree": "6",  "id": 09, "label": "6"},
-        {"semitones": 10, "degree": "7", "id": 10,  "label": "♭7"},
-        {"semitones": 11, "degree": "7", "id": 11,  "label": "7"},
-        {"semitones": 12, "degree": "1", "id": 12,  "label": "(8)"},
-        {"semitones": 13, "degree": "2", "id": 13,  "label": "♭9"},
-        {"semitones": 14, "degree": "2", "id": 14,  "label": "9"}       ,    
-        {"semitones": 15, "degree": "2", "id": 15,  "label": "♯9"},
-        {"semitones": 16, "degree": "4", "id": 16,  "label": "♭11"},
-        {"semitones": 17, "degree": "4", "id": 17,  "label": "11"},
-        {"semitones": 18, "degree": "4", "id": 18,  "label": "♯11"},
-        {"semitones": 19, "degree": "5", "id": 19,  "label": "(12)"},
-        {"semitones": 20, "degree": "6", "id": 20,  "label": "♭13"},
-        {"semitones": 21, "degree": "6", "id": 21,  "label": "13"},
-        {"semitones": 22, "degree": "6", "id": 22,  "label": "♯13"},
-        {"semitones": 23, "degree": "1", "id": 23,  "label": "(14)"},
-        {"semitones": -999, "degree": "", "id": _id_Rest,  "label": "𝄽"} // rest
+        {"semitones": -2, "degree": 7, "id": 40,  "label": "𝄫1"}, //bb1
+        {"semitones": -1, "degree": 7, "id": 41,  "label": "♭1"},
+        {"semitones": 0,  "degree": 1, "id": 00,  "label": "1"},
+        {"semitones": 1,  "degree": 2, "id": 01,  "label": "♭2"},
+        {"semitones": 2,  "degree": 2, "id": 02,  "label": "2"},
+        {"semitones": 3,  "degree": 3, "id": 03,  "label": "♭3"},
+        {"semitones": 4,  "degree": 3, "id": 04,  "label": "3"},
+        {"semitones": 5,  "degree": 4, "id": 05,  "label": "4"},
+        {"semitones": 6,  "degree": 4, "id": 50,  "label": "#4"},
+        {"semitones": 6,  "degree": 5, "id": 06,  "label": "♭5"},
+        {"semitones": 7,  "degree": 5, "id": 07,  "label": "5"},
+        {"semitones": 8,  "degree": 6, "id": 08,  "label": "♭6"},
+        {"semitones": 9,  "degree": 6, "id": 09,  "label": "6"},
+        {"semitones": 10, "degree": 7, "id": 10,  "label": "♭7"},
+        {"semitones": 11, "degree": 7, "id": 11,  "label": "7"},
+        {"semitones": 12, "degree": 1, "id": 12,  "label": "(8)"},
+        {"semitones": 13, "degree": 2, "id": 13,  "label": "♭9"},
+        {"semitones": 14, "degree": 2, "id": 14,  "label": "9"}       ,    
+        {"semitones": 15, "degree": 2, "id": 15,  "label": "♯9"},
+        {"semitones": 15, "degree": 3, "id": 51,  "label": "♭10"},
+        {"semitones": 16, "degree": 3, "id": 52,  "label": "10"},
+        {"semitones": 16, "degree": 4, "id": 16,  "label": "♭11"},
+        {"semitones": 17, "degree": 4, "id": 17,  "label": "11"},
+        {"semitones": 18, "degree": 4, "id": 18,  "label": "♯11"},
+        {"semitones": 19, "degree": 5, "id": 19,  "label": "(12)"},
+        {"semitones": 20, "degree": 6, "id": 20,  "label": "♭13"},
+        {"semitones": 21, "degree": 6, "id": 21,  "label": "13"},
+        {"semitones": 22, "degree": 6, "id": 22,  "label": "♯13"},
+        {"semitones": 23, "degree": 1, "id": 23,  "label": "(14)"},
+        {"semitones": -999, "id": _id_Rest,  "label": "𝄽"} // rest
         ]
 
     property var _notenames: ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
@@ -303,7 +307,7 @@ MuseScore {
 
         "M": {
             "symb": "",
-            "scale": [0, 2, 4, 5, 7, 9, 11, 12],
+            "scale": [0, 2, 4, 5, 7, 9, 11, 12], // degree ids
             "mode": "major"
         },
         "m": {
@@ -333,8 +337,13 @@ MuseScore {
         },
         "dim": {
             "symb": "dim",
-            "scale": [0, 1, 3, 4, 6, 7, 9, 12],
+            "scale": [0, 1, 3, 4, 6, 7, 9, 12], // 6=b5
             "mode": "minor"
+        },
+        "Lydian": {
+            "symb": "",
+            "scale": [0, 2, 4, 50, 7, 9, 11, 12], // 50 = #11
+            "mode": "major"
         },
         "Bepop": {
             "symb": "-7",
@@ -363,97 +372,116 @@ MuseScore {
             "root": 'C',
             "major": false, // we consider C as a flat scale, sothat a m7 is displayed as B♭ instead of A♯
             "minor": false,
-            "semitones": 0
+            "semitones": 0,
+            "accidental": ""
         }, {
             "root": 'C♯',
             "major": true,
             "minor": true,
-            "semitones": 1
+            "semitones": 1,
+            "accidental": "SHARP"
         }, {
             "root": 'D♭',
             "major": false,
             "minor": false,
-            "semitones": 1
+            "semitones": 1,
+            "accidental": "FLAT"
         }, {
             "root": 'D',
             "major": true,
             "minor": false,
-            "semitones": 2
+            "semitones": 2,
+            "accidental": ""
         }, {
             "root": 'D♯',
             "major": true,
             "minor": true,
-            "semitones": 3
+            "semitones": 3,
+            "accidental": "SHARP"
         }, {
             "root": 'E♭',
             "major": false,
             "minor": false,
-            "semitones": 3
+            "semitones": 3,
+            "accidental": "FLAT"
         }, {
             "root": 'E',
             "major": true,
             "minor": true,
-            "semitones": 4
+            "semitones": 4,
+            "accidental": ""
         }, {
             "root": 'F♭',
             "major": false,
             "minor": false,
-            "semitones": 4
+            "semitones": 4,
+            "accidental": "FLAT"
         }, {
             "root": 'F',
             "major": false,
             "minor": false,
-            "semitones": 5
+            "semitones": 5,
+            "accidental": ""
         }, {
             "root": 'F♯',
             "major": true,
             "minor": true,
-            "semitones": 6
+            "semitones": 6,
+            "accidental": "SHARP"
         }, {
             "root": 'G♭',
             "major": false,
             "minor": false,
-            "semitones": 6
+            "semitones": 6,
+            "accidental": "FLAT"
         }, {
             "root": 'G',
             "major": true,
             "minor": false,
-            "semitones": 7
+            "semitones": 7,
+            "accidental": ""
         }, {
             "root": 'G♯',
             "major": true,
             "minor": true,
-            "semitones": 8
+            "semitones": 8,
+            "accidental": "SHARP"
         }, {
             "root": 'A♭',
             "major": false,
             "minor": false,
-            "semitones": 8
+            "semitones": 8,
+            "accidental": "FLAT"
         }, {
             "root": 'A',
             "major": true,
             "minor": true,
-            "semitones": 9
+            "semitones": 9,
+            "accidental": ""
         }, {
             "root": 'A♯',
             "major": true,
             "minor": true,
-            "semitones": 10
+            "semitones": 10,
+            "accidental": "SHARP"
         }, {
             "root": 'B♭',
             "major": false,
             "minor": false,
-            "semitones": 10
+            "semitones": 10,
+            "accidental": "FLAT"
         }, {
             "root": 'B',
             "major": true,
             "minor": true,
-            "semitones": 11
+            "semitones": 11,
+            "accidental": ""
         }, {
             "root": 'Cb',
             "major": false,
             "minor": false,
-            "semitones": 11
+            "semitones": 11,
+            "accidental": "FLAT"
         }
     ]
 
@@ -671,7 +699,7 @@ MuseScore {
             // Retrieving Chord type
             // Build final pattern
             var pattern = {
-                "notes": p,
+                "notes": p, // array de {note: [1..x], duration}
                 "loopAt": mode,
                 "name": (raw.gridType!=="grid")?"Chord notes":raw.pattName,
 				"gridType": raw.gridType,
@@ -703,8 +731,8 @@ MuseScore {
                 console.log("By P, patterns: " + p + "/" + (patts.length - 1) + "; chords:" + r + "/" + (chords.length - 1) + " => " + page);
 
                 var chord = chords[r];
-                var root = chord.root;
-                var rawRootName = _chords[root].root.substr(0,1); // raw root name : e.g. "E" for "Eb";
+                var rootIndex = chord.root;
+                var rawRootName = _chords[rootIndex].root.substr(0,1); // raw root name : e.g. "E" for "Eb";
                 
                 var chordtype = chord.type;
                 // var scale = _chordTypes[chordtype].scale;
@@ -748,25 +776,37 @@ MuseScore {
 				// if (pp.notes.length==1 && pp.notes[0]==null) {
 				if (pp.gridType!=="grid") {
 					// Chord mode: take only the notes of the chord
-					var nns=chord.chordnotes.map(function(e) { return 
-                    (e.note); }).sort(function(a,b) { return a-b;});
+                    var steps=chord.chordnotes
+                        .map(function(e) {return {note: e.note, degreeName:parseInt(e.role), duration: 1}})
+                        .sort(function(a,b) { return a.note-b.note;});
 					
 					console.log("~~Collecting notes for "+pp.gridType+" on "+effective_chord.name+" ~~");
 					if (chord.bass!=null) {
 						if (debugPrepare) console.log("~~~~Dealing with the bass~~~~~")
-						if (debugPrepare) console.log("nns before: "+nns);
-						var bass=chord.bass.key;
-						var idx=nns.indexOf(bass);
-						nns.pop(); // retirer le "12"
-						if (tracePrepare) console.log("nns without 12: "+nns);
-						nns=nns.concat(nns.splice(0,idx).map(function(e){ return e+12}));
-						if (tracePrepare) console.log("nns rotated: "+nns);
-						nns=nns.concat(12+bass);
-						if (tracePrepare) console.log("nns with bass+12: "+nns);
+                        if (tracePrepare) debugO("steps before",steps);
+						var bass=parseInt(chord.bass.key);
+                        console.log("basse: "+bass);
+						var idx=-1;
+                        for(var xyz=0;xyz<steps.length;xyz++) {
+                            if(steps[xyz].note==bass) {
+                                idx=xyz;
+                                if (tracePrepare) debugO("Bass found at "+xyz,steps[xyz]);
+                                break;
+                            }
+                        }
+                        if (idx>=0) {
+                            var bassData=JSON.parse(JSON.stringify(steps[idx]));;
+                            steps.pop(); // retirer le "12"
+                            if (tracePrepare) debugO("steps without 12",steps);
+                            steps=steps.concat(steps.splice(0,idx).map(function(e){ e.note+=12; return e;}));
+                            if (tracePrepare) debugO("steps rotated",steps);
+                            
+                            bassData.note+=12;
+                            steps=steps.concat(bassData);
+                            if (tracePrepare) debugO("steps with bass+12",steps);
+                        }
 
 					}
-					
-					steps=nns.map(function(e) { return { note: e, duration: 1 }});
 					
 					if(pp.gridType=="chorddown") steps=reversePattern(steps);
 					
@@ -774,17 +814,20 @@ MuseScore {
 					// Traditional mode: pattern based
 					console.log("~~Collecting notes for "+pp.gridType+" ~~");
 					for (var n = 0; n < pp.notes.length; n++) {
-						var degree=pp.notes[n];
+						var stepData=pp.notes[n];
 						var inScale =null;
-						if (degree.note !== null) {
-                            var ip = parseInt(degree.note) - 1; // TODO: This is not clean: using a label "1" and trying to deduce the valid array index
+                        var degreeName="";
+                        // rem: "note" = le degré demandé dans la pattern: e.g. 2 pour II
+						if (stepData.note !== null) {
+                            var ip = parseInt(stepData.note) - 1; // TODO: This is not clean: using a label "1" and trying to deduce the valid array index
 
-                            if (tracePrepare) console.log(ip + "--" + (ip % 7) + "--" + Math.floor(ip / 7) + "--" + (Math.floor(ip / 7) * 12) + "**" + scale[ip % 7] + "**" + (scale[ip % 7] + (Math.floor(ip / 7) * 12)));
+                            if (tracePrepare) console.log(n+": "+ip + "--" + (ip % 7) + "--" + Math.floor(ip / 7) + "--" + (Math.floor(ip / 7) * 12) + "**" + scale[ip % 7] + "**" + (scale[ip % 7] + (Math.floor(ip / 7) * 12)));
 
                             inScale = (scale[ip % 7]) + (Math.floor(ip / 7) * 12);
+                            degreeName=(ip%7)+1; // ip =[0,...], degreeName=[1,...]
 						}
 						if (debugPrepare) console.log(n + ": " + pp.notes[n].note + " --> " + ip + " --> " + inScale);
-						var step={note: inScale, duration: degree.duration}; 
+						var step={note: inScale, duration: stepData.duration, degreeName: degreeName }; 
 						steps.push(step);
 					}
 				}
@@ -823,10 +866,10 @@ MuseScore {
                     for (var j = 0; j < pt.length; j++) {
                         if (debugPrepare) console.log(">>> Looking at note " + j + ": " + pt[j].note);
 
-                        var smt=_chords[root].semitones;
+                        var smt=_chords[rootIndex].semitones;
                         var noteName = noteFromRoot(rawRootName,pt[j].degreeName);
-                        if (debugPrepare) console.log(">>>   with root id = "+root+" ("+smt+")");
-                        // var _n=(pt[j].note!==null)?(root + pt[j].note):null;
+                        if (debugPrepare) console.log(">>>   with root id = "+rootIndex+" ("+smt+")");
+                        // var _n=(pt[j].note!==null)?(rootIndex + pt[j].note):null;
                         var _n=(pt[j].note!==null)?(smt + pt[j].note):null;
                         notes.push({"note" : _n, "noteName": noteName, "duration": pt[j].duration });
                     }
@@ -835,7 +878,7 @@ MuseScore {
                     if (debugPrepare) debugO("pushing to pages (effective_chord): ", effective_chord, ["scale"]);
 
                     pages[placeAt].push({
-                        "root": root,
+                        "root": rootIndex,
                         "chord": effective_chord,
                         "mode": effective_chord.mode,
                         "notes": notes,
@@ -888,7 +931,8 @@ MuseScore {
                     // if (smt > -1) {
                         // var arr=noteData.label.match(/\d+/); // On extrait si on le degré auquel on se réfère (ex b2 => 2)
                         // var degreeName=(arr!==null && arr.length>0)?arr[0]:null;
-                        var step={"note": smt, "degreeName": noteData.degree,
+                        var step={"note": smt, 
+                            "degreeName": noteData.degree,
                             "duration": sn.duration,
                             "label": noteData.label};
                         p.unshift(step);
@@ -936,10 +980,13 @@ MuseScore {
             var cText = raw.chordType; // editable
             var orig = cText;
             console.log("Retrieving scale for \""+cText+"\"");
-            var cSymb = _chordTypes[cText];
-            if (cSymb === undefined) {
+            var chordData = _chordTypes[cText];
+            if (chordData === undefined) {
                 if (cText === '') {
+                    // Pas d'accords spécifié, on cherche à le déduire de la pattern en fonction
+                    // des demi-tons présents
                     var nn = p.map(function (e) {return e.note});
+                    // matching sur base des demi-tons !!
                     var m3 = (nn.indexOf(3) > -1); // if we have the "♭3" the we are in minor mode.
                     if (nn.indexOf(10) > -1) { //♭7
                         cText = m3 ? "m7" : "7";
@@ -953,28 +1000,28 @@ MuseScore {
                     cText = "7";
                     console.log("Unknown scale text. Translating it if possible. Ending up with \"" + cText + "\"");
                 }
-                cSymb = _chordTypes[cText];
+                chordData = _chordTypes[cText];
             }
-            if (cSymb === undefined) {
+            if (chordData === undefined) {
                 // For user-specific chord type, we take a Major scale, or the Min scale of we found a "-"
                 // Clone them so we can modify the name without affecting the main object
                 if (cText.includes("-"))  {
-                    cSymb = JSON.parse( JSON.stringify( _chordTypes['m'])); 
+                    chordData = JSON.parse( JSON.stringify( _chordTypes['m'])); 
                     console.log("Couldn't find a scale for that text. Taking the minor one.");
                 } else {
-                    cSymb = JSON.parse( JSON.stringify( _chordTypes['M'])); 
+                    chordData = JSON.parse( JSON.stringify( _chordTypes['M'])); 
                     console.log("Couldn't find a scale for that text. Taking the major one.");
                 }
-                cSymb.symb = cText;
+                chordData.symb = cText;
             }
 
-            console.log("Pattern " + i + ": \"" + orig + "\" > \"" + cSymb.symb + "\", scale : "+JSON.stringify(cSymb.scale));
+            console.log("Pattern " + i + ": \"" + orig + "\" > \"" + chordData.symb + "\", scale : "+JSON.stringify(chordData.scale));
 
             // Build final pattern
             var pattern = {
                 "notes": p,
                 "loopAt": mode,
-                "chord": cSymb,
+                "chord": chordData,
                 "name": raw.pattName,
             };
             patts.push(pattern);
@@ -1027,8 +1074,8 @@ MuseScore {
                 for (var r = 0; r < roots.length; r++) {
                     console.log("By P, patterns: " + p + "/" + (patts.length - 1) + "; roots:" + r + "/" + (roots.length - 1) + " => " + page);
 
-                    var root = roots[r]; // index in the _chords array
-                    var rawRootName = _chords[root].root.substr(0,1); // raw root name : e.g. "E" for "Eb";
+                    var rootIndex = roots[r]; // index in the _chords array
+                    var rawRootName = _chords[rootIndex].root.substr(0,1); // raw root name : e.g. "E" for "Eb";
 
                     // Looping through the "loopAt" subpatterns (keeping them as a whole)
                     for (var s = 0; s < pp["subpatterns"].length; s++) {
@@ -1043,17 +1090,17 @@ MuseScore {
 
 						for (var j = 0; j < _base.length; j++) {
 							console.log(">>> Looking at note " + j + ": " + _base[j].note);
-                            var smt=_chords[root].semitones;
+                            var smt=_chords[rootIndex].semitones;
                             var noteName = noteFromRoot(rawRootName,_base[j].degreeName);
-                            if (debugPrepare) console.log(">>>   with root id = "+root+" ("+smt+")");
-							// var _n=(_base[j].note!==null)?(root + _base[j].note):null;
+                            if (debugPrepare) console.log(">>>   with root id = "+rootIndex+" ("+smt+")");
+							// var _n=(_base[j].note!==null)?(rootIndex + _base[j].note):null;
 							var _n=(_base[j].note!==null)?(smt + _base[j].note):null;
                             notes.push({"note" : _n, "noteName": noteName,  "duration": _base[j].duration });
 						}
 
 
                         pages[page].push({
-                            "root": root,
+                            "root": rootIndex,
                             "chord": pp.chord,
                             "mode": mode,
                             "notes": notes,
@@ -1085,8 +1132,8 @@ MuseScore {
             for (var r = 0; r < roots.length; r++) {
                 //var page = r; //0; //(chkPageBreak.checked) ? r : 0;
 
-                var root = roots[r];
-                var rawRootName = _chords[root].root.substr(0,1); // raw root name : e.g. "E" for "Eb";
+                var rootIndex = roots[r];
+                var rawRootName = _chords[rootIndex].root.substr(0,1); // raw root name : e.g. "E" for "Eb";
 
                 if ((r == 0) || ((patts.length > 1) && (roots.length > 1))) {
                     console.log("page++");
@@ -1109,15 +1156,15 @@ MuseScore {
                         var notes = [];
 
                         for (var j = 0; j < basesteps.length; j++) {
-                            var smt=_chords[root].semitones;
+                            var smt=_chords[rootIndex].semitones;
                             var noteName = noteFromRoot(rawRootName,basesteps[j].degreeName);
-                            // var _n=(basesteps[j].note!==null)?(root + basesteps[j].note):null;
+                            // var _n=(basesteps[j].note!==null)?(rootIndex + basesteps[j].note):null;
                             var _n=(basesteps[j].note!==null)?(smt + basesteps[j].note):null;
                             notes.push({"note" : _n, "noteName": noteName, "duration": basesteps[j].duration });
                         }
 
                         pages[page].push({
-                            "root": root,
+                            "root": rootIndex,
                             "chord": pp.chord,
                             "mode": mode,
                             "notes": notes,
@@ -1546,7 +1593,13 @@ MuseScore {
 
 	/**
 	a pattern described as :
-			"notes": array of {"note": (semitones) integer/null, "degreeName": [1..14], "duration": float, "label": string }; "null" is for rest
+			"notes": array of {
+                "note": semitones: integer/null, 
+                "degreeName": [1..14], 
+                "duration": float, 
+                "label": string }; 
+                - or -
+                "null" is for rest
             "loopAt": mode,
             "chord": { "symb": text, "scale": [0, 2, 4, 5, 7, 9, 11, 12], "mode": "major"|"minor" }
             "name": text
@@ -1663,14 +1716,13 @@ MuseScore {
                     if (_b.note === null) {
                         shifted.splice(j, 0, null);
                     }
-                    var newDegree=degreeForSemitones(shifted[j].note);
+                    // var newDegree=degreeForSemitones(shifted[j].note);
                     p.push({
                         note: shifted[j].note,
-                        degreeName: newDegree.degree,
-                        label: newDegree.label,
+                        degreeName: shifted[j].degreeName, // la note garde son degré
+                        label: shifted[j].label,
                         duration: basesteps[j].duration
                     });
-                    // --- TODO ---- continuer à partir d'ici
                 }
 
 				// if there was a rest at the end reinserting it
@@ -1720,7 +1772,7 @@ MuseScore {
                 dia.push(i);
             }
 
-            // if we have a scale ending on a tonic (I - 12), and our steps have stopped before (ex the next triad after the VII is the II, not the I)
+            // if we have a scale ending on a tonic (1 - 12), and our steps have stopped before (ex the next triad after the VII is the II, not the I)
             // we add it explicitely
             if ((scale[scale.length - 1] == 12) && (dia[dia.length - 1] < (scale.length - 1))) {
                 dia.push(scale.length - 1); // the repetition must end with the last step of the scale (the one that holds "12")
@@ -1793,93 +1845,124 @@ MuseScore {
 
 	}
 
+    /**
+    * scale = array of degree ids : e.g. 0 for 1, 6 for b5, 50 for #11
+    */
     function shiftPattern(pattern, scale, step) {
         var pdia = [];
+        var degreeScale=_degrees.filter(function (e) { return scale.indexOf(e.id)>=0})
+            .map(function(e,index) { e.index=index; return e}); // on rajoute l'index dans la table des deegrés
+        ;
+        debugO("degreeScale",degreeScale);
+        
         // 1) convert a chromatic pattern into a diatonic pattern
         for (var ip = 0; ip < pattern.length; ip++) {
             // for every step of the pattern we look for its diatonic equivalent.
-            // And a delta. For a b5, while in major scale, we will retrieve a degree of "4" + a delta of 1 semitone
-            var d = undefined;
-            var p = pattern[ip].note;
-			if(p!==null) {
-                var o = Math.floor(p / 12);
-                p = p % 12;
-                for (var is = 0; is < scale.length; is++) {
-                    s = scale[is];
-                    if (s == p) {
-                        d = {
-                            "degree": is,
-                            "semi": 0,
-                            "octave": o
+            // And a delta. For a b5, while in major scale, we will retrieve a degree of "5" + a delta of -1 semitone
+            
+            var computeData = undefined;
+            var smt = pattern[ip].note;
+            var degree= pattern[ip].degreeName;
+            
+            if(tracePrepare) console.log("[shift " + step + "] 0)[" + ip + "] searching for degree "+degree);
+
+            
+            var octave = Math.floor(smt / 12);
+            smt = smt % 12;
+
+            for(var ds=0; ds<degreeScale.length;ds++) {
+                if (degreeScale[ds].degree===degree) {
+                if(tracePrepare) console.log("[shift " + step + "] 0)[" + ip + "] searching for degree "+degree +" -- FOUND");
+            
+                    computeData = {
+                            "degreeIndex": degreeScale[ds].index,
+                            "semi": smt-degreeScale[ds].semitones, // la différence de demi-tons entre la note et son degré dans la gamme
+                            "octave": octave
                         };
-                        break;
-                    } else if (s > p) {
-                        d = {
-                            "degree": (is == 0) ? 0 : is - 1,
-                            "semi": s - p,
-                            "octave": o
-                        };
-                        break;
-                    }
+                    break;
                 }
 
-                if (d === undefined) {
-                    // if not found, it means we are beyond the last degree
-                    d = {
-                        "degree": scale.length - 1,
-                        "semi": p - scale[scale.length - 1],
-                        "octave": o
-                    };
-
-                }
-
-            } else {
-                d=null;
             }
-            pdia.push(d);
-			console.log("[shift " + step + "] 1)[" + ip + "]" + p + "->" + debugDia(d));
+
+           if (computeData === undefined) {
+                // if not found, it means we are beyond the last degree
+                if(tracePrepare) console.log("[shift " + step + "] 0)[" + ip + "] searching for degree "+degree +" -- NOT FOUND");
+                var lastDegree=degreeScale[degreeScale.length-1];
+                computeData = {
+                    "degreeIndex": lastDegree.index,
+                    "semi": smt - lastDegree.semitones,
+                    "octave": octave
+                };
+
+            }
+
+            pdia.push(computeData);
+			console.log("[shift " + step + "] 1)[" + ip + "]" + smt + "->" + debugDia(computeData));
         }
 
         // 2) shift the diatonic pattern by the amount of steps
         for (var ip = 0; ip < pdia.length; ip++) {
-            var d = pdia[ip];
-			if (d!==null) {
-            d.degree += step;
-            d.octave += Math.floor(d.degree / 7); // degrees are ranging from 0->6, 7 is 0 at the next octave //scale.length);
-            d.degree = d.degree % 7; //scale.length;
+            var computeData = pdia[ip];
+			if (computeData!==null) {
+                computeData.degreeIndex += step;
+                computeData.octave += Math.floor(computeData.degreeIndex / 7); // degrees are ranging from 0->6, 7 is 0 at the next octave 
+                computeData.degreeIndex = computeData.degreeIndex % 7; //scale.length;
 			}
-            pdia[ip] = d;
-            console.log("[shift " + step + "] 2)[" + ip + "]->" + debugDia(d));
+            pdia[ip] = computeData;
+            console.log("[shift " + step + "] 2)[" + ip + "]->" + debugDia(computeData));
         }
 
         // 3) Convert back to a chromatic scale
         var pshift = [];
         for (var ip = 0; ip < pdia.length; ip++) {
-            var d = pdia[ip];
-			var s=null;
-			if(d!==null) {
-                if (d.degree >= scale.length) {
+            var computeData = pdia[ip];
+			var noteData=null;
+			if(computeData!==null) {
+                if (computeData.degreeIndex >= degreeScale.length) {
                     // We are beyond the scale, let's propose some value
-                    d.semi += (d.degree - scale.length + 1) * 1; // 1 semi-tone by missing degree
-                    d.degree = scale.length - 1;
-                    if ((scale[d.degree] + d.semi) >= 12)
-                        d.semi = 11;
+                    computeData.semi += (computeData.degreeIndex - degreeScale.length + 1) * 1; // 1 semi-tone by missing degree
+                    computeData.degreeIndex = degreeScale.length - 1;
+                    if ((degreeScale[computeData.degreeIndex] + computeData.semi) >= 12)
+                        computeData.semi = 11;
                 }
-                s = scale[d.degree] + 12 * d.octave + d.semi;
-                console.log("\tscale[d.degree] + 12 * d.octave + d.semi: "+JSON.stringify(scale));
+                var degreeData=degreeScale[computeData.degreeIndex];
+                var label="";
+                switch(computeData.semi) {
+                    case -2:
+                        label="\u{1D12B}";
+                        break;
+                    case -1:
+                        label="\u{266D}";
+                        break;
+                    case 0:
+                        label="";
+                        break;
+                    case 1:
+                        label="\u{266F}";
+                        break;
+                    case 2:
+                        label="\u{1D12A}";
+                        break;
+                    default:
+                        label="("+computeData.semi+")"
+                };
+                label+=degreeData.degree;
+                noteData = {
+                    "note": degreeData.semitones + 12 * computeData.octave + computeData.semi,
+                    "degreeName": degreeData.degree,
+                    "label": label,
+                };
+                console.log("\tscale[.degree] + 12 * .octave + .semi: "+JSON.stringify(scale));
 			} else {
-				s=null;
+				noteData=null;
 			}
-            pshift.push(s);
-            console.log("[shift " + step + "] 3)[" + ip + "]" + debugDia(d) + "->" + s);
+            pshift.push(noteData);
+            console.log("[shift " + step + "] 3)[" + ip + "]" + debugDia(computeData) + "->" + noteData.note);
         }
 		
 		// 4) Reset the right durations
         for (var ip = 0; ip < pattern.length; ip++) {
-			pshift[ip]={
-				"note": pshift[ip],
-				"duration": pattern[ip].duration
-			};
+			pshift[ip].duration=pattern[ip].duration
 		}
 		
         return pshift;
@@ -1942,7 +2025,7 @@ MuseScore {
 
 	/**
 	notes described as :
-        array of {"note": integer/null, "degreeName": [1..14], "duration": float, "label": string }; "null" is for rest
+        array of {"note": semitones: integer/null, "degreeName": [1..14], "delta": semitones to degree "duration": float, "label": string }; "null" is for rest
 	*/		
     function patternToString(notes, loopAt) {
         var str = "";
@@ -1971,7 +2054,8 @@ MuseScore {
     }
 
     function debugDia(d) {
-		if (d!==null)         return "{degree:" + d.degree + ",semi:" + d.semi + ",octave:" + d.octave + "}";
+		// if (d!==null)         return "{degree:" + d.degree + ",semi:" + d.semi + ",octave:" + d.octave + "}";
+		if (d!==null)         return "{degreeIndex:" + d.degreeIndex + ",semi:" + d.semi + ",octave:" + d.octave + "}";
 		else return "{degree: null (=rest)}";
     }
 
@@ -2232,14 +2316,24 @@ MuseScore {
             var c = ChordHelper.chordFromText(name);
             if (c != null) {
                 var isSharp = defaultSharp; // si l'accord n'a pas d'accidental on utilise la key signature
+                var rootAccidental="";
                 if (c.accidental.startsWith("SHARP")) {
                     isSharp = true;
+                    rootAccidental="SHARP";
                 }
                 if (c.accidental.startsWith("FLAT")) {
                     isSharp = false;
+                    rootAccidental="FLAT";
                 }
+                
+                var rootIndex=getRootIndex(c.pitch,rootAccidental);
+                
+                debugO("Found root",{pitch: c.pitch, chord: name, accidental: rootAccidental, found: _chords[rootIndex].root});
+                debugO("",c.chordnotes);
+                
                 var forPhrase = {
-                    "root": c.pitch,
+                    // "root": c.pitch,
+                    "root": rootIndex,
                     "type": c.name,
 					"chordnotes": c.chordnotes,
 					"bass": c.bass,
@@ -2480,6 +2574,29 @@ MuseScore {
 
         setPhrase(phrase);
 
+    }
+    
+    function getRootIndex(semitones, accidental) {
+        var acc=(accidental==="SHARP" || accidental==="FLAT")?accidental:"" ;
+        
+        // On cherche la concordance entre demi-tons et altération
+        for(var i=0; i<_chords.length;i++) {
+            var e=_chords[i];
+            if (e.semitones===semitones && e.accidental===accidental) {
+                return i;
+            }
+        }
+        
+        // Si on n'a pas trouvé, on cherche juste la concordance sur les demis-tons
+        for(var i=0; i<_chords.length;i++) {
+            var e=_chords[i];
+            if (e.semitones===semitones) {
+                return i;
+            }
+        }
+
+        // Si on n'a toujours pas trouvé, on retourne 0, arbitrairement
+        return 0;
     }
 
     function applyWorkout(workout) {
@@ -4721,7 +4838,16 @@ MuseScore {
     }
 
     /**
-     * chords is an array of {"root": index_in__chords_array, "type": key_in__chordTypes_map}
+     * chords is an array of {
+         "root": index_in__chords_array, 
+         "type": key_in__chordTypes_map
+         "chordnotes"
+         "bass"
+         "sharp": true|false|undefined
+         "name"
+         "end": true|false si l'accord est une fin (il faut par ex un retour chariot)
+         "key": "bbb", "#", "", ... la clé de la phrase
+         }
      */
     function phraseClass(name, chords) {
         this.name = ((name !== undefined) && (name.trim() !== "")) ? name.trim() : undefined;
