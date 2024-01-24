@@ -29,7 +29,7 @@ import "selectionhelper.js" as SelHelper
 /*  - 2.3.0 New ChordUp and ChordDown options in grid mode
 /*  - 2.3.0 Refactoring of patterns to ListModel
 /*  - 2.3.0 Moved *.js libraries to own folder
-/*  - 2.3.0 Store settings (checkboxes, instrument)
+/*  - 2.3.0 Store settings (CheckBoxes, instrument)
 /*  - 2.3.0 Add new "Bass" instrument (should a require a F-clef, but the clef is not available from the API)
 /*  - 2.4.0 alpha 1: Add step durations
 /*  - 2.4.0 alpha 2: Limit to standard Harmony types
@@ -44,10 +44,13 @@ import "selectionhelper.js" as SelHelper
 /*  - 2.4.1 Better title in case of one score per root note
 /*  - 2.4.1 Improvment for MS4 - but still no effect.
 /*  - 2.4.1 Bugfix in the QML subcomponents and in chordanalyser library (Issue#2)
-/*  - 2.4.2 repeat the chord symbol at each pattern repetition
-/*  - 2.4.2 Distinction between C# and Db, G# and Ab, ... (ongoing)
+/*  - 2.4.2 Repeat the chord symbol at each pattern repetition
+/*  - 2.4.2 Distinction between C# and Db, G# and Ab, ...
 /*  - 2.4.2 Use correct notes e.g. a 3rd of Bb must be some kind of D. So 3m of Bb is Db and not C#
 /*  - 2.4.2 Correct scale notes naming convention (e.g. "♭3" and "3" instead of "m3" and "M3")
+/*  - 2.4.2 Add option for line break at each repetition
+/*  - 2.4.2 Size of several small windows
+/*  - 2.4.2 degrees up to "15" (thord ocatve root)
 /**********************************************/
 MuseScore {
     menuPath: "Plugins." + pluginName
@@ -131,6 +134,7 @@ MuseScore {
 		property alias orderByPattern: chkByPattern.checked
 		property alias adaptativeMeasure: chkAdaptativeMeasure.checked
 		property alias strictLayout: chkStrictLayout.checked
+		property alias lineBreak: chkLineBreak.checked
 		property alias instrument: lstTransposition.currentIndex
     }
 
@@ -176,6 +180,7 @@ MuseScore {
         {"semitones": 21, "degree": 6, "id": 21,  "label": "13"},
         {"semitones": 22, "degree": 6, "id": 22,  "label": "♯13"},
         {"semitones": 23, "degree": 1, "id": 23,  "label": "(14)"},
+        {"semitones": 25, "degree": 2, "id": 53,  "label": "(15)"},
         {"semitones": -999, "id": _id_Rest,  "label": "𝄽"} // rest
         ]
 
@@ -1344,30 +1349,8 @@ MuseScore {
         var newLine = false;
 		
 
-        for (var i = 0; i < pages.length; i++) {
+        for (var i = 0; i < pages.length; i++) {;
 
-            if (i > 0) {
-                // New Page ==> double bar + section break;
-                cursor.rewindToTick(cur_time); // rewing to the last note
-
-                // ... add a double line
-                var measure = cursor.measure;
-                if (measure.nextMeasure != null) {
-
-                    addDoubleLineBar(measure, score);
-                } else {
-                    if (debugPrint) console.log("Changing the bar line is delayed after the next measure is added");
-                }
-
-                // ... add a  linebreak
-                var lbreak = newElement(Element.LAYOUT_BREAK);
-                lbreak.layoutBreakType = 2; //section break
-                cursor.add(lbreak);
-                newLine = true;
-            } else {
-                if (debugPrint) console.log("No LAYOUT_BREAK required");
-
-            }
 
             var prevRoot = '';
             var prevMode = 'xxxxxxxxxxxxxxx';
@@ -1376,6 +1359,34 @@ MuseScore {
                 "name": 'xxxxxxxxxxxxxxx'
             };
             for (var j = 0; j < pages[i].length; j++) {
+                var shouldLineBreak=(chkLineBreak.checked)?((i>0) || (j>0)):((i>0) && (j==0));
+
+                if (shouldLineBreak) {
+                    // New Page ==> double bar + section break;
+                    cursor.rewindToTick(cur_time); // rewing to the last note
+
+                    // ... add a double line
+                    var measure = cursor.measure;
+                    if (measure.nextMeasure != null) {
+                        addDoubleLineBar(measure, score);
+                    } else {
+                        if (debugPrint) console.log("Changing the bar line is delayed after the next measure is added");
+                    }
+
+                    // ... add a  linebreak
+                    var lbreak = newElement(Element.LAYOUT_BREAK);
+                    lbreak.layoutBreakType = 2; //section break
+                    cursor.add(lbreak);
+                    newLine = true;
+                    newLine = true;
+                    newLine = true;
+                } else {
+                    if (debugPrint) console.log("No LAYOUT_BREAK required");
+
+                }
+
+
+
                 var root = pages[i][j].root;
                 var chord = pages[i][j].chord;
                 var mode = pages[i][j].mode;
@@ -1532,7 +1543,8 @@ MuseScore {
                     }
 
                     // Adding the signature change if needed (must be done **after** a note has been added to the new measure.
-                    if ((beatsByMeasure != prevBeatsByM) || newLine) {
+                    // if ((beatsByMeasure != prevBeatsByM) || newLine) {
+                    if ((beatsByMeasure != prevBeatsByM)) { // 24/1/24 Pourquoi rajouter une signature à chaque "newLine" ?
                         console.log("Adapting measure to " + beatsByMeasure + "/4  (#2)");
                         var ts = newElement(Element.TIMESIG);
                         ts.timesig = fraction(beatsByMeasure, 4);
@@ -2625,7 +2637,7 @@ MuseScore {
                 m = Math.min(_max_roots, workout.roots.length);
 
                 for (var i = 0; i < m; i++) {
-                    // TODO
+                    // TODO ??
                     idRoot.itemAt(i).currentIndex = _ddRoots.indexOf(_roots[workout.roots[i]]); // id --> label --> indexOf dans le tableau de présentation
                 }
 
@@ -3607,7 +3619,7 @@ MuseScore {
                     console.log("Preset Changed: " + __preset.name + " -- " + rr);
                     for (var i = 0; i < _max_roots; i++) {
                         if (i < rr.length) {
-                            // TODO
+                            // TODO	??
                             idRoot.itemAt(i).currentIndex = _ddRoots.indexOf(_roots[rr[i]]);
                         } else {
                             idRoot.itemAt(i).currentIndex = 0;
@@ -3796,9 +3808,13 @@ MuseScore {
             //Layout.row : 1
             text: "Options:"
         }
-        RowLayout {
+        // RowLayout {
+        GridLayout {
             //Layout.column : 1
             //Layout.row : 1
+            Layout.fillWidth: false
+            Layout.alignment: Qt.AlignTop | Qt.AlignLeft
+            columns:3
 
             CheckBox {
                 id: chkByPattern
@@ -3869,11 +3885,11 @@ MuseScore {
                 ToolTip.timeout: tooltipHide
                 ToolTip.visible: hovered
             }
-            /*CheckBox {
-            id : chkPageBreak
+            CheckBox {
+                id : chkLineBreak
             checked : false
-            text : "Page break after each group"
-            }*/
+                text : "Line break after each repetition"
+            }
             Item {
                 Layout.fillWidth: true
             }
@@ -4059,7 +4075,7 @@ MuseScore {
     Window {
         id: loadWindow
         title: "Reuse pattern..."
-        width: 500
+        width: 800
         height: 500
         modality: Qt.WindowModal
         flags: Qt.Dialog | Qt.WindowSystemMenuHint | Qt.WindowTitleHint | Qt.WindowCloseButtonHint
@@ -4299,7 +4315,7 @@ MuseScore {
                 //Layout.preferredHeight: 30
                 text: "--"
                 Layout.fillWidth: true
-                Layout.preferredWidth: 200
+                Layout.preferredWidth: 400
                 placeholderText: "Enter new " + ((state === "workout") ? "workout" : "phrase") + "'s name"
                 maximumLength: 255
 
@@ -4397,8 +4413,8 @@ MuseScore {
             TextField {
                 id: txtInputPatternName
 
-                //Layout.preferredHeight: 30
                 text: ""
+                Layout.preferredWidth: 400
                 Layout.fillWidth: true
                 placeholderText: "Leave blank for default name"
                 maximumLength: 255
