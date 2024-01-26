@@ -373,116 +373,154 @@ MuseScore {
         }
     }
 
-    property var _chords: [{
-            "root": 'C',
+    property var _rootsData: [{
+            "rootLabel": 'C',
+            "cleanName": 'C',
+            "rawName": 'C',
             "major": false, // we consider C as a flat scale, sothat a m7 is displayed as B♭ instead of A♯
             "minor": false,
             "semitones": 0,
             "accidental": ""
         }, {
-            "root": 'C♯',
+            "rootLabel": 'C♯',
+            "cleanName": 'C#',
+            "rawName": 'C',
             "major": true,
             "minor": true,
             "semitones": 1,
             "accidental": "SHARP"
         }, {
-            "root": 'D♭',
+            "rootLabel": 'D♭',
+            "cleanName": 'Db',
+            "rawName": 'D',
             "major": false,
             "minor": false,
             "semitones": 1,
             "accidental": "FLAT"
         }, {
-            "root": 'D',
+            "rootLabel": 'D',
+            "cleanName": 'D',
+            "rawName": 'D',
             "major": true,
             "minor": false,
             "semitones": 2,
             "accidental": ""
         }, {
-            "root": 'D♯',
+            "rootLabel": 'D♯',
+            "cleanName": 'D#',
+            "rawName": 'D',
             "major": true,
             "minor": true,
             "semitones": 3,
             "accidental": "SHARP"
         }, {
-            "root": 'E♭',
+            "rootLabel": 'E♭',
+            "cleanName": 'Eb',
+            "rawName": 'E',
             "major": false,
             "minor": false,
             "semitones": 3,
             "accidental": "FLAT"
         }, {
-            "root": 'E',
+            "rootLabel": 'E',
+            "cleanName": 'E',
+            "rawName": 'E',
             "major": true,
             "minor": true,
             "semitones": 4,
             "accidental": ""
         }, {
-            "root": 'F♭',
+            "rootLabel": 'F♭',
+            "cleanName": 'Fb',
+            "rawName": 'F',
             "major": false,
             "minor": false,
             "semitones": 4,
             "accidental": "FLAT"
         }, {
-            "root": 'F',
+            "rootLabel": 'F',
+            "cleanName": 'F',
+            "rawName": 'F',
             "major": false,
             "minor": false,
             "semitones": 5,
             "accidental": ""
         }, {
-            "root": 'F♯',
+            "rootLabel": 'F♯',
+            "cleanName": 'F#',
+            "rawName": 'F',
             "major": true,
             "minor": true,
             "semitones": 6,
             "accidental": "SHARP"
         }, {
-            "root": 'G♭',
+            "rootLabel": 'G♭',
+            "cleanName": 'Gb',
+            "rawName": 'G',
             "major": false,
             "minor": false,
             "semitones": 6,
             "accidental": "FLAT"
         }, {
-            "root": 'G',
+            "rootLabel": 'G',
+            "cleanName": 'G',
+            "rawName": 'G',
             "major": true,
             "minor": false,
             "semitones": 7,
             "accidental": ""
         }, {
-            "root": 'G♯',
+            "rootLabel": 'G♯',
+            "cleanName": 'G#',
+            "rawName": 'G',
             "major": true,
             "minor": true,
             "semitones": 8,
             "accidental": "SHARP"
         }, {
-            "root": 'A♭',
+            "rootLabel": 'A♭',
+            "cleanName": 'Ab',
+            "rawName": 'A',
             "major": false,
             "minor": false,
             "semitones": 8,
             "accidental": "FLAT"
         }, {
-            "root": 'A',
+            "rootLabel": 'A',
+            "cleanName": 'A',
+            "rawName": 'A',
             "major": true,
             "minor": true,
             "semitones": 9,
             "accidental": ""
         }, {
-            "root": 'A♯',
+            "rootLabel": 'A♯',
+            "cleanName": 'A#',
+            "rawName": 'A',
             "major": true,
             "minor": true,
             "semitones": 10,
             "accidental": "SHARP"
         }, {
-            "root": 'B♭',
+            "rootLabel": 'B♭',
+            "cleanName": 'Bb',
+            "rawName": 'B',
             "major": false,
             "minor": false,
             "semitones": 10,
             "accidental": "FLAT"
         }, {
-            "root": 'B',
+            "rootLabel": 'B',
+            "cleanName": 'B',
+            "rawName": 'B',
             "major": true,
             "minor": true,
             "semitones": 11,
             "accidental": ""
         }, {
-            "root": 'Cb',
+            "rootLabel": 'C♭',
+            "cleanName": 'Cb',
+            "rawName": 'C',
             "major": false,
             "minor": false,
             "semitones": 11,
@@ -490,10 +528,10 @@ MuseScore {
         }
     ]
 
-    property var _roots: { {
+    property var _rootLabels: { {
             var dd = [];
-            for (var i = 0; i < _chords.length; i++) {
-                dd.push(_chords[i].root);
+            for (var i = 0; i < _rootsData.length; i++) {
+                dd.push(_rootsData[i].rootLabel);
             }
             return dd;
         }
@@ -501,7 +539,7 @@ MuseScore {
 
     property var _ddRoots: { {
             var dd = [''];
-            dd = dd.concat(_roots);
+            dd = dd.concat(_rootLabels);
             return dd;
         }
     }
@@ -674,7 +712,7 @@ MuseScore {
                 }
                 
                 // 1.2) Completing the pattern to have a round duration
-                if (chkAdaptativeMeasure.checked && chkStrictLayout.checked) {
+                if (chkAdaptativeMeasure.valid) {
                     var total = p.map(function (e) {
                         return e.duration
                     }).reduce(function (t, n) {
@@ -737,7 +775,7 @@ MuseScore {
 
                 var chord = chords[r];
                 var rootIndex = chord.root;
-                var rawRootName = _chords[rootIndex].root.substr(0,1); // raw root name : e.g. "E" for "Eb";
+                var rawRootName = _rootsData[rootIndex].rawName; // raw root name : e.g. "E" for "Eb";
                 
                 var chordtype = chord.type;
                 // var scale = _chordTypes[chordtype].scale;
@@ -871,7 +909,7 @@ MuseScore {
                     for (var j = 0; j < pt.length; j++) {
                         if (debugPrepare) console.log(">>> Looking at note " + j + ": " + pt[j].note);
 
-                        var smt=_chords[rootIndex].semitones;
+                        var smt=_rootsData[rootIndex].semitones;
                         var noteName = noteFromRoot(rawRootName,pt[j].degreeName);
                         if (debugPrepare) console.log(">>>   with root id = "+rootIndex+" ("+smt+")");
                         // var _n=(pt[j].note!==null)?(rootIndex + pt[j].note):null;
@@ -956,7 +994,7 @@ MuseScore {
             }
 			
 			// 1.2) Completing the pattern to have a round duration
-			if (chkAdaptativeMeasure.checked && chkStrictLayout.checked) {
+			if (chkAdaptativeMeasure.valid) {
 			    var total = p.map(function (e) {
 			        return e.duration
 			    }).reduce(function (t, n) {
@@ -1037,23 +1075,23 @@ MuseScore {
 
         // Collecting the roots
         if (debugPrepare) console.log("collecting the roots: ");
-        var roots = [];
+        var rootIndexes = [];
         for (var i = 0; i < _max_roots; i++) {
             var txt = idRoot.itemAt(i).currentText;
             if (debugPrepare) console.log("root at "+i+": "+txt);
             if (txt === '' || txt === undefined)
                 continue;
-            var r = _roots.indexOf(txt);
+            var r = _rootLabels.indexOf(txt);
             if (debugPrepare) console.log("-- => index = " + r);
             if (r > -1) {
-                roots.push(r);
+                rootIndexes.push(r);
                 
             }
         }
 
         // Must have at least 1 pattern and 1 root
         var pages = [];
-        if (patts.length == 0 || roots.length == 0) {
+        if (patts.length == 0 || rootIndexes.length == 0) {
             return [];
         }
 
@@ -1072,15 +1110,15 @@ MuseScore {
                 var pp = extpatts[p];
                 var mode = (pp.notes.map(function(e) { return e.note }).indexOf(3) > -1) ? "minor" : "major"; // if we have the "♭3" the we are in minor mode.
                 //var page = p; //0; //(chkPageBreak.checked) ? p : 0;
-                if ((p == 0) || ((patts.length > 1) && (roots.length > 1))) {
+                if ((p == 0) || ((patts.length > 1) && (rootIndexes.length > 1))) {
                     console.log("page++");
                     page++;
                 }
-                for (var r = 0; r < roots.length; r++) {
-                    console.log("By P, patterns: " + p + "/" + (patts.length - 1) + "; roots:" + r + "/" + (roots.length - 1) + " => " + page);
+                for (var r = 0; r < rootIndexes.length; r++) {
+                    console.log("By P, patterns: " + p + "/" + (patts.length - 1) + "; roots:" + r + "/" + (rootIndexes.length - 1) + " => " + page);
 
-                    var rootIndex = roots[r]; // index in the _chords array
-                    var rawRootName = _chords[rootIndex].root.substr(0,1); // raw root name : e.g. "E" for "Eb";
+                    var rootIndex = rootIndexes[r]; // index in the _rootsData array
+                    var rawRootName = _rootsData[rootIndex].rawName; // raw root name : e.g. "E" for "Eb";
 
                     // Looping through the "loopAt" subpatterns (keeping them as a whole)
                     for (var s = 0; s < pp["subpatterns"].length; s++) {
@@ -1095,7 +1133,7 @@ MuseScore {
 
 						for (var j = 0; j < _base.length; j++) {
 							console.log(">>> Looking at note " + j + ": " + _base[j].note);
-                            var smt=_chords[rootIndex].semitones;
+                            var smt=_rootsData[rootIndex].semitones;
                             var noteName = noteFromRoot(rawRootName,_base[j].degreeName);
                             if (debugPrepare) console.log(">>>   with root id = "+rootIndex+" ("+smt+")");
 							// var _n=(_base[j].note!==null)?(rootIndex + _base[j].note):null;
@@ -1120,9 +1158,9 @@ MuseScore {
                     if (
                         (
                             (pp["subpatterns"].length > 1) ||
-                            ((p < (extpatts.length - 1)) && (extpatts[p + 1]["subpatterns"].length > 1) && (r == (roots.length - 1))))
+                            ((p < (extpatts.length - 1)) && (extpatts[p + 1]["subpatterns"].length > 1) && (r == (rootIndexes.length - 1))))
                          &&
-                        ((roots.length == 1) || (r < (roots.length - 1)))) {
+                        ((rootIndexes.length == 1) || (r < (rootIndexes.length - 1)))) {
                         console.log("page++ (SP)");
                         page++;
                     } {
@@ -1134,18 +1172,18 @@ MuseScore {
             }
         } else {
             // We sort by roots. By root, repeat every pattern
-            for (var r = 0; r < roots.length; r++) {
+            for (var r = 0; r < rootIndexes.length; r++) {
                 //var page = r; //0; //(chkPageBreak.checked) ? r : 0;
 
-                var rootIndex = roots[r];
-                var rawRootName = _chords[rootIndex].root.substr(0,1); // raw root name : e.g. "E" for "Eb";
+                var rootIndex = rootIndexes[r];
+                var rawRootName = _rootsData[rootIndex].rawName; // raw root name : e.g. "E" for "Eb";
 
-                if ((r == 0) || ((patts.length > 1) && (roots.length > 1))) {
+                if ((r == 0) || ((patts.length > 1) && (rootIndexes.length > 1))) {
                     console.log("page++");
                     page++;
                 }
                 for (var p = 0; p < extpatts.length; p++) {
-                    console.log("By R, patterns: " + p + "/" + (patts.length - 1) + "; roots:" + r + "/" + (roots.length - 1) + " => " + page);
+                    console.log("By R, patterns: " + p + "/" + (patts.length - 1) + "; roots:" + r + "/" + (rootIndexes.length - 1) + " => " + page);
 
                     var pp = extpatts[p];
                     var mode = (pp.notes.map(function(e) { return e.note }).indexOf(3) > -1) ? "minor" : "major"; // if we have the "♭3" the we are in minor mode.
@@ -1161,7 +1199,7 @@ MuseScore {
                         var notes = [];
 
                         for (var j = 0; j < basesteps.length; j++) {
-                            var smt=_chords[rootIndex].semitones;
+                            var smt=_rootsData[rootIndex].semitones;
                             var noteName = noteFromRoot(rawRootName,basesteps[j].degreeName);
                             // var _n=(basesteps[j].note!==null)?(rootIndex + basesteps[j].note):null;
                             var _n=(basesteps[j].note!==null)?(smt + basesteps[j].note):null;
@@ -1242,18 +1280,18 @@ MuseScore {
             }*/
             // On ne prend que les roots de ce qui nous est envoyé (2.4.0 Beta1)
             var sub = pages.reduce(function (acc, val) {
-                var roots = val.map(function (e) {
+                var rootIndexes = val.map(function (e) {
                     return e.root;
                 });
-                for (var r = 0; r < roots.length; r++) {
-                    var root = roots[r];
-                    if (acc.indexOf(root) === -1)
-                        acc.push(root);
+                for (var r = 0; r < rootIndexes.length; r++) {
+                    var rootIndex = rootIndexes[r];
+                    if (acc.indexOf(rootIndex) === -1)
+                        acc.push(rootIndex);
                 }
                 return acc;
             }, [])
             .map(function (e) {
-                return _chords[e].root;
+                return _rootsData[e].rootLabel;
             })
             .join(", ");
             title += sub;
@@ -1302,7 +1340,7 @@ MuseScore {
 
         // end of styling
 
-        var adaptativeMeasure = chkAdaptativeMeasure.checked && chkStrictLayout.checked;
+        var adaptativeMeasure = chkAdaptativeMeasure.valid;
         var beatsByMeasure;
 
 
@@ -1359,7 +1397,7 @@ MuseScore {
                 "name": 'xxxxxxxxxxxxxxx'
             };
             for (var j = 0; j < pages[i].length; j++) {
-                var shouldLineBreak=(chkLineBreak.checked)?((i>0) || (j>0)):((i>0) && (j==0));
+                var shouldLineBreak=(chkLineBreak.valid)?((i>0) || (j>0)):((i>0) && (j==0));
 
                 if (shouldLineBreak) {
                     // New Page ==> double bar + section break;
@@ -1394,11 +1432,14 @@ MuseScore {
                     preferredTpcs = filterTpcs(root, mode);
                 }
 
-                // 2.4.2: reset prevChord to be sure to reprint it at each pattern repetition
-                prevChord = {
-                    "symb": 'xxxxxxxxxxxxxxx',
-                    "name": 'xxxxxxxxxxxxxxx'
-                };
+                // 2.4.2: reset prevChord to be sure to reprint it at each pattern repetition 
+                // Except in "flow" mode (i.e. not Complete measures with rests)
+                if(chkStrictLayout.checked) {
+                    prevChord = {
+                        "symb": 'xxxxxxxxxxxxxxx',
+                        "name": 'xxxxxxxxxxxxxxx'
+                    };
+                }
 
 
                 if (adaptativeMeasure) {
@@ -1480,7 +1521,7 @@ MuseScore {
 
 					    var pitch = instru.cpitch + delta;
 					    var sharp_mode = true;
-					    var f = (chord.sharp !== undefined) ? chord.sharp : _chords[root][mode]; // si un mode est spécifié on l'utilise sinon on prend celui par défaut
+					    var f = (chord.sharp !== undefined) ? chord.sharp : _rootsData[root][mode]; // si un mode est spécifié on l'utilise sinon on prend celui par défaut
 					    if (f !== undefined)
 					        sharp_mode = f;
 
@@ -1981,16 +2022,16 @@ MuseScore {
 
     }
     
-    function noteFromRoot(rootName,degree) {
-        var idxR=_notenames.indexOf(rootName);
-        console.log("idxR of "+rootName+" = "+idxR);
+    function noteFromRoot(rawRootName,degree) {
+        var idxR=_notenames.indexOf(rawRootName);
+        console.log("idxR of "+rawRootName+" = "+idxR);
         var idxN=idxR+parseInt(degree)-1; // degree goes from 1 to 7 and beyond
         console.log("idxN at degree "+degree+" = "+idxN);
         idxN = idxN % _notenames.length;
         console.log(" ==> = "+idxN);
         var noteName=_notenames[idxN];
         console.log(" ==> noteName = "+noteName);
-        if(tracePrepare) console.log(degree +"° of "+rootName+" is "+noteName);
+        if(tracePrepare) console.log(degree +"° of "+rawRootName+" is "+noteName);
         return noteName;
     }
 
@@ -2071,14 +2112,14 @@ MuseScore {
 		else return "{degree: null (=rest)}";
     }
 
-    function filterTpcs(root, mode) {
+    function filterTpcs(rootIndex, mode) {
         var sharp_mode = true;
 
-        var f = _chords[root][mode];
+        var f = _rootsData[rootIndex][mode];
         if (f !== undefined)
             sharp_mode = f;
 
-        //console.log(_chords[root].root + " " + mode + " => sharp: " + sharp_mode);
+        //console.log(_rootsData[rootIndex].rootLabel + " " + mode + " => sharp: " + sharp_mode);
 
         var accidentals = sharp_mode ? ['NONE', 'SHARP', 'SHARP2'] : ['NONE', 'FLAT', 'FLAT2']
             var preferredTpcs;
@@ -2106,9 +2147,9 @@ MuseScore {
 
     }
 
-    function rootToName(root, sharp_mode, chordsymb) {
+    function rootToName(rootIndex, sharp_mode, chordsymb) {
         // no preferred name set. Just a root(pitch). Computing a name.
-        var rtxt = _chords[root].root.replace(/♯/gi, '#').replace(/♭/gi, "b");
+        var rtxt = _rootsData[rootIndex].cleanName;
         var name;
 
         // chord's roots
@@ -2340,7 +2381,7 @@ MuseScore {
                 
                 var rootIndex=getRootIndex(c.pitch,rootAccidental);
                 
-                debugO("Found root",{pitch: c.pitch, chord: name, accidental: rootAccidental, found: _chords[rootIndex].root});
+                debugO("Found root",{pitch: c.pitch, chord: name, accidental: rootAccidental, found: _rootsData[rootIndex].rootLabel});
                 debugO("",c.chordnotes);
                 
                 var forPhrase = {
@@ -2592,16 +2633,16 @@ MuseScore {
         var acc=(accidental==="SHARP" || accidental==="FLAT")?accidental:"" ;
         
         // On cherche la concordance entre demi-tons et altération
-        for(var i=0; i<_chords.length;i++) {
-            var e=_chords[i];
+        for(var i=0; i<_rootsData.length;i++) {
+            var e=_rootsData[i];
             if (e.semitones===semitones && e.accidental===accidental) {
                 return i;
             }
         }
         
         // Si on n'a pas trouvé, on cherche juste la concordance sur les demis-tons
-        for(var i=0; i<_chords.length;i++) {
-            var e=_chords[i];
+        for(var i=0; i<_rootsData.length;i++) {
+            var e=_rootsData[i];
             if (e.semitones===semitones) {
                 return i;
             }
@@ -2638,7 +2679,7 @@ MuseScore {
 
                 for (var i = 0; i < m; i++) {
                     // TODO ??
-                    idRoot.itemAt(i).currentIndex = _ddRoots.indexOf(_roots[workout.roots[i]]); // id --> label --> indexOf dans le tableau de présentation
+                    idRoot.itemAt(i).currentIndex = _ddRoots.indexOf(_rootLabels[workout.roots[i]]); // id --> label --> indexOf dans le tableau de présentation
                 }
 
                 for (var i = m; i < _max_patterns; i++) {
@@ -3615,12 +3656,12 @@ MuseScore {
                 }
                 onActivated: {
                     var __preset = model[currentIndex];
-                    var rr = __preset.roots;
+                    var rr = __preset.rootIndexes;
                     console.log("Preset Changed: " + __preset.name + " -- " + rr);
                     for (var i = 0; i < _max_roots; i++) {
                         if (i < rr.length) {
                             // TODO	??
-                            idRoot.itemAt(i).currentIndex = _ddRoots.indexOf(_roots[rr[i]]);
+                            idRoot.itemAt(i).currentIndex = _ddRoots.indexOf(_rootLabels[rr[i]]);
                         } else {
                             idRoot.itemAt(i).currentIndex = 0;
                         }
@@ -3878,8 +3919,9 @@ MuseScore {
             CheckBox {
                 id: chkAdaptativeMeasure
                 text: "Adapt signature to pattern"
-                checked: true
                 enabled: chkStrictLayout.checked
+                checked: true
+                property bool valid: chkAdaptativeMeasure.checked && chkStrictLayout.checked
                 ToolTip.text: "Adapt the score signatures to ensure that each patterns fits into one measure."
                 ToolTip.delay: tooltipShow
                 ToolTip.timeout: tooltipHide
@@ -3887,7 +3929,9 @@ MuseScore {
             }
             CheckBox {
                 id : chkLineBreak
-            checked : false
+                enabled: chkStrictLayout.checked
+                checked : false
+                property bool valid: chkLineBreak.checked && chkStrictLayout.checked
                 text : "Line break after each repetition"
             }
             Item {
@@ -4558,45 +4602,34 @@ MuseScore {
     property var presets: [{
             "name": '',
             "root": 0,
-            "roots": []
+            "rootIndexes": []
         },
-        new presetClass("Chromatic progression", 0, function (r) {
-            return r + 1;
-        }),
-        new presetClass("by Seconds", 0, function (r) {
-            return r + 2;
-        }),
-        new presetClass("Circle of fourths", 0, function (r) {
-            return r + 5;
-        }),
-        new presetClass("Circle of fifths", 0, function (r) {
-            return r + 7;
-        }),
+        new presetClass("Chromatic progression", ["C","C#","D","Eb","E","F","F#","G","Ab","A","Bb","B","C"]),
+        new presetClass("by Seconds", ["C","D","E","F#","G#","A#"]),
+        new presetClass("Circle of fourths", ["C","F","Bb","Eb","Ab","Db","F#","B","E","A","D","G","C"]),
+        new presetClass("Circle of fifths", ["C","G","D","A","E","B","F#","Db","Ab","Eb","Bb","F","C"]),
     ]
 
-    function presetClass(name, root, funcNext) {
+    function presetClass(name, rootNames) {
         this.name = name;
-        this.root = root;
-        this.getNext = funcNext;
-        Object.defineProperty(this, "roots", {
+        Object.defineProperty(this, "rootIndexes", {
             get: function () {
                 console.log("getting roots for " + this.name);
-                var roots = [this.root];
-                var r = this.root;
-                while (true) {
-                    r = this.getNext(r);
-                    r = r % 12;
-                    if (r == root) {
-                        break;
+                var indexes = rootNames.map(function(name) {
+                    for(var i=0;i<_rootsData.length;i++) {
+                        console.log("Comparing "+name+" and "+_rootsData[i].cleanName);
+                        if(_rootsData[i].cleanName===name) return i;
                     }
-                    roots.push(r);
-                }
-
-                return roots;
+                    return -1;
+                }).filter(function(e) {
+                    return e>=0;
+                });
+                return indexes;
             },
 
             enumerable: true
         });
+        this.root = this.rootIndexes[0];
 
     }
 
@@ -4886,7 +4919,7 @@ MuseScore {
             for (var i = 0; i < Math.min(5, this.chords.length); i++) {
                 if (i > 0)
                     label += ", ";
-                label += _chords[chords[i].root].root + this.chords[i].type;
+                label += _rootsData[chords[i].root].rootLabel + this.chords[i].type;
             }
             if (this.chords.length > 5) {
                 label += ", ..."
