@@ -151,8 +151,8 @@ MuseScore {
         // semitones = nb de demi-tons par rapport au root
         // degree = degrée de référence. Ex: b3 => degré de référence = 3
         // id correspond à l'ancien index
-        {"semitones": -2, "degree": 7, "id": 40,  "label": "𝄫1"}, //bb1
-        {"semitones": -1, "degree": 7, "id": 41,  "label": "♭1"},
+        {"semitones": -2, "degree": 7, "id": 40,  "label": "-♭7"}, //bb1
+        {"semitones": -1, "degree": 7, "id": 41,  "label": "-7"},
         {"semitones": 0,  "degree": 1, "id": 00,  "label": "1"},
         {"semitones": 1,  "degree": 2, "id": 01,  "label": "♭2"},
         {"semitones": 2,  "degree": 2, "id": 02,  "label": "2"},
