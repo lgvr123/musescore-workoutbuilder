@@ -51,6 +51,8 @@ import "selectionhelper.js" as SelHelper
 /*  - 2.4.2 Add option for line break at each repetition
 /*  - 2.4.2 Size of several small windows
 /*  - 2.4.2 degrees up to "15" (thord ocatve root)
+/*  - 2.4.2 Score properties (for easier batch export)
+/*  - 2.4.2 Some new degrees (b4, #5, b8)
 /**********************************************/
 MuseScore {
     menuPath: "Plugins." + pluginName
@@ -143,7 +145,7 @@ MuseScore {
     readonly property var _GRID_MODE: "grid"
 
     property int _max_patterns: 10
-    property int _max_steps: 12 
+    property int _max_steps: 20 
 	
     property int _max_roots: 12
     property int _id_Rest: 999
@@ -158,14 +160,17 @@ MuseScore {
         {"semitones": 2,  "degree": 2, "id": 02,  "label": "2"},
         {"semitones": 3,  "degree": 3, "id": 03,  "label": "♭3"},
         {"semitones": 4,  "degree": 3, "id": 04,  "label": "3"},
+        {"semitones": 4,  "degree": 1, "id": 54,  "label": "♭4"},
         {"semitones": 5,  "degree": 4, "id": 05,  "label": "4"},
-        {"semitones": 6,  "degree": 4, "id": 50,  "label": "#4"},
-        {"semitones": 6,  "degree": 5, "id": 06,  "label": "♭5"},
+        {"semitones": 6,  "degree": 4, "id": 06,  "label": "#4"},
+        {"semitones": 6,  "degree": 5, "id": 50,  "label": "♭5"},
         {"semitones": 7,  "degree": 5, "id": 07,  "label": "5"},
+        {"semitones": 8,  "degree": 5, "id": 55,  "label": "#5"},
         {"semitones": 8,  "degree": 6, "id": 08,  "label": "♭6"},
         {"semitones": 9,  "degree": 6, "id": 09,  "label": "6"},
         {"semitones": 10, "degree": 7, "id": 10,  "label": "♭7"},
         {"semitones": 11, "degree": 7, "id": 11,  "label": "7"},
+        {"semitones": 12, "degree": 1, "id": 56,  "label": "♭(8)"},
         {"semitones": 12, "degree": 1, "id": 12,  "label": "(8)"},
         {"semitones": 13, "degree": 2, "id": 13,  "label": "♭9"},
         {"semitones": 14, "degree": 2, "id": 14,  "label": "9"}       ,    
@@ -337,17 +342,22 @@ MuseScore {
         },
         "ø": {
             "symb": "0",
-            "scale": [0, 2, 3, 5, 6, 8, 10, 12],
+            "scale": [0, 2, 3, 5, 50, 8, 10, 12],
             "mode": "minor"
         },
         "dim": {
-            "symb": "dim",
-            "scale": [0, 1, 3, 4, 6, 7, 9, 12], // 6=b5
+            "symb": "o",
+            "scale": [0, 1, 3, 4, 50, 7, 9, 12], // 50=b5
             "mode": "minor"
         },
+        "Dorien": {
+            "symb": "m6",
+            "scale": [0, 2, 3, 5, 7, 9, 10, 12],
+            "mode": "major"
+        },
         "Lydian": {
-            "symb": "",
-            "scale": [0, 2, 4, 50, 7, 9, 11, 12], // 50 = #11
+            "symb": "t7#11",
+            "scale": [0, 2, 4, 6, 7, 9, 11, 12], // 6 = #11
             "mode": "major"
         },
         "Bepop": {
@@ -1250,9 +1260,6 @@ MuseScore {
         console.log("Instrument is " + instru.label);
 
         // Push all this to the score
-        var score = newScore("Workout", instru.instrument, 1);
-
-
 
         var title = (workoutName !== undefined) ? workoutName : "Scale workout";
         title += " - ";
@@ -1262,9 +1269,11 @@ MuseScore {
         console.log("------------- chkSingleScoreExport.checked: "+chkSingleScoreExport.checked);
         console.log("------------- modeIndex: "+modeIndex());
         
+        var subtitle="";
+        
         if (rootSchemeName !== undefined && rootSchemeName.trim() !== "" && (chkSingleScoreExport.checked || !chkSingleScoreExport.enabled)) {
             // Si on a un nom schéma mais qu'on est en mode 1 page par root => on n'utilise pas ce nom.
-            title += rootSchemeName;
+            subtitle = rootSchemeName;
 
         }
         else if ((modeIndex() === 0)) {
@@ -1279,7 +1288,7 @@ MuseScore {
             title += txt;
             }*/
             // On ne prend que les roots de ce qui nous est envoyé (2.4.0 Beta1)
-            var sub = pages.reduce(function (acc, val) {
+            subtitle = pages.reduce(function (acc, val) {
                 var rootIndexes = val.map(function (e) {
                     return e.root;
                 });
@@ -1294,7 +1303,6 @@ MuseScore {
                 return _rootsData[e].rootLabel;
             })
             .join(", ");
-            title += sub;
             }
             else {
             // grid mode
@@ -1311,12 +1319,19 @@ MuseScore {
                 names = names.slice(0, 4);
                 names.push("...");
             }
-            title += names.join(", ");
+            subtitle = names.join(", ");
 
         }
+        title += subtitle;
+
+        // New score
+        var score = newScore(title, instru.instrument, 1);
 
         // Styling
         score.addText("title", title);
+        score.setMetaTag("workTitle", title);
+        score.setMetaTag("movementTitle", subtitle);
+        score.setMetaTag("composer","Parking B")
         if (lstTransposition.currentIndex != 0) {
             score.addText("subtitle", instru.label);
         }
