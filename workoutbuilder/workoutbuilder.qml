@@ -3052,7 +3052,6 @@ MuseScore {
                         columnSpacing: colSpacing
                         rowSpacing: rowSpacing
                         Repeater {
-                            id: idNoteLabels
                             model: _max_steps
 
 
@@ -3075,12 +3074,13 @@ MuseScore {
 
                         Repeater {
                             model: _max_steps
-                            property var stepIndex: index
                         
                             ComboBox {
                                 id: lstStepDuration
                                 model: durations
                                 // Layout.row: 1
+
+                                property var stepIndex: index // index is a "context property" given to the repeated element by the repeater
 
                                 Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
                                 Layout.fillWidth: true
@@ -3102,7 +3102,7 @@ MuseScore {
                                 onActivated: {
                                     // loopMode = currentValue;
                                     duration = model[currentIndex][comboValue];
-                                    console.log(duration);
+                                    console.log("step "+stepIndex + ": "+duration);
 
                                     for (var i = 0; i < _max_patterns; i++) {
                                         var raw = mpatterns.get(i);
@@ -3339,7 +3339,7 @@ MuseScore {
                                     height: cellHeight
                                     
                                     property var stepIndex: index
-$
+
                                     Layout.minimumWidth: cellWidth - Layout.leftMargin - Layout.rightMargin
                                     Layout.maximumWidth: cellWidth - Layout.leftMargin - Layout.rightMargin
                                     implicitWidth: cellWidth - Layout.leftMargin - Layout.rightMargin
