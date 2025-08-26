@@ -53,22 +53,20 @@ import "selectionhelper.js" as SelHelper
 /*  - 2.4.2 degrees up to "15" (thord ocatve root)
 /*  - 2.4.2 Score properties (for easier batch export)
 /*  - 2.4.2 Some new degrees (b4, #5, b8)
-/*  - 2.5.0 (ongoing) srollbars
+/*  - 2.5.0 Srollbars
 
-// TODO 2.5.0 : 
-* bind et cacher la scroll bar verticale des libellés de Pattern
-* prefWidth des DD "LoopMode" et "Scale"
+
 
 /**********************************************/
 MuseScore {
     menuPath: "Plugins." + pluginName
     description: "This plugin builds chordscale workouts based on patterns defined by the user."
-    version: "2.4.2-SNAPSHOT"
+    version: "2.5.0"
 
     pluginType: "dialog"
     requiresScore: false
     width: 1375
-    height: 820
+    height: 860
 
     id: mainWindow
 
@@ -3020,7 +3018,7 @@ MuseScore {
             Layout.fillWidth: true
             
             rows: 2 // header+grid
-            columns: 5 // label+grid+tools
+            columns: 5 // label + grid + loopAt+Scale+Tools
             
             
 
@@ -3045,6 +3043,8 @@ MuseScore {
                     Binding on contentX {
                         value: notesFlickable.contentX
                     }
+                    
+                    interactive: false
                     
                     GridLayout {
                         id: stepLabelsGrid
@@ -3178,105 +3178,118 @@ MuseScore {
                 Layout.column: 0
                 Layout.row: 1
                 Layout.fillHeight: true
-                contentHeight: patternLabelsGrid.width
+                contentWidth: patternLabelsGrid.width
+                contentHeight: patternLabelsGrid.height
+
+                clip: true
                 
-                GridLayout {
-                    id: patternLabelsGrid
-                    rows: _max_patterns
-                    columnSpacing: colSpacing
-                    rowSpacing: rowSpacing
-                    flow: GridLayout.TopToBottom
-                    
-                    Repeater {
-                        id: idPatternLabels
-                        model: _max_patterns
+                Flickable {
+                    id: leftColumnFlickable
 
-                        Label {
-                            Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
-                            Layout.rightMargin: 10
-                            Layout.leftMargin: 2
-                            Layout.minimumHeight: cellHeight - Layout.bottomMargin - Layout.topMargin
-                            Layout.maximumHeight: cellHeight - Layout.bottomMargin - Layout.topMargin
-                            text: "Pattern " + (index + 1) + ":"
-                            
-                        }
+                    Binding on contentY {
+                        value: notesFlickable.contentY
                     }
-                    
-                    Repeater { // 2.3.0
-                        id: idGridTypes
-                        model: mpatterns
 
+                    interactive: false
+               
+                
+                    GridLayout {
+                        id: patternLabelsGrid
+                        rows: _max_patterns
+                        columnSpacing: colSpacing
+                        rowSpacing: rowSpacing
+                        flow: GridLayout.TopToBottom
                         
-                        ComboBox {
-                            //Layout.fillWidth : true
-                            id: lstGridType
-                            Layout.minimumHeight: cellHeight - Layout.bottomMargin - Layout.topMargin
-                            Layout.maximumHeight: cellHeight - Layout.bottomMargin - Layout.topMargin   
-                            implicitHeight: cellHeight - Layout.bottomMargin - Layout.topMargin
-                            
-                            model: _gridTypes
-                            
-                            textRole: "label" 
-                            property var imageRole: "image"
-                            property var comboValue: "type"
+                        Repeater {
+                            id: idPatternLabels
+                            model: _max_patterns
 
-
-                            onActivated: {
-                                // loopMode = currentValue;
-                                gridType = model[currentIndex][comboValue];
-                                console.log(gridType);
+                            Label {
+                                Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
+                                Layout.rightMargin: 10
+                                Layout.leftMargin: 2
+                                Layout.minimumHeight: cellHeight - Layout.bottomMargin - Layout.topMargin
+                                Layout.maximumHeight: cellHeight - Layout.bottomMargin - Layout.topMargin
+                                text: "Pattern " + (index + 1) + ":"
+                                
                             }
+                        }
+                        
+                        Repeater { // 2.3.0
+                            id: idGridTypes
+                            model: mpatterns
 
-                            Binding on currentIndex {
-                                value: {
-                                    var ci=_gridTypes.map(function(e) { return e[comboValue] }).indexOf(gridType);
-                                    ci;
+                            
+                            ComboBox {
+                                //Layout.fillWidth : true
+                                id: lstGridType
+                                Layout.minimumHeight: cellHeight - Layout.bottomMargin - Layout.topMargin
+                                Layout.maximumHeight: cellHeight - Layout.bottomMargin - Layout.topMargin   
+                                implicitHeight: cellHeight - Layout.bottomMargin - Layout.topMargin
+                                
+                                model: _gridTypes
+                                
+                                textRole: "label" 
+                                property var imageRole: "image"
+                                property var comboValue: "type"
+
+
+                                onActivated: {
+                                    // loopMode = currentValue;
+                                    gridType = model[currentIndex][comboValue];
+                                    console.log(gridType);
                                 }
-                            }
-                            
-                            visible: modeIndex()!=0
 
-                            Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
-                            Layout.rightMargin: 0
-                            Layout.leftMargin: 0
+                                Binding on currentIndex {
+                                    value: {
+                                        var ci=_gridTypes.map(function(e) { return e[comboValue] }).indexOf(gridType);
+                                        ci;
+                                    }
+                                }
+                                
+                                visible: modeIndex()!=0
 
-                            //Layout.preferredHeight: 30
-                            Layout.preferredWidth: 30 + indicator.width
+                                Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
+                                Layout.rightMargin: 0
+                                Layout.leftMargin: 0
 
-                            delegate: ItemDelegate { // requiert QuickControls 2.2
+                                Layout.preferredWidth: 30 + indicator.width
+
+                                delegate: ItemDelegate { // requiert QuickControls 2.2
+                                    contentItem: Image {
+                                        height: 25
+                                        width: 25
+                                        source: "./" + modelData[imageRole]
+                                        fillMode: Image.Pad
+                                        verticalAlignment: Text.AlignVCenter
+                                        ToolTip.text: modelData[textRole]
+                                        ToolTip.delay: tooltipShow
+                                        ToolTip.timeout: tooltipHide
+                                        ToolTip.visible: hovered
+                                    }
+                                    highlighted: lstGridType.highlightedIndex === index
+
+                                }
+
                                 contentItem: Image {
                                     height: 25
                                     width: 25
-                                    source: "./" + modelData[imageRole]
                                     fillMode: Image.Pad
-                                    verticalAlignment: Text.AlignVCenter
-                                    ToolTip.text: modelData[textRole]
+                                    source: "./" +model[lstGridType.currentIndex][imageRole]
+
+                                    ToolTip.text: lstGridType.displayText
                                     ToolTip.delay: tooltipShow
                                     ToolTip.timeout: tooltipHide
                                     ToolTip.visible: hovered
+
                                 }
-                                highlighted: lstGridType.highlightedIndex === index
 
                             }
 
-                            contentItem: Image {
-                                height: 25
-                                width: 25
-                                fillMode: Image.Pad
-                                source: "./" +model[lstGridType.currentIndex][imageRole]
-
-                                ToolTip.text: lstGridType.displayText
-                                ToolTip.delay: tooltipShow
-                                ToolTip.timeout: tooltipHide
-                                ToolTip.visible: hovered
-
-                            }
-
+                            
                         }
-
                         
                     }
-                    
                 }
             }
             
@@ -3326,14 +3339,7 @@ MuseScore {
                                     height: cellHeight
                                     
                                     property var stepIndex: index
-                                    // property var _row: patternIndex 
-                                    // property var _column: stepIndex
-                                    // Layout.row: _row
-                                    // Layout.column: _column 
-                                    // Layout.preferredHeight: 30
-                                    // // Layout.maximumHeight: 30
-                                    // Layout.preferredWidth: 50
-
+$
                                     Layout.minimumWidth: cellWidth - Layout.leftMargin - Layout.rightMargin
                                     Layout.maximumWidth: cellWidth - Layout.leftMargin - Layout.rightMargin
                                     implicitWidth: cellWidth - Layout.leftMargin - Layout.rightMargin
@@ -3341,9 +3347,7 @@ MuseScore {
                                     Layout.maximumHeight: cellHeight - Layout.bottomMargin - Layout.topMargin   
                                     implicitHeight: cellHeight - Layout.bottomMargin - Layout.topMargin
                                     
-                                    // spacing: 2  // specific to "Row"
-
-
+                                    
                                     currentIndex: modeIndex()
                                     
                                     ComboBox {
@@ -3367,7 +3371,6 @@ MuseScore {
                                         }
 
                                         editable: false
-                                        // implicitWidth: 30
                                         
                                         // font.family: "FreeSerif"
 
@@ -3477,6 +3480,7 @@ MuseScore {
                         value: notesFlickable.contentY
                     }
 
+                    interactive: false
                 
                     GridLayout {
                         id: repeatGrid
@@ -3511,19 +3515,13 @@ MuseScore {
                                     }
                                 }
 
-                                //clip: true
-                                //focus: true
-                                // property var _row: index + 1
-                                // property var _column: steps.count + 3
-                                // Layout.row: _row
-                                // Layout.column: _column 
                                 Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
                                 Layout.rightMargin: 2
-                                // Layout.preferredHeight: 30
-                                // Layout.preferredWidth: 80
                                 Layout.minimumHeight: cellHeight - Layout.bottomMargin - Layout.topMargin
                                 Layout.maximumHeight: cellHeight - Layout.bottomMargin - Layout.topMargin   
                                 implicitHeight: cellHeight - Layout.bottomMargin - Layout.topMargin
+
+                                Layout.preferredWidth: 80 
 
                                 delegate: ItemDelegate { // requiert QuickControls 2.2
                                     contentItem: Image {
@@ -3583,6 +3581,8 @@ MuseScore {
                         value: notesFlickable.contentY
                     }
                 
+                    interactive: false
+
                     GridLayout {
                         id: scaleGrid
                         rows: _max_patterns
@@ -3618,17 +3618,15 @@ MuseScore {
                                 }
 
                                 editable: true
-                                // property var _row: index + 1
-                                // property var _column: steps.count + 4
-                                // Layout.row: _row
-                                // Layout.column: _column 
                                 Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
                                 Layout.rightMargin: 2
                                 Layout.leftMargin: 2
-                                // Layout.preferredWidth: 90
+
                                 Layout.minimumHeight: cellHeight - Layout.bottomMargin - Layout.topMargin
                                 Layout.maximumHeight: cellHeight - Layout.bottomMargin - Layout.topMargin   
                                 implicitHeight: cellHeight - Layout.bottomMargin - Layout.topMargin
+                                
+                                Layout.preferredWidth: 120
 
                                 states: [
                                     State {
@@ -3674,6 +3672,7 @@ MuseScore {
                         value: notesFlickable.contentY
                     }
 
+                    interactive: false
                 
                     GridLayout {
                         id: toolsGrid
@@ -3793,617 +3792,6 @@ MuseScore {
 
             
             
-            /*ScrollView {
-                clip: true
-
-                GridLayout { // un small element within the fullWidth/fullHeight where we paint the repeater
-
-                    anchors.fill: parent
-                    
-                    //anchors.verticalCenter : parent.verticalCenter
-                    id: idNoteGrid
-                    rows: _max_patterns + 1
-                    // columns: _max_steps + 6
-                    columnSpacing: 0
-                    rowSpacing: 0
-
-
-                    //Layout.preferredWidth : _max_steps * 20
-                    //Layout.preferredHeight : (_max_patterns + 1) * 20
-
-                    // DONE
-                    Repeater {
-                        id: idPatternLabels
-                        model: _max_patterns
-
-                        Label {
-                            Layout.row: index + 1
-                            Layout.column: 0
-                            Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
-                            Layout.rightMargin: 10
-                            Layout.leftMargin: 2
-                            text: "Pattern " + (index + 1) + ":"
-                        }
-                    }
-                    
-                    
-
-                    // ??
-                    Label {// v2.3.0
-                        Layout.row: 0
-                        Layout.column: 1 
-                        Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
-                        Layout.rightMargin: 1
-                        Layout.leftMargin: 1
-                        Layout.bottomMargin: 5
-                        text: "C.N."
-                        visible: modeIndex()!=0
-
-                    }
-
-                    // DONE
-                    Repeater { // 2.3.0
-                        id: idGridTypes
-                        model: mpatterns
-
-                        
-                        ComboBox {
-                            //Layout.fillWidth : true
-                            id: lstGridType
-
-                            model: _gridTypes
-                            
-                            textRole: "label" 
-                            property var imageRole: "image"
-                            property var comboValue: "type"
-
-
-                            onActivated: {
-                                // loopMode = currentValue;
-                                gridType = model[currentIndex][comboValue];
-                                console.log(gridType);
-                            }
-
-                            Binding on currentIndex {
-                                value: {
-                                    var ci=_gridTypes.map(function(e) { return e[comboValue] }).indexOf(gridType);
-                                    ci;
-                                }
-                            }
-                            
-                            visible: modeIndex()!=0
-
-                            property var _row: index + 1
-                            property var _column: 1
-                            Layout.row: _row
-                            Layout.column: _column 
-
-                            Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
-                            Layout.rightMargin: 0
-                            Layout.leftMargin: 0
-
-                            Layout.preferredHeight: 30
-                            Layout.preferredWidth: 30 + indicator.width
-
-                            delegate: ItemDelegate { // requiert QuickControls 2.2
-                                contentItem: Image {
-                                    height: 25
-                                    width: 25
-                                    source: "./" + modelData[imageRole]
-                                    fillMode: Image.Pad
-                                    verticalAlignment: Text.AlignVCenter
-                                    ToolTip.text: modelData[textRole]
-                                    ToolTip.delay: tooltipShow
-                                    ToolTip.timeout: tooltipHide
-                                    ToolTip.visible: hovered
-                                }
-                                highlighted: lstGridType.highlightedIndex === index
-
-                            }
-
-                            contentItem: Image {
-                                height: 25
-                                width: 25
-                                fillMode: Image.Pad
-                                source: "./" +model[lstGridType.currentIndex][imageRole]
-
-                                ToolTip.text: lstGridType.displayText
-                                ToolTip.delay: tooltipShow
-                                ToolTip.timeout: tooltipHide
-                                ToolTip.visible: hovered
-
-                            }
-
-                        }
-
-                        
-                    }
-                    
-                    // DONE    
-                    Repeater {
-                        id: idNoteLabels
-                        model: _max_steps
-
-                        RowLayout {
-                            Layout.row: 0
-                            Layout.column: index + 2 // v2.3.0
-                            Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
-                            Layout.rightMargin: 2
-                            Layout.leftMargin: 2
-                            Layout.bottomMargin: 5
-
-                            property var stepIndex: index
-
-                            Label {
-                                text: (index + 1)
-                            }
-                            ComboBox {
-                                id: lstStepDuration
-                                model: durations
-
-                                textRole: "text"
-                                property var comboValue: "duration"
-                                property var duration: 1
-
-                                onActivated: {
-                                    // loopMode = currentValue;
-                                    duration = model[currentIndex][comboValue];
-                                    console.log(duration);
-
-                                    for (var i = 0; i < _max_patterns; i++) {
-                                        var raw = mpatterns.get(i);
-
-                                        // console.log("Setting duration of step/pattern "+index+"/"+i+" to "+duration);
-
-                                        raw.steps.get(stepIndex).duration = duration;
-                                    }
-
-                                }
-
-                                Binding on currentIndex {
-                                    value: durations.map(function (e) {
-                                        return e[lstStepDuration.comboValue]
-                                    }).indexOf(lstStepDuration.duration);
-                                }
-
-                                implicitHeight: 30
-                                implicitWidth: 50
-
-                                font.family: 'MScore Text'
-                                font.pointSize: 10
-
-                                delegate: ItemDelegate {
-                                    contentItem: Text {
-                                        text: modelData[lstStepDuration.textRole]
-                                        verticalAlignment: Text.AlignVCenter
-                                        font: lstStepDuration.font
-                                    }
-                                    highlighted: durations.highlightedIndex === index
-
-                                }
-                                indicator: Canvas {
-                                    id: canvas
-                                    x: lstStepDuration.width - width - lstStepDuration.rightPadding
-                                    y: lstStepDuration.topPadding + (lstStepDuration.availableHeight - height) / 2
-                                    width: 8
-                                    height: width * 1.5
-
-                                    contextType: "2d"
-
-                                    Connections {
-                                        target: lstStepDuration
-                                        function onPressedChanged() {
-                                            canvas.requestPaint();
-                                        }
-                                    }
-
-                                    onPaint: {
-                                        context.reset();
-                                        context.lineWidth = 1.5;
-                                        context.strokeStyle = "black";
-                                        context.beginPath();
-                                        context.moveTo(0, height / 2 - 1);
-                                        context.lineTo(width / 2, 0);
-                                        context.lineTo(width, height / 2 - 1);
-                                        context.stroke();
-                                        context.beginPath();
-                                        context.moveTo(0, height / 2 + 1);
-                                        context.lineTo(width / 2, height);
-                                        context.lineTo(width, height / 2 + 1);
-                                        context.stroke();
-                                    }
-                                }
-                            }
-                        }
-                        }
-                    
-                    // DONE
-                    Repeater {
-                            id: idStepNotes
-                            model: mpatterns
-
-                            Repeater {
-
-                                id: idSingleStep
-                                property var patternIndex: index
-
-                                model: steps
-                            
-                            // Row {
-                                StackLayout {
-                            
-                                    width: parent.width
-                                    property var stepIndex: index
-                                    property var _row: patternIndex + 1
-                                    property var _column: 2 + stepIndex
-                                    Layout.row: _row
-                                    Layout.column: _column 
-                                    Layout.preferredHeight: 30
-                                    // Layout.maximumHeight: 30
-                                    Layout.preferredWidth: 50
-                                    
-                                    // spacing: 2  // specific to "Row"
-
-                                // StackLayout {
-                                    // width: 60
-
-                                    currentIndex: modeIndex()
-                                    
-                                    ComboBox {
-                                        id: lstStep
-                                        model: _ddNotes
-
-                                        textRole: "text"
-                                        property var comboValue: "id"
-
-                                        onActivated: {
-                                            note = model[currentIndex][comboValue];
-                                            console.log(note);
-                                        }
-
-                                        Binding on currentIndex {
-                                            value: {
-                                                _ddNotes.map(function (e) {
-                                                return e[lstStep.comboValue]
-                                            }).indexOf(note);
-                                            }
-                                        }
-
-                                        editable: false
-                                        implicitWidth: 30
-                                        
-                                        // font.family: "FreeSerif"
-
-                                        delegate: ItemDelegate {
-                                            contentItem: Text {
-                                                text: modelData[lstStep.textRole]
-                                                // textFormat: Text.RichText
-                                                anchors.verticalCenter: parent.verticalCenter
-                                                font: lstStep.font
-                                            }
-                                            highlighted: lstStep.highlightedIndex === index
-
-                                        }
-
-                                        contentItem: Text {
-                                            text: lstStep.displayText
-                                            // textFormat: Text.RichText
-                                            verticalAlignment: Text.AlignVCenter
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            horizontalAlignment: Qt.AlignHCenter
-                                        }
-                                        
-
-                                        
-                                    }
-                                    ComboBox {
-                                        id: lstGStep
-
-                                        model: _ddGridNotes
-
-                                        enabled: gridType==="grid"
-
-                                        // Roles in the ComboBox model
-                                        textRole: "text"
-                                        property var comboValue: "step"
-
-                                        onActivated: {
-                                            console.log("degree at "+stepIndex+" of "+patternIndex+": "+degree);
-                                            degree = model[currentIndex][comboValue];
-                                            workoutName = undefined; // resetting the name of the 
-                                            console.log("==> now degree: "+degree);
-                                        }
-                                        
-                                        Binding on currentIndex {
-                                            // value: lstGStep.model.indexOf(degree)
-                                            value: {
-                                                _ddGridNotes.map(function (e) {
-                                                return e[lstGStep.comboValue]
-                                            }).indexOf(degree);
-                                            }
-                                        }
-
-
-                                        editable: false
-                                        Layout.alignment: Qt.AlignLeft | Qt.QtAlignBottom
-                                        implicitWidth: 30
-                                        
-                                        delegate: ItemDelegate {
-                                            contentItem: Text {
-                                                text: modelData[lstGStep.textRole]
-                                                // textFormat: Text.RichText
-                                                anchors.verticalCenter: parent.verticalCenter
-                                                font: lstGStep.font
-                                            }
-                                            highlighted: lstStep.highlightedIndex === index
-
-                                        }
-
-                                        contentItem: Text {
-                                            text: lstGStep.displayText
-                                            // textFormat: Text.RichText
-                                            verticalAlignment: Text.AlignVCenter
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            horizontalAlignment: Qt.AlignHCenter
-                                        }
-                                        
-                                    }
-                                }
-                                
-                            // }
-                        }
-                    }
-
-                    
-                    // DONE
-                    Label {
-                        Layout.row: 0
-                        Layout.column: _max_steps + 3 // v2.3.0
-                        Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
-                        Layout.rightMargin: 2
-                        Layout.leftMargin: 2
-                        Layout.bottomMargin: 5
-                        text: "Repeat"
-                    }
-
-                    // DONE
-                    Repeater {
-                        id: idLoopingMode
-                        model: mpatterns
-
-                        ComboBox {
-                            //Layout.fillWidth : true
-                            id: lstLoop
-                            model: _loops
-                            
-                            textRole: "label" 
-                            property var imageRole: "image"
-                            property var comboValue: "id"
-                            
-                            onActivated: {
-                                // loopMode = currentValue;
-                                loopMode = model[currentIndex][comboValue];;
-                                console.log(loopMode);
-                            }
-
-                            Binding on currentIndex {
-                                value: {
-                                    var ci=model.map(function(e) { return e[comboValue] }).indexOf(loopMode);
-                                    ci;
-                                }
-                            }
-
-                            //clip: true
-                            //focus: true
-                            property var _row: index + 1
-                            property var _column: steps.count + 3
-                            Layout.row: _row
-                            Layout.column: _column 
-                            Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
-                            Layout.rightMargin: 2
-                            Layout.preferredHeight: 30
-                            Layout.preferredWidth: 80
-
-                            delegate: ItemDelegate { // requiert QuickControls 2.2
-                                contentItem: Image {
-                                    height: 25
-                                    width: 25
-                                    source: "./" + modelData[imageRole]
-                                    fillMode: Image.Pad
-                                    verticalAlignment: Text.AlignVCenter
-                                    ToolTip.text: modelData[textRole]
-                                    ToolTip.delay: tooltipShow
-                                    ToolTip.timeout: tooltipHide
-                                    ToolTip.visible: hovered
-                                }
-                                highlighted: lstLoop.highlightedIndex === index
-
-                            }
-
-                            contentItem: Image {
-                                height: 25
-                                width: 25
-                                fillMode: Image.Pad
-                                // source: lstLoop.displayText?"./workoutbuilder/" +lstLoop.displayText:null
-                                source: "./" +model[lstLoop.currentIndex][imageRole]
-
-                                ToolTip.text: lstLoop.displayText
-                                ToolTip.delay: tooltipShow
-                                ToolTip.timeout: tooltipHide
-                                ToolTip.visible: hovered
-
-                            }
-
-                        }
-                    }
-
-                    // DONE
-                    Label {
-                        Layout.row: 0
-                        Layout.column: _max_steps + 4  // v2.3.0
-                        Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
-                        Layout.rightMargin: 2
-                        Layout.leftMargin: 2
-                        Layout.bottomMargin: 5
-                        text: "Scale"
-                    }
-
-                    // DONE
-                    Repeater {
-                        id: idChordType
-                        model: mpatterns
-                        
-                        ComboBox {
-                            id: lstChordType
-                            model: _ddChordTypes
-
-                            onAccepted: {
-                                chordType = editText;
-                                console.log("manual chordType: "+chordType);
-                                workoutName = undefined; // resetting the name of the workout. One has to save it again to regain the name
-                                
-                            }
-                            onActivated: {
-                                chordType = model[currentIndex];
-                                console.log("selected chordType: "+chordType);
-                                workoutName = undefined; // resetting the name of the workout. One has to save it again to regain the name
-                            }
-
-                            Binding on currentIndex {
-                                value: lstChordType.model.indexOf(chordType)
-                            }
-                            Binding on editText {
-                                value: chordType
-                            }
-
-                            editable: true
-                            property var _row: index + 1
-                            property var _column: steps.count + 4
-                            Layout.row: _row
-                            Layout.column: _column 
-                            Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
-                            Layout.rightMargin: 2
-                            Layout.leftMargin: 2
-                            Layout.preferredWidth: 90
-
-                            states: [
-                                State {
-                                    when: modeIndex() == 0
-                                    PropertyChanges {
-                                        target: lstChordType;
-                                        enabled: true
-                                    }
-                                },
-                                State {
-                                    when: modeIndex() != 0;
-                                    PropertyChanges {
-                                        target: lstChordType;
-                                        enabled: false
-                                    }
-                                }
-                            ]
-
-                        }
-                    }
-
-                    // DONE
-                    Repeater {
-                        id: idTools
-                        model: mpatterns
-
-                        Rectangle {
-
-                            property var _row: index + 1
-                            property var _column: steps.count + 5
-                            Layout.row: _row
-                            Layout.column: _column 
-                            Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
-                            Layout.rightMargin: 0
-                            Layout.leftMargin: 0
-                            width: gridTools.width + 6
-                            height: gridTools.height + 6
-
-                            color: "#E8E8E8"
-                            radius: 4
-
-                            Grid {
-                                id: gridTools
-                                anchors.centerIn: parent
-                                rows: 1
-                                columnSpacing: 2
-                                rowSpacing: 0
-
-                                ImageButton {
-                                    id: btnClear
-                                    imageSource: "cancel.svg"
-                                    ToolTip.text: "Clear"
-                                    onClicked: clearPattern(index);
-                                }
-                                ImageButton {
-                                    id: btnCopy
-                                    imageSource: "copy.svg"
-                                    ToolTip.text: "Copy"
-                                    onClicked: toClipboard(index);
-                                }
-                                ImageButton {
-                                    id: btnPaste
-                                    imageSource: "paste.svg"
-                                    ToolTip.text: "Paste"
-                                    enabled: clipboard !== undefined
-                                    onClicked: fromClipboard(index);
-                                }
-                                ImageButton {
-                                    id: btnLoad
-                                    imageSource: "upload.svg"
-                                    ToolTip.text: "Reuse saved pattern"
-                                    //onClicked: loadPattern(index);
-                                    onClicked: {
-                                        loadWindow.state = "pattern";
-                                        loadWindow.index = index;
-                                        loadWindow.show();
-                                    }
-                                }
-                                ImageButton {
-                                    id: btnSave
-                                    imageSource: "download.svg"
-                                    ToolTip.text: "Save for later reuse"
-                                    onClicked: savePattern(index);
-                                }
-                                ImageButton {
-                                    id: btnSetName
-                                    imageSource: "edittext.svg"
-                                    ToolTip.text: "Set pattern's name" +
-                                    ((pattName != "") ? ("\n\"" + pattName + "\"") : "\n--default--")
-                                    highlighted: (pattName != "")
-                                    onClicked: {
-                                        patternNameInputDialog.index = index;
-                                        patternNameInputDialog.open();
-
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // Repeater {
-                        // id: idPattName
-                        // model: mpatterns
-
-                        // Text {
-                            // id: txtPN
-                            // text: pattName
-                            // visible: true // DEBUG was false
-                            // property var _row: index + 1
-                            // property var _column: steps.count + 6
-                            // Layout.row: _row
-                            // Layout.column: _column 
-                        // }
-                    // }
-
-                }
-            ScrollBar.horizontal.policy: ScrollBar.AsNeeded
-            ScrollBar.vertical.policy: ScrollBar.AsNeeded
-            }*/
         }
         // Presets
         Label {
