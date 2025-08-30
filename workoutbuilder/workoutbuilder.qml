@@ -54,8 +54,9 @@ import "selectionhelper.js" as SelHelper
 /*  - 2.4.2 Score properties (for easier batch export)
 /*  - 2.4.2 Some new degrees (b4, #5, b8)
 /*  - 2.5.0 Srollbars
-/*  - 2.5.0 (ongoing) fix new degrees behaviour with loop modes ("LYDIAN BUG")
-/*  - 2.5.0 (ongoing) refactoring des propriétés - étape 1 : "degreeName" renommé "degree"
+/*  - 2.5.0 fix new degrees behaviour with loop modes ("LYDIAN BUG")
+/*  - 2.5.0 refactoring des propriétés - "degreeName" -> "degree", "note" -> "semitones" -or- "degree"
+/*  - 2.5.0 bug: management of rests in the looping modes
 
 
 /**********************************************/
@@ -164,41 +165,57 @@ MuseScore {
     property var _degrees: [
         // semitones = nb de demi-tons par rapport au root
         // degree = degrée de référence. Ex: b3 => degré de référence = 3
-        // id correspond à l'ancien index
+        {"semitones": -999, "id": _id_Rest,  "label": "𝄽" ,  "degreeLabel": "𝄽"}, // rest
+
         {"semitones": -2, "degree": 7, "octave":-1, "delta":-1, "id": 40,  "label": "-♭7" , "degreeLabel": "♭VII-"  }, //bb1
         {"semitones": -1, "degree": 7, "octave":-1, "delta": 0, "id": 41,  "label": "-7"  , "degreeLabel": "VII"  },
+
         {"semitones": 0,  "degree": 1, "octave": 0, "delta": 0, "id": 00,  "label": "1"   , "degreeLabel": "I"  },
+
         {"semitones": 1,  "degree": 2, "octave": 0, "delta":-1, "id": 01,  "label": "♭2"  , "degreeLabel": "♭II"  },
         {"semitones": 2,  "degree": 2, "octave": 0, "delta": 0, "id": 02,  "label": "2"   , "degreeLabel": "II"  },
+
         {"semitones": 3,  "degree": 3, "octave": 0, "delta":-1, "id": 03,  "label": "♭3"  , "degreeLabel": "♭III"  },
         {"semitones": 4,  "degree": 3, "octave": 0, "delta": 0, "id": 04,  "label": "3"   , "degreeLabel": "III"  },
-        {"semitones": 4,  "degree": 1, "octave": 0, "delta":-1, "id": 54,  "label": "♭4"  , "degreeLabel": "♭IV"  },
+
+        {"semitones": 4,  "degree": 4, "octave": 0, "delta":-1, "id": 54,  "label": "♭4"  , "degreeLabel": "♭IV"  },
         {"semitones": 5,  "degree": 4, "octave": 0, "delta": 0, "id": 05,  "label": "4"   , "degreeLabel": "IV"  },
         {"semitones": 6,  "degree": 4, "octave": 0, "delta": 1, "id": 06,  "label": "#4"  , "degreeLabel": "#IV"  },
+
         {"semitones": 6,  "degree": 5, "octave": 0, "delta":-1, "id": 50,  "label": "♭5"  , "degreeLabel": "♭V"  },
         {"semitones": 7,  "degree": 5, "octave": 0, "delta": 0, "id": 07,  "label": "5"  , "degreeLabel": "V"  },
         {"semitones": 8,  "degree": 5, "octave": 0, "delta": 1, "id": 55,  "label": "#5"  , "degreeLabel": "#V"  },
+
         {"semitones": 8,  "degree": 6, "octave": 0, "delta":-1, "id": 08,  "label": "♭6"  , "degreeLabel": "♭VI"  },
         {"semitones": 9,  "degree": 6, "octave": 0, "delta": 0, "id": 09,  "label": "6"   , "degreeLabel": "VI"  },
+
         {"semitones": 10, "degree": 7, "octave": 0, "delta":-1, "id": 10,  "label": "♭7"  , "degreeLabel": "♭VII"  },
         {"semitones": 11, "degree": 7, "octave": 0, "delta": 0, "id": 11,  "label": "7"   , "degreeLabel": "VII"  },
+
         {"semitones": 11, "degree": 1, "octave": 1, "delta":-1, "id": 56,  "label": "♭(8)", "degreeLabel": "♭I+"  },
         {"semitones": 12, "degree": 1, "octave": 1, "delta": 0, "id": 12,  "label": "(8)" , "degreeLabel": "I+"  },
+
         {"semitones": 13, "degree": 2, "octave": 1, "delta":-1, "id": 13,  "label": "♭9"  , "degreeLabel": "♭II+"  },
         {"semitones": 14, "degree": 2, "octave": 1, "delta": 0, "id": 14,  "label": "9"  ,  "degreeLabel": "II+"  }       ,    
         {"semitones": 15, "degree": 2, "octave": 1, "delta": 1, "id": 15,  "label": "♯9"  , "degreeLabel": "#II+"  },
+
         {"semitones": 15, "degree": 3, "octave": 1, "delta":-1, "id": 51,  "label": "♭10" , "degreeLabel": "♭III+"   },
         {"semitones": 16, "degree": 3, "octave": 1, "delta": 0, "id": 52,  "label": "10"  , "degreeLabel": "III+"  },
+
         {"semitones": 16, "degree": 4, "octave": 1, "delta":-1, "id": 16,  "label": "♭11" , "degreeLabel": "♭IV+"   },
         {"semitones": 17, "degree": 4, "octave": 1, "delta": 0, "id": 17,  "label": "11"  , "degreeLabel": "IV+"  },
         {"semitones": 18, "degree": 4, "octave": 1, "delta": 1, "id": 18,  "label": "♯11" , "degreeLabel": "#IV+"   },
+
         {"semitones": 19, "degree": 5, "octave": 1, "delta": 0, "id": 19,  "label": "(12)", "degreeLabel": "V+"    },
+
         {"semitones": 20, "degree": 6, "octave": 1, "delta":-1, "id": 20,  "label": "♭13" , "degreeLabel": "♭VI+"   },
         {"semitones": 21, "degree": 6, "octave": 1, "delta": 0, "id": 21,  "label": "13"  , "degreeLabel": "VI+"  },
         {"semitones": 22, "degree": 6, "octave": 1, "delta": 1, "id": 22,  "label": "♯13" , "degreeLabel": "#VI+"   },
+
         {"semitones": 23, "degree": 7, "octave": 2, "delta": 0, "id": 23,  "label": "14", "degreeLabel": "VII+"    },
+
         {"semitones": 24, "degree": 1, "octave": 2, "delta": 0, "id": 53,  "label": "(15)", "degreeLabel": "I++"    },
-        {"semitones": -999, "id": _id_Rest,  "label": "𝄽"} // rest
+
         ]
 
     property var _notenames: ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
@@ -621,6 +638,7 @@ MuseScore {
 					"steps": steps, // will be converted to ListElement
 					"chordType" : '', 
 					"pattName":'', 
+                    "asDegrees": false,
 				});
 			}
 		}
@@ -1002,15 +1020,15 @@ MuseScore {
                         
                         // LYDIAN BUG ...
                         // old:
-                        var step={"semitones": smt, 
-                            "degree": noteData.degree, // LYDIAN degreeName -> degree
-                            "duration": sn.duration,
-                            "label": noteData.label};
+                        // var step={"semitones": smt, 
+                            // "degree": noteData.degree, // LYDIAN degreeName -> degree
+                            // "duration": sn.duration,
+                            // "label": noteData.label};
                         // new:
-                        // /*  {"semitones": -2, "degree": 7, "octave":-1, "delta":-1, "id": 40,  "label": "-♭7" , "degreeLabel": "♭VII-"  } */
-                        // var step=JSON.parse( JSON.stringify(noteData)); 
-                        // step.duration=sn.duration;
-                        // ... LYDIAN BUG
+                        /*  {"semitones": -2, "degree": 7, "octave":-1, "delta":-1, "id": 40,  "label": "-♭7" , "degreeLabel": "♭VII-"  } */
+                        var step=JSON.parse( JSON.stringify(noteData)); 
+                        step.duration=sn.duration;
+                        //... LYDIAN BUG
                         p.unshift(step);
                         if (tracePrepare) console.log("Adding "+JSON.stringify(step));
                     }
@@ -1140,6 +1158,7 @@ MuseScore {
             var pattern = extendPattern(patts[p]);
             extpatts.push(pattern);
         }
+
 
         // Building the notes and their order
         var page = -1;
@@ -1696,19 +1715,29 @@ MuseScore {
     }
 
 	/**
-	a pattern described as :
-			"notes": array of noteData object :
-            {
-                "semitones": semitones: integer/null, // LYDIAN note -> semitones
-                "degree": [1..14], // LYDIAN degreeName -> degree
-                "duration": float, 
-                "label": string 
-                }; 
-            - or -
-                "null" is for rest
-            "loopAt": mode,
-            "chord": { "symb": text, "scale": [0, 2, 4, 5, 7, 9, 11, 12], "mode": "major"|"minor" }
-            "name": text
+	/* a pattern =  {
+	/* 		"notes": array of noteData object :
+    /*         {
+    /*             "semitones": semitones: integer/null, // LYDIAN note -> semitones
+    /*             "degree": [1..14], // LYDIAN degreeName -> degree
+    /*             "octave": integer
+    /*             "delta": -1|0|1 difference de demi-tons par rapport au degré non altéré. E.g #IV => delta=+1
+    /*             "duration": float, 
+    /*             "label": string 
+    /*             }; 
+    /*         - or -
+    /*             "null" is for rest
+    /*         
+    /*         "loopAt": mode,
+    /*         "chord": 
+    /*         { 
+    /*             "symb": text, 
+    /*             "scale": [0, 2, 4, 5, 7, 9, 11, 12], 
+    /*             "mode": "major"|"minor"
+    /*             "isExplicitChord": true|false
+    /*         }
+    /*         "name": text
+    /*      }
 	*/		
 	
     function extendPattern(pattern) {
@@ -1721,6 +1750,25 @@ MuseScore {
 		if (basesteps[basesteps.length-1].semitones===null) { // LYDIAN note -> semitones
 			lastrest=basesteps.pop();
 		}
+        
+        var chordData=pattern.chord;
+        var degreeMode=chordData && chordData.isExplicitChord;
+        if(degreeMode) {
+            // degreeMode
+            debugO("Before semitones correction",basesteps);
+            // converts degree to semitones
+            basesteps=basesteps.map(function(note) {
+                if(note.semitones!==null) {
+                    var degree=note.degree;
+                    var semitones=chordData.scale[degree-1];  // 
+                    semitones+=note.octave*12;
+                    semitones+=note.delta;
+                    note.semitones=semitones;
+                }
+                return note;
+            });
+            debugO("After semitones correction",basesteps);
+        }
 
         extpattern.representation = (pattern.name && pattern.name !== "") ? pattern.name : patternToString(pattern.notes, pattern.loopAt);
 
@@ -1737,6 +1785,7 @@ MuseScore {
         if ((loopAt.type == 1) && (Math.abs(loopAt.shift) < basesteps.length) && (loopAt.shift != 0)) {
             // 1) Regular loopAt mode, where we loop from the current pattern, restarting the pattern (and looping)
             // from the next step of it : A-B-C, B-C-A, C-A-B
+            // LYDIAN BUG: TODO degreeMode : quelque chose à faire ?
             if (debugPrepare) console.log("--Looping patterns : shift mode--");
 			
 			// reducing the basesteps to only the 1) the notes (and dropping the rests) 2) only the notes (not taking care of the durations)
@@ -1816,26 +1865,21 @@ MuseScore {
                 }
 
                 // reinserting the rests and the durations
-                var p = [];
                 for (var j = 0; j < basesteps.length; j++) {
                     var _b = basesteps[j];
                     if (_b.semitones === null) { // LYDIAN note -> semitones
-                        shifted.splice(j, 0, null);
+                        shifted.splice(j, 0, {semitones:null });
                     }
-                    // var newDegree=degreeForSemitones(shifted[j].note);
-                    p.push({
-                        semitones: shifted[j].semitones, // LYDIAN note -> semitones
-                        degree: shifted[j].degree, // la note garde son degré // LYDIAN degreeName -> degree
-                        label: shifted[j].label,
-                        duration: basesteps[j].duration
-                    });
+                    
+                    shifted[j].duration=basesteps[j].duration;
+                    
                 }
 
 				// if there was a rest at the end reinserting it
                 if (lastrest) {
-                    p.push(lastrest);
+                    shifted.push(lastrest);
                 }
-                extpattern["subpatterns"].push(p);
+                extpattern["subpatterns"].push(shifted);
 
                 from += loopAt.shift;
 
@@ -1888,7 +1932,7 @@ MuseScore {
                 for (var i = 0; i < dia.length; i++) {
                     counter++;
                     if (debugPrepare) console.log("Looping patterns : scale mode at " + dia[i]);
-                    var shifted = shiftPattern(basesteps, scale, dia[i]);
+                    var shifted = shiftPattern(basesteps, scale, dia[i],degreeMode);
 					if (lastrest) {
 						shifted.push(lastrest);
 					}
@@ -1903,7 +1947,7 @@ MuseScore {
                 for (var i = (dia.length - 1); i >= 0; i--) {
                     counter++;
                     if (debugPrepare) console.log("Looping patterns : scale mode at " + dia[i]);
-                    var shifted = shiftPattern(basesteps, scale, dia[i]);
+                    var shifted = shiftPattern(basesteps, scale, dia[i],degreeMode);
 					if (lastrest) {
 						shifted.push(lastrest);
 					}
@@ -1926,7 +1970,19 @@ MuseScore {
 
     }
 	
+	/**
+	/* a pattern = an array of noteData object :
+    /*         {
+    /*             "semitones": semitones: integer/null, // LYDIAN note -> semitones
+    /*             "degree": [1..14], // LYDIAN degreeName -> degree
+    /*             "octave": integer
+    /*             "delta": -1|0|1 difference de demi-tons par rapport au degré non altéré. E.g #IV => delta=+1
+    /*             "duration": float, 
+    /*             "label": string 
+    /*             }; 
+	*/		
 	function reversePattern(pattern) {
+        // LYDIAN BUG: TODO degreeMode : rien de spécial à faire
 	    var reduced = pattern.filter(function (e) {
 	        return e.semitones !== null // LYDIAN note -> semitones
 	    }).map(function (e) {
@@ -1942,7 +1998,7 @@ MuseScore {
 	    for (var j = 0; j < pattern.length; j++) {
 	        var _b = pattern[j];
 	        if (_b.semitones === null) { // LYDIAN note -> semitones
-	            reduced.splice(j, 0, null);
+	            reduced.splice(j, 0, {semitones: null});
 	        }
             reduced[j].duration=pattern[j].duration;
 	        p.push(reduced[j]);
@@ -1952,9 +2008,19 @@ MuseScore {
 	}
 
     /**
-    * scale = array of degree ids : e.g. 0 for 1, 6 for b5, 50 for #11
+	/* a pattern = an array of noteData object :
+    /*         {
+    /*             "semitones": semitones: integer/null, // LYDIAN note -> semitones
+    /*             "degree": [1..14], // LYDIAN degreeName -> degree
+    /*             "octave": integer
+    /*             "delta": -1|0|1 difference de demi-tons par rapport au degré non altéré. E.g #IV => delta=+1
+    /*             "duration": float, 
+    /*             "label": string 
+    /*             }; 
+    /*
+    /* scale = array of degree ids : e.g. 0 for 1, 6 for b5, 50 for #11
     */
-    function shiftPattern(pattern, scale, step) {
+    function shiftPattern(pattern, scale, step, degreeMode) {
         console.log("----SHIFT PATTERN---");
         debugO("pattern",pattern);
         debugO("scale",scale);
@@ -1962,71 +2028,72 @@ MuseScore {
         var degreeScale=_degrees.filter(function (e) { return scale.indexOf(e.id)>=0})
             .map(function(e,index) { e.index=index; return e}); // on rajoute l'index dans la table des deegrés
         ;
-        debugO("degreeScale",degreeScale);
+        // debugO("degreeScale",degreeScale);
         
         // 1) convert a chromatic pattern into a diatonic pattern
-        for (var ip = 0; ip < pattern.length; ip++) {
-            // for every step of the pattern we look for its diatonic equivalent.
-            // And a delta. For a b5, while in major scale, we will retrieve a degree of "5" + a delta of -1 semitone
-            
-            // LYDIAN BUG
-            /* Todo: Trouver un moyen pour que pattern[i].degree = 4 matche avec // LYDIAN degreeName -> degree
-            Debug: degreeScale-3: semitones: 6
-            Debug: degreeScale-3: degree: 4
-            Debug: degreeScale-3: octave: 0
-            Debug: degreeScale-3: delta: 1
-            Debug: degreeScale-3: id: 6
-            Debug: degreeScale-3: label: #4
-            Debug: degreeScale-3: index: 3
-            
-            Par exemple avec degreeScale[ parseInt(pattern[i].degree)-1]
-            Ou via degreeScale.filter(e -> e.degree==parseInt(pattern[i].degree))
-           
-            
-            Ce qui permet de trouver le vrai degré et permet de dire "2-4-1" et de l'application tant à du lydien
-            ce qui déduira que "4" est le #11, qu'à du majeur qui en déduire que le "4" est bécarre11
-            
-            
-            */
-            
-            var computeData = undefined;
-            var smt = pattern[ip].semitones; // LYDIAN note -> semitones
-            var degree= pattern[ip].degree;  // LYDIAN degreeName -> degree
-            
-            if(tracePrepare) console.log("[shift " + step + "] 0)[" + ip + "] searching for degree "+degree);
+        if(!degreeMode) {
+            // regular mode
+            for (var ip = 0; ip < pattern.length; ip++) {
+                // for every step of the pattern we look for its diatonic equivalent.
+                // And a delta. For a b5, while in major scale, we will retrieve a degree of "5" + a delta of -1 semitone
+                
+                var computeData = undefined;
+                var smt = pattern[ip].semitones; // LYDIAN note -> semitones
+                
+                // dropping the rests
+                if (smt==null) continue;
 
-            
-            var octave = Math.floor(smt / 12);
-            smt = smt % 12;
+                var degree= pattern[ip].degree;  // LYDIAN degreeName -> degree
+                
+                if(tracePrepare) console.log("[shift " + step + "] 0)[" + ip + "] searching for degree "+degree);
 
-            for(var ds=0; ds<degreeScale.length;ds++) {
-                if (degreeScale[ds].degree===degree) {
-                if(tracePrepare) console.log("[shift " + step + "] 0)[" + ip + "] searching for degree "+degree +" -- FOUND");
-            
-                    computeData = {
-                            "degreeIndex": degreeScale[ds].index,
-                            "semi": smt-degreeScale[ds].semitones, // la différence de demi-tons entre la note et son degré dans la gamme
-                            "octave": octave
-                        };
-                    break;
+                
+                var octave = Math.floor(smt / 12);
+                smt = smt % 12;
+
+                for(var ds=0; ds<degreeScale.length;ds++) {
+                    if (degreeScale[ds].degree===degree) {
+                    if(tracePrepare) console.log("[shift " + step + "] 0)[" + ip + "] searching for degree "+degree +" -- FOUND");
+                
+                        computeData = {
+                                "degreeIndex": degreeScale[ds].index,
+                                "semi": smt-degreeScale[ds].semitones, // la différence de demi-tons entre la note et son degré dans la gamme
+                                "octave": octave
+                            };
+                        break;
+                    }
+
                 }
 
+               if (computeData === undefined) {
+                    // if not found, it means we are beyond the last degree
+                    if(tracePrepare) console.log("[shift " + step + "] 0)[" + ip + "] searching for degree "+degree +" -- NOT FOUND");
+                    var lastDegree=degreeScale[degreeScale.length-1];
+                    computeData = {
+                        "degreeIndex": lastDegree.index,
+                        "semi": smt - lastDegree.semitones,
+                        "octave": octave
+                    };
+
+                }
+
+                pdia.push(computeData);
+                console.log("[shift " + step + "] 1)[" + ip + "]" + smt + "->" + debugDia(computeData));
             }
-
-           if (computeData === undefined) {
-                // if not found, it means we are beyond the last degree
-                if(tracePrepare) console.log("[shift " + step + "] 0)[" + ip + "] searching for degree "+degree +" -- NOT FOUND");
-                var lastDegree=degreeScale[degreeScale.length-1];
-                computeData = {
-                    "degreeIndex": lastDegree.index,
-                    "semi": smt - lastDegree.semitones,
-                    "octave": octave
-                };
-
-            }
-
-            pdia.push(computeData);
-			console.log("[shift " + step + "] 1)[" + ip + "]" + smt + "->" + debugDia(computeData));
+        } else {
+             //degreeMode
+             pdia=pattern
+                // On drop les silences
+                .filter(function (note) {
+                        return note.semitones!=null;
+                })
+                .map(function(note) {
+                     return {
+                        "degreeIndex": note.degree-1, // 1..8 -> 0..7
+                        "semi": note.delta, // la différence de demi-tons entre la note et son degré dans la gamme
+                        "octave": note.octave
+                    };
+                 });
         }
 
         // 2) shift the diatonic pattern by the amount of steps
@@ -2041,58 +2108,90 @@ MuseScore {
             console.log("[shift " + step + "] 2)[" + ip + "]->" + debugDia(computeData));
         }
 
+        
+        debugO("Before convert back",pdia);
+        
+        
         // 3) Convert back to a chromatic scale
         var pshift = [];
-        for (var ip = 0; ip < pdia.length; ip++) {
-            var computeData = pdia[ip];
-			var noteData=null;
-			if(computeData!==null) {
-                if (computeData.degreeIndex >= degreeScale.length) {
-                    // We are beyond the scale, let's propose some value
-                    computeData.semi += (computeData.degreeIndex - degreeScale.length + 1) * 1; // 1 semi-tone by missing degree
-                    computeData.degreeIndex = degreeScale.length - 1;
-                    if ((degreeScale[computeData.degreeIndex] + computeData.semi) >= 12)
-                        computeData.semi = 11;
+        if(!degreeMode) {
+            // regular mode
+            for (var ip = 0; ip < pdia.length; ip++) {
+                var computeData = pdia[ip];
+                var noteData=null;
+                if(computeData!==null) {
+                    if (computeData.degreeIndex >= degreeScale.length) {
+                        // We are beyond the scale, let's propose some value
+                        computeData.semi += (computeData.degreeIndex - degreeScale.length + 1) * 1; // 1 semi-tone by missing degree
+                        computeData.degreeIndex = degreeScale.length - 1;
+                        if ((degreeScale[computeData.degreeIndex] + computeData.semi) >= 12)
+                            computeData.semi = 11;
+                    }
+                    var degreeData=degreeScale[computeData.degreeIndex];
+                    var label="";
+                    switch(computeData.semi) {
+                        case -2:
+                            label="\u{1D12B}";
+                            break;
+                        case -1:
+                            label="\u{266D}";
+                            break;
+                        case 0:
+                            label="";
+                            break;
+                        case 1:
+                            label="\u{266F}";
+                            break;
+                        case 2:
+                            label="\u{1D12A}";
+                            break;
+                        default:
+                            label="("+computeData.semi+")"
+                    };
+                    label+=degreeData.degree;
+                    noteData = {
+                        "semitones": degreeData.semitones + 12 * computeData.octave + computeData.semi, // LYDIAN note -> semitones
+                        "degree": degreeData.degree, // LYDIAN degreeName -> degree
+                        "label": label,
+                    };
+                    console.log("\tscale[.degree] + 12 * .octave + .semi: "+JSON.stringify(scale));
+                } else {
+                    noteData=null;
                 }
-                var degreeData=degreeScale[computeData.degreeIndex];
-                var label="";
-                switch(computeData.semi) {
-                    case -2:
-                        label='\u1D12B';
-                        break;
-                    case -1:
+                pshift.push(noteData);
+                console.log("[shift " + step + "] 3)[" + ip + "]" + debugDia(computeData) + "->" + noteData.semitones); // LYDIAN note -> semitones
+            }
+        } else {
+            // degreeMode
+            pshift=pdia.map(function(computeData) {
+                var semitones=scale[computeData.degreeIndex]; //degreeIndex est 0..7
+                semitones+=12 * computeData.octave + computeData.semi;
+                return {
+                    "semitones": semitones,
+                    "degree": computeData.degreeIndex + 1, // LYDIAN degreeName -> degree
+                    "label": "???",
+                    };
+            });
+            
                         label='\u266D';
-                        break;
-                    case 0:
-                        label="";
-                        break;
-                    case 1:
                         label='\u266F';
-                        break;
-                    case 2:
                         label='\u1D12A';
-                        break;
-                    default:
-                        label="("+computeData.semi+")"
-                };
-                label+=degreeData.degree;
-                noteData = {
-                    "semitones": degreeData.semitones + 12 * computeData.octave + computeData.semi, // LYDIAN note -> semitones
-                    "degree": degreeData.degree, // LYDIAN degreeName -> degree
-                    "label": label,
-                };
-                console.log("\tscale[.degree] + 12 * .octave + .semi: "+JSON.stringify(scale));
-			} else {
-				noteData=null;
-			}
-            pshift.push(noteData);
-            console.log("[shift " + step + "] 3)[" + ip + "]" + debugDia(computeData) + "->" + noteData.semitones); // LYDIAN note -> semitones
         }
-		
-		// 4) Reset the right durations
-        for (var ip = 0; ip < pattern.length; ip++) {
-			pshift[ip].duration=pattern[ip].duration
-		}
+
+		// 4) Reinsert the rests
+		// 5) Reset the right durations
+        for (var i = 0; i < pattern.length; i++) {
+            var _b = pattern[i];
+            if (_b.semitones === null) { // LYDIAN note -> semitones
+                pshift.splice(i, 0, { semitones: null});
+                // pshift.splice(i, 0, null);
+            } 
+            pshift[i].duration=pattern[i].duration
+            
+        }
+
+
+        debugO("Shifted by "+step,pshift);
 		
         return pshift;
 
@@ -2123,8 +2222,9 @@ MuseScore {
 		return count;
 	}
     
-    /*
-    Retourne l'objet _degree qui correspond au nombre de demi-tons demandé. Si plusieurs objets ont le même nombre de demi-tons (ex #4 et b5) retourne (pour le moment) le 1er trouvé.
+    /**
+    /* Retourne l'objet _degree qui correspond au nombre de demi-tons demandé. Si plusieurs objets 
+    /* ont le même nombre de demi-tons (ex #4 et b5) retourne (pour le moment) le 1er trouvé.
     */
     function degreeForSemitones(semitones) {
         var rounded=(144+semitones)%12; //144 = 12*12, on s'assure que 144+semitones soit tjs >=0
@@ -2155,10 +2255,19 @@ MuseScore {
 
 
 	/**
-	notes described as :
-        array of {"semitones": semitones: integer/null, "degree": [1..14], "delta": semitones to degree "duration": float, "label": string }; "null" is for rest
-        // LYDIAN degreeName -> degree
-        // LYDIAN note -> semitones
+	/* notes = array of noteData + duration
+    /* {
+    /*     "semitones": semitones: integer/null, // LYDIAN note -> semitones
+    /*     "degree": [1..14], // LYDIAN degreeName -> degree
+    /*     "octave": integer
+    /*     "delta": semitones to degree 
+    /*     "duration": float, 
+    /*     "label": string
+    /*     }; 
+    /* 
+    /* 
+    /*     
+    /*     
 	*/		
     function patternToString(notes, loopAt) {
         var str = "";
