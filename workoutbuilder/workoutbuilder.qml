@@ -57,6 +57,8 @@ import "selectionhelper.js" as SelHelper
 /*  - 2.5.0 fix new degrees behaviour with loop modes ("LYDIAN BUG")
 /*  - 2.5.0 refactoring des propriétés - "degreeName" -> "degree", "note" -> "semitones" -or- "degree"
 /*  - 2.5.0 bug: management of rests in the looping modes
+/*  - 2.5.0 (ongoing) sauvegarde des durées des Workout 
+        TODO: A tester
 
 
 /**********************************************/
@@ -2454,11 +2456,12 @@ MuseScore {
 
     }
 
-    function setPattern(index, pattern, scaleMode) {
+    function setPattern(index, pattern, scaleMode, durations) {
         if (scaleMode === undefined)
             scaleMode = (modeIndex() == 0);
 
         console.log("Setting pattern " + index + ", mode: " + (scaleMode ? _SCALE_MODE : _GRID_MODE)+", pattern: "+((pattern)?pattern.label:"undefined"));
+        console.log("   with durations: "+durations);
 
         if (pattern !== undefined && pattern.type !== (scaleMode ? _SCALE_MODE : _GRID_MODE)) {
             console.log("!! Cannot setPattern due to non-matching pattern. Expected " + (scaleMode ? _SCALE_MODE : _GRID_MODE) + ", while pattern is: " + pattern.type);
@@ -2475,6 +2478,14 @@ MuseScore {
             } else {
                 var degree = (pattern !== undefined && (i < pattern.steps.length)) ? _griddegrees[pattern.steps[i]] : '';
                 sn.degree = degree;
+            }
+
+            // DURATION LOAD: Si des durées sont spécifiées, on les mets, sinon on laisse ne l'état
+            if(durations) {
+                var dur=parseFloat(durations[i]);
+                console.log("durations "+i+": "+durations[i]+" => "+dur);
+                if(isNaN(dur)) dur=1;
+                sn.duration=dur;
             }
         }
 
@@ -2853,12 +2864,29 @@ MuseScore {
         var m = (workout !== undefined) ? Math.min(_max_patterns, workout.patterns.length) : 0;
 
         for (var i = 0; i < m; i++) {
-            setPattern(i, workout.patterns[i]);
+            setPattern(i, workout.patterns[i], workout.type, workout.durations);
+            for(var j=0;j<_max_steps;j++) {
+                debugO("Applying pattern "+i,mpatterns.get(i).steps.get(j).duration);
+            }
         }
 
         for (var i = m; i < _max_patterns; i++) {
-            setPattern(i, undefined);
+            setPattern(i, undefined, workout.type, workout.durations);
         }
+
+        // durations
+        // DURATIONS LOAD
+        // On pousse aussi au niveau de la DD 
+        var d = (workout !== undefined && workout.durations !== undefined) ? Math.min(_max_steps, workout.durations.length) : 0;
+
+        for (var i = 0; i < d; i++) {
+            stepDurationRepeater.itemAt(i).duration=workout.durations[i];
+        }
+
+        for (var i = d; i < _max_steps; i++) {
+            stepDurationRepeater.itemAt(i).duration=1;
+        }
+
 
         // roots/phrase
         if (workout !== undefined && (workout.type === _SCALE_MODE)) {
@@ -2908,13 +2936,22 @@ MuseScore {
                 break;
             pp.push(p);
         }
+        
+        // DURATIONS LOAD
+        var pattDurations = [];
+		var current=mpatterns.get(0); // On récupère les durées de la 1ère pattern
+        for (var i = 0; i < current.steps.count; i++) {
+            var dur = current.steps.get(i).duration;
+            pattDurations.push(dur);
+        }
+        
 
         var workout;
         if (modeIndex() == 0) {
-            workout = new workoutClass(label, pp, undefined, chkByPattern.checked, chkInvert.checked);
+            workout = new workoutClass(label, pp, undefined, chkByPattern.checked, chkInvert.checked, pattDurations);
         } else {
             var phrase = (withPhrase) ? getPhrase() : undefined;
-            workout = new gridWorkoutClass(label, pp, phrase, chkByPattern.checked, chkInvert.checked);
+            workout = new gridWorkoutClass(label, pp, phrase, chkByPattern.checked, chkInvert.checked, pattDurations);
 
         }
         return workout;
@@ -3065,6 +3102,7 @@ MuseScore {
             for (var i = 0; i < allworkouts.length; i++) {
                 var pp = allworkouts[i];
                 var p = new workoutClassRaw(pp);
+                //debugO("Loaded workout "+i,pp);
                 workouts.push(p);
             }
         }
@@ -3237,6 +3275,7 @@ MuseScore {
 
                         Repeater {
                             model: _max_steps
+                            id: stepDurationRepeater
                         
                             ComboBox {
                                 id: lstStepDuration
@@ -5064,20 +5103,22 @@ MuseScore {
      * Creation of a pattern from a pattern object containing the *enumerable* fields (ie. the non transient fields)
      */
     function patternClassRaw(raw) {
-        patternClass.call(this, raw.steps, raw.loopMode, raw.scale, raw.name, raw.type, raw.gridType);
+        patternClass.call(this, raw.steps, raw.loopMode, raw.scale, raw.name, raw.type, raw.gridType, raw.durations);
     }
 
-    function workoutClass(name, patterns, roots, bypattern, invert) {
+    function workoutClass(name, patterns, roots, bypattern, invert, durations) {
         this.type = _SCALE_MODE;
         this.patterns = (patterns !== undefined) ? patterns : [];
         this.name = ((name !== undefined) && (name.trim() !== "")) ? name.trim() : "???";
         this.roots = roots;
         this.bypattern = bypattern;
         this.invert = invert;
+        this.durations = (durations !== undefined) ? durations : [];
 
         this.toJSON = function (key) {
             return {
                 patterns: this.patterns,
+                durations: this.durations,
                 name: this.name,
                 type: this.type,
                 roots: this.roots,
@@ -5127,13 +5168,14 @@ MuseScore {
 
     }
 
-    function gridWorkoutClass(name, patterns, phrase, bypattern, invert) {
+    function gridWorkoutClass(name, patterns, phrase, bypattern, invert, durations) {
         this.type = _GRID_MODE;
         this.patterns = (patterns !== undefined) ? patterns : [];
         this.name = ((name !== undefined) && (name.trim() !== "")) ? name.trim() : "???";
         this.phrase = ((phrase === undefined) || (phrase.chords === undefined) || (phrase.chords.length == 0)) ? undefined : phrase;
         this.bypattern = bypattern;
         this.invert = invert;
+        this.durations = (durations !== undefined) ? durations : [];
 
         // Trying to pick a name for the phrase
         if (this.phrase !== undefined && this.phrase.name === "") {
@@ -5151,6 +5193,7 @@ MuseScore {
         this.toJSON = function (key) {
             return {
                 patterns: this.patterns,
+                durations: this.durations,
                 name: this.name,
                 type: this.type,
                 phrase: this.phrase,
@@ -5221,10 +5264,10 @@ MuseScore {
         }
 
         if (type === _SCALE_MODE)
-            workoutClass.call(this, raw.name, pp, raw["roots"], raw["bypattern"], raw["invert"]);
+            workoutClass.call(this, raw.name, pp, raw["roots"], raw["bypattern"], raw["invert"], raw["durations"]);
         else {
             var phrase = (raw.phrase !== undefined) ? new phraseClassRaw(raw["phrase"]) : undefined;
-            gridWorkoutClass.call(this, raw.name, pp, phrase, raw["bypattern"], raw["invert"]);
+            gridWorkoutClass.call(this, raw.name, pp, phrase, raw["bypattern"], raw["invert"], raw["durations"]);
         }
     }
 
