@@ -59,7 +59,7 @@ import "selectionhelper.js" as SelHelper
 /*  - 2.5.0 bug: management of rests in the looping modes
 /*  - 2.5.0 (ongoing) sauvegarde des durées des Workout 
         TODO: A tester
-
+/*  - 2.5.0 Some new degrees: V(-1), VI(-1), bI
 
 /**********************************************/
 MuseScore {
@@ -169,8 +169,13 @@ MuseScore {
         // degree = degrée de référence. Ex: b3 => degré de référence = 3
         {"semitones": -999, "id": _id_Rest,  "label": "𝄽" ,  "degreeLabel": "𝄽"}, // rest
 
-        {"semitones": -2, "degree": 7, "octave":-1, "delta":-1, "id": 40,  "label": "-♭7" , "degreeLabel": "♭VII-"  }, //bb1
-        {"semitones": -1, "degree": 7, "octave":-1, "delta": 0, "id": 41,  "label": "-7"  , "degreeLabel": "VII"  },
+        {"semitones": -5,  "degree": 5, "octave": -1, "delta": 0, "id": 57,  "label": "(-5)"  , "degreeLabel": "(V)"  },
+        {"semitones": -3,  "degree": 6, "octave": -1, "delta": 0, "id": 58,  "label": "(-6)"   , "degreeLabel": "(VI)"  },
+
+        {"semitones": -2, "degree": 7, "octave":-1, "delta":-1, "id": 40,  "label": "(-♭7)" , "degreeLabel": "(♭VII)"  }, //bb1
+        {"semitones": -1, "degree": 7, "octave":-1, "delta": 0, "id": 41,  "label": "(-7)"  , "degreeLabel": "(VII)"  },
+
+        {"semitones": -1, "degree": 1, "octave":0, "delta": -1, "id": 59,  "label": "♭1"  , "degreeLabel": "♭I"  },
 
         {"semitones": 0,  "degree": 1, "octave": 0, "delta": 0, "id": 00,  "label": "1"   , "degreeLabel": "I"  },
 
@@ -2133,19 +2138,19 @@ MuseScore {
                     var label="";
                     switch(computeData.semi) {
                         case -2:
-                            label="\u{1D12B}";
+                            label=""; //"\u{1D12B}"; //bb
                             break;
                         case -1:
-                            label="\u{266D}";
+                            label="♭"; //"\u{266D}"; //b
                             break;
                         case 0:
                             label="";
                             break;
                         case 1:
-                            label="\u{266F}";
+                            label="♯"; //"\u{266F}"; // #
                             break;
                         case 2:
-                            label="\u{1D12A}";
+                            label=""; //"\u{1D12A}"; // x
                             break;
                         default:
                             label="("+computeData.semi+")"
