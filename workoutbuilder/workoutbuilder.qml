@@ -54,6 +54,7 @@ import "selectionhelper.js" as SelHelper
 /*  - 2.4.2 Score properties (for easier batch export)
 /*  - 2.4.2 Some new degrees (b4, #5, b8)
 /*  - 2.5.0 Srollbars
+/*  - 2.5.1 Unicode encoding issue on 3.6.2
 
 
 
@@ -2008,19 +2009,19 @@ MuseScore {
                 var label="";
                 switch(computeData.semi) {
                     case -2:
-                        label="\u{1D12B}";
+                        label='\u1D12B';
                         break;
                     case -1:
-                        label="\u{266D}";
+                        label='\u266D';
                         break;
                     case 0:
                         label="";
                         break;
                     case 1:
-                        label="\u{266F}";
+                        label='\u266F';
                         break;
                     case 2:
-                        label="\u{1D12A}";
+                        label='\u1D12A';
                         break;
                     default:
                         label="("+computeData.semi+")"
