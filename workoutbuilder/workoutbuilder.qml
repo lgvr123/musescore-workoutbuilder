@@ -54,18 +54,19 @@ import "selectionhelper.js" as SelHelper
 /*  - 2.4.2 Score properties (for easier batch export)
 /*  - 2.4.2 Some new degrees (b4, #5, b8)
 /*  - 2.5.0 Srollbars
-/*  - 2.5.0 fix new degrees behaviour with loop modes ("LYDIAN BUG")
-/*  - 2.5.0 refactoring des propriétés - "degreeName" -> "degree", "note" -> "semitones" -or- "degree"
-/*  - 2.5.0 bug: management of rests in the looping modes
-/*  - 2.5.0 (ongoing) sauvegarde des durées des Workout 
+/*  - 2.5.1 Bugs into 3.6.2
+/*  - 2.6.0 fix new degrees behaviour with loop modes ("LYDIAN BUG")
+/*  - 2.6.0 refactoring des propriétés - "degreeName" -> "degree", "note" -> "semitones" -or- "degree"
+/*  - 2.6.0 bug: management of rests in the looping modes
+/*  - 2.6.0 (ongoing) sauvegarde des durées des Workout 
         TODO: A tester
-/*  - 2.5.0 Some new degrees: V(-1), VI(-1), bI
+/*  - 2.6.0 Some new degrees: V(-1), VI(-1), bI
 
 /**********************************************/
 MuseScore {
     menuPath: "Plugins." + pluginName
     description: "This plugin builds chordscale workouts based on patterns defined by the user."
-    version: "2.5.0-SNAPSHOT"
+    version: "2.6.0-SNAPSHOT"
 
     pluginType: "dialog"
     requiresScore: false
@@ -2138,19 +2139,19 @@ MuseScore {
                     var label="";
                     switch(computeData.semi) {
                         case -2:
-                            label=""; //"\u{1D12B}"; //bb
+                            label='\u1D12B'; //bb
                             break;
                         case -1:
-                            label="♭"; //"\u{266D}"; //b
+                            label='\u266D'; //b
                             break;
                         case 0:
                             label="";
                             break;
                         case 1:
-                            label="♯"; //"\u{266F}"; // #
+                            label='\u266F'; // #
                             break;
                         case 2:
-                            label=""; //"\u{1D12A}"; // x
+                            label='\u1D12A'; // x
                             break;
                         default:
                             label="("+computeData.semi+")"
@@ -2180,9 +2181,6 @@ MuseScore {
                     };
             });
             
-                        label='\u266D';
-                        label='\u266F';
-                        label='\u1D12A';
         }
 
 		// 4) Reinsert the rests
